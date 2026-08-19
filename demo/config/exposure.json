@@ -1,0 +1,89 @@
+{
+  "_readme": "Ventilation géographique/sectorielle par asset_key (démo, approximée sur factsheets publics).",
+  "Amundi MSCI World UCITS ETF - EUR (C)": {
+    "country": {
+      "États-Unis": 70.0,
+      "Japon": 6.0,
+      "Royaume-Uni": 4.0,
+      "France": 3.0,
+      "Allemagne": 2.5,
+      "Suisse": 2.5,
+      "Canada": 3.0,
+      "Chine": 3.0,
+      "Autres": 6.0
+    },
+    "sector": {
+      "Technologie": 27.0,
+      "Financières": 16.0,
+      "Industrie": 11.0,
+      "Santé": 10.0,
+      "Consommation discrétionnaire": 10.0,
+      "Communication": 8.0,
+      "Consommation de base": 6.0,
+      "Énergie": 4.0,
+      "Matériaux": 3.0,
+      "Services publics": 2.5,
+      "Immobilier": 2.5
+    }
+  },
+  "Sanofi": {
+    "country": {
+      "France": 100
+    },
+    "sector": {
+      "Santé": 100
+    }
+  },
+  "US0378331005": {
+    "country": {
+      "États-Unis": 100
+    },
+    "sector": {
+      "Technologie": 100
+    }
+  },
+  "FR0000121014": {
+    "country": {
+      "France": 100
+    },
+    "sector": {
+      "Consommation discrétionnaire": 100
+    }
+  },
+  "US1912161007": {
+    "country": {
+      "États-Unis": 100
+    },
+    "sector": {
+      "Consommation de base": 100
+    }
+  },
+  "IE00BK5BQT80": {
+    "country": {
+      "États-Unis": 62.0,
+      "Japon": 5.5,
+      "Royaume-Uni": 3.5,
+      "Chine": 3.0,
+      "France": 2.8,
+      "Canada": 2.7,
+      "Allemagne": 2.0,
+      "Inde": 2.0,
+      "Suisse": 2.0,
+      "Taïwan": 1.8,
+      "Autres": 12.7
+    },
+    "sector": {
+      "Technologie": 24.0,
+      "Financières": 17.0,
+      "Industrie": 12.0,
+      "Santé": 10.0,
+      "Consommation discrétionnaire": 10.5,
+      "Communication": 7.5,
+      "Consommation de base": 6.0,
+      "Énergie": 4.5,
+      "Matériaux": 3.5,
+      "Services publics": 2.5,
+      "Immobilier": 2.5
+    }
+  }
+}

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: portfolio-dashboard-demo
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    envVars:
+      - key: PORTFOLIO_ROOT
+        value: demo
+      - key: PYTHON_VERSION
+        value: 3.12.0

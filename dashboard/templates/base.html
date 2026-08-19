@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Portfolio Dashboard{% endblock %}</title>
+
+<!-- Installation en app sur l'écran d'accueil (PWA) : manifest + icônes iOS/Android. -->
+<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+<meta name="theme-color" content="#2a78d6">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Portfolio">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --row-hover: rgba(11,11,11,0.03);
+    --good: #006300;
+    --critical: #d03b3b;
+    --info: #2a78d6;
+    --chip-bg: rgba(11,11,11,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --row-hover: rgba(255,255,255,0.03);
+      --good: #0ca30c;
+      --critical: #e66767;
+      --info: #3987e5;
+      --chip-bg: rgba(255,255,255,0.06);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--page); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; }
+  .ink-primary { color: var(--text-primary); }
+  .ink-secondary { color: var(--text-secondary); }
+  .ink-muted { color: var(--text-muted); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .delta-good { color: var(--good); }
+  .delta-critical { color: var(--critical); }
+  .delta-info { color: var(--info); }
+  .hero-value { font-size: 2.5rem; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
+  .section-title { font-size: 1rem; font-weight: 600; }
+  .section-hint { color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; }
+  .chip { display: inline-block; background: var(--chip-bg); color: var(--text-secondary); border-radius: 999px; padding: 1px 8px; font-size: 0.75rem; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: 9px 12px; text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--text-muted); font-weight: 500; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--grid); }
+  td { border-bottom: 1px solid var(--grid); font-size: 0.875rem; }
+  td.wrap { white-space: normal; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--row-hover); }
+  .stat-label { color: var(--text-muted); font-size: 0.75rem; margin-bottom: 4px; }
+  .stat-value { font-size: 1.125rem; font-weight: 600; }
+  .nav-link { padding: 6px 12px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-decoration: none; }
+  .nav-link:hover { background: var(--row-hover); }
+  .nav-link.active { background: var(--chip-bg); color: var(--text-primary); }
+
+  /* Chip de delta (héro) : pastille colorée avec triangle de sens, façon Finary. */
+  .chip-delta { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; font-weight: 600; }
+  .chip-delta.is-good { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
+  .chip-delta.is-critical { background: color-mix(in srgb, var(--critical) 14%, transparent); color: var(--critical); }
+
+  /* Accent latéral sur une card, pour rattacher visuellement une valeur à son signe. */
+  .card-accent-good { border-left: 3px solid var(--good); }
+  .card-accent-critical { border-left: 3px solid var(--critical); }
+
+  /* Onglets de section (façon Finary) : un seul panneau visible à la fois. */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
+  .tab-btn { flex: none; padding: 10px 16px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--info); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Petit sélecteur à deux options (ex. Pays / Secteur), pour un choix local dans un onglet. */
+  .pill-btn { padding: 6px 14px; min-height: 40px; display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; cursor: pointer; }
+  .pill-btn.active { background: var(--chip-bg); color: var(--text-primary); }
+  .pill-btn + .pill-btn { border-left: 1px solid var(--border); }
+
+  /* Cible tactile ≥44px (iOS HIG / Material) sur les contrôles déjà existants. */
+  .tab-btn { min-height: 44px; display: inline-flex; align-items: center; }
+  .nav-link { min-height: 40px; display: inline-flex; align-items: center; }
+
+  /* Liste "type Finary" : remplace un tableau dense sur mobile — une ligne = une
+     entité, libellé/contexte à gauche, valeur + delta alignés à droite. Le tableau
+     d'origine reste affiché à partir de md: (voir hidden/md:hidden dans les pages),
+     cette liste ne le remplace jamais, elle prend juste le relai en dessous. */
+  .list-row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; min-height: 58px; border-bottom: 1px solid var(--grid); }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:active { background: var(--row-hover); }
+  .list-row-main { flex: 1; min-width: 0; }
+  .list-row-title { font-size: 0.9rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-row-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-row-end { flex-shrink: 0; text-align: right; }
+  .list-row-value { font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .list-row-meta { font-size: 0.78rem; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Barre de nav basse, mobile uniquement (md:hidden) — remplace les liens du
+     header (réservés au desktop, hidden md:flex) comme point d'entrée principal. */
+  .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; background: var(--surface-1); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
+  .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; padding: 5px 4px; font-size: 0.68rem; font-weight: 500; color: var(--text-muted); text-decoration: none; }
+  .bottom-nav-item.active { color: var(--info); }
+  .bottom-nav-icon { font-size: 1.15rem; line-height: 1; }
+
+  /* Mode compact mobile : les gabarits desktop (cartes, texte, hauteur de ligne,
+     graphiques) forcent trop de scroll sur téléphone — on densifie sous 768px.
+     `.card.p-4` etc. (2 classes) passe devant l'utilitaire Tailwind `.p-4` (1 classe)
+     par spécificité CSS, sans dépendre de l'ordre d'injection du script Tailwind. */
+  @media (max-width: 767px) {
+    .card.p-8 { padding: 1.25rem; }
+    .card.p-5 { padding: 1rem; }
+    .card.p-4 { padding: 0.75rem; }
+    .card.p-3 { padding: 0.6rem; }
+    .hero-value { font-size: 1.75rem; line-height: 1.15; }
+    .stat-value { font-size: 1rem; }
+    .stat-label { font-size: 0.7rem; margin-bottom: 2px; }
+    .section-title { font-size: 0.875rem; }
+    /* Le texte d'explication sous le nom du graphique/tableau est réservé au
+       desktop — sur mobile, le titre seul suffit, le détail est superflu. */
+    .section-hint { display: none; }
+    .chip-delta { padding: 2px 8px; font-size: 0.72rem; }
+    .tabs { margin-bottom: 14px; }
+    .tab-btn { padding: 8px 12px; font-size: 0.8rem; }
+    .list-row { padding: 8px 2px; min-height: 48px; gap: 10px; }
+    .list-row-title, .list-row-value { font-size: 0.82rem; }
+    .list-row-sub, .list-row-meta { font-size: 0.7rem; }
+
+    /* Graphiques : marges Python déjà réduites, mais le padding de la carte
+       (cf. .card.p-4 ci-dessus, 0.75rem) laisse encore un liseré — on l'annule
+       pour que le tracé colle au bord intérieur de la carte sur mobile. */
+    [id^="chart-"] { margin-left: -0.75rem; margin-right: -0.75rem; }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-7xl mx-auto px-4 pt-6 pb-20 md:pt-8 md:pb-8">
+
+  <div class="flex items-center justify-between mb-5 md:mb-8 flex-wrap gap-3">
+    <div class="flex items-center gap-4">
+      <h1 class="text-xl md:text-2xl font-semibold">Portfolio Dashboard</h1>
+      <!-- Nav desktop : sur mobile, la bottom-nav en bas d'écran prend le relai. -->
+      <nav class="hidden md:flex gap-1">
+        <a href="/" class="nav-link {{ 'active' if active_page == 'bourse' else '' }}">Bourse</a>
+        <a href="/patrimoine" class="nav-link {{ 'active' if active_page == 'patrimoine' else '' }}">Patrimoine global</a>
+      </nav>
+    </div>
+    {% block header_right %}{% endblock %}
+  </div>
+
+  {% block content %}{% endblock %}
+
+  <script>
+    // Les figures Plotly générées côté Python embarquent parfois des couleurs
+    // "var(--xxx)" (grille, ligne zéro) pour suivre le thème clair/sombre — mais le
+    // moteur couleur de Plotly ne résoud pas les custom properties CSS dans un
+    // attribut SVG brut (contrairement à un élément.style.xxx = 'var(...)').
+    // On les résout donc nous-mêmes ici, à l'affichage, en lisant la valeur CSS
+    // réellement calculée pour le thème courant.
+    function resolveCssVars(node) {
+      if (Array.isArray(node)) return node.map(resolveCssVars);
+      if (node && typeof node === 'object') {
+        const out = {};
+        for (const key in node) out[key] = resolveCssVars(node[key]);
+        return out;
+      }
+      if (typeof node === 'string') {
+        const match = node.match(/^var\((--[\w-]+)\)$/);
+        if (match) {
+          const resolved = getComputedStyle(document.documentElement).getPropertyValue(match[1]).trim();
+          return resolved || node;
+        }
+      }
+      return node;
+    }
+
+    function themeLayout(layout) {
+      const rootStyles = getComputedStyle(document.documentElement);
+      const resolved = Object.assign({}, resolveCssVars(layout), {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: rootStyles.getPropertyValue('--text-secondary').trim(), family: 'system-ui, -apple-system, Segoe UI, sans-serif', size: 12 },
+      });
+      // Les hauteurs fixes (pensées pour desktop) sont réduites sur mobile pour
+      // limiter le scroll. Exclus : les graphiques dont la hauteur est déjà calculée
+      // dynamiquement par ligne (classement, écart cible — meta.content_height), où
+      // la lisibilité par barre prime sur la densité, et les très petits graphiques
+      // (sparkline, jauge courtier en barre) déjà compacts.
+      const isContentSized = layout && layout.meta && layout.meta.content_height;
+      if (!isContentSized && window.innerWidth < 640 && typeof resolved.height === 'number' && resolved.height > 150) {
+        resolved.height = Math.round(resolved.height * 0.7);
+      }
+      // Libellés d'axe plus petits sur mobile : moins de place perdue en marge
+      // auto-calculée par Plotly (automargin) pour les ticks, plus de place pour le tracé.
+      if (window.innerWidth < 640) {
+        ['xaxis', 'yaxis'].forEach(function (key) {
+          if (resolved[key]) {
+            resolved[key] = Object.assign({}, resolved[key], { tickfont: { size: 10 } });
+          }
+        });
+      }
+      return resolved;
+    }
+
+    // Même chose côté data (ex. la bordure "var(--surface-1)" des marqueurs/parts de
+    // pie) : Plotly ne la résoudrait pas non plus si on ne passait pas par ici.
+    function renderFig(divId, fig, extraConfig) {
+      if (!fig || !fig.data) return;
+      Plotly.newPlot(divId, resolveCssVars(fig.data), themeLayout(fig.layout), Object.assign({}, config, extraConfig || {}));
+    }
+
+    const config = {
+      displayModeBar: false,
+      responsive: true,
+      locale: 'fr',
+      locales: {
+        fr: {
+          format: {
+            decimal: '.',
+            thousands: ' ',
+            grouping: [3],
+            currency: ['', ' €'],
+            days: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'],
+            shortDays: ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'],
+            months: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+            shortMonths: ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'],
+            date: '%d/%m/%Y',
+          },
+        },
+      },
+    };
+
+    // Onglets de section : un seul .tab-panel visible à la fois par groupe .tabs.
+    // Les graphes Plotly des panneaux inactifs sont initialisés à taille nulle
+    // (display:none au moment du newPlot) — on les redimensionne au premier affichage.
+    function initTabs(root) {
+      root.querySelectorAll('.tabs').forEach(function (tabs) {
+        const buttons = tabs.querySelectorAll('.tab-btn');
+        buttons.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            buttons.forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            root.querySelectorAll('.tab-panel').forEach(function (panel) {
+              panel.classList.toggle('active', panel.id === btn.dataset.tabTarget);
+            });
+            const shown = document.getElementById(btn.dataset.tabTarget);
+            if (shown && window.Plotly) {
+              shown.querySelectorAll('[id^="chart-"]').forEach(function (el) {
+                Plotly.Plots.resize(el);
+              });
+            }
+          });
+        });
+      });
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</div>
+
+<!-- Nav mobile : équivalent de la nav desktop (hidden md:flex ci-dessus), point
+     d'entrée principal sur téléphone façon app (Finary, Revolut, ...). -->
+<nav class="bottom-nav md:hidden">
+  <a href="/" class="bottom-nav-item {{ 'active' if active_page == 'bourse' else '' }}">
+    <span class="bottom-nav-icon">📈</span><span>Bourse</span>
+  </a>
+  <a href="/patrimoine" class="bottom-nav-item {{ 'active' if active_page == 'patrimoine' else '' }}">
+    <span class="bottom-nav-icon">🏦</span><span>Patrimoine</span>
+  </a>
+</nav>
+</body>
+</html>

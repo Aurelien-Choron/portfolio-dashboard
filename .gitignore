@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.log
+
+# Données personnelles : jamais versionnées
+data/fortuneo/*.csv
+data/trade_republic/*.csv
+data/processed/*.csv
+data/accounts/
+data/corrections/*.csv
+config/exposure.json
+config/tickers.json
+config/fees.json
+config/asset_classes.json
+config/target_allocation.json
+# (demo/data/... et demo/config/... ne sont PAS concernés par ces règles :
+# ancrées à la racine, elles ne s'appliquent qu'à data/ et config/ eux-mêmes.
+# demo/ contient volontairement des équivalents fictifs, committés pour la démo publique.)
+
+# Cache de prix marché (market_data.py) : régénéré automatiquement
+data/cache/
+
+# demo/ : seuls les fichiers "source" (CSV + config) sont committés — le cache
+# de prix et le journal normalisé qu'une exécution locale y régénère ne le sont pas.
+demo/data/cache/
+demo/data/processed/

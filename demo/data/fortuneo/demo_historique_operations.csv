@@ -1,0 +1,17 @@
+libellé;Opération;Place;Date;Qté;Prix d'éxé;Montant brut;Courtage/Prélèvement;Montant net;Devise;
+;Versement;Euronext Paris;01/02/2024;;;;;3000.00;EUR;
+Amundi MSCI World UCITS ETF - EUR (C);Achat comptant;Euronext Paris;05/02/2024;40;68.50;2740.00;2.90;-2742.90;EUR;
+;Versement;Euronext Paris;03/06/2024;;;;;1500.00;EUR;
+Sanofi;Achat comptant;Euronext Paris;10/06/2024;15;92.30;1384.50;2.90;-1387.40;EUR;
+;Versement;Euronext Paris;04/11/2024;;;;;2000.00;EUR;
+Amundi MSCI World UCITS ETF - EUR (C);Achat comptant;Euronext Paris;08/11/2024;25;78.20;1955.00;2.90;-1957.90;EUR;
+Sanofi;Encaissement coupons intérêt/dividende;Euronext Paris;15/03/2025;;;;;47.25;EUR;
+;Versement;Euronext Paris;02/05/2025;;;;;2500.00;EUR;
+Amundi MSCI World UCITS ETF - EUR (C);Achat comptant;Euronext Paris;07/05/2025;28;85.10;2382.80;2.90;-2385.70;EUR;
+Sanofi;Vente comptant;Euronext Paris;12/09/2025;5;98.40;492.00;2.90;489.10;EUR;
+Sanofi;Encaissement coupons intérêt/dividende;Euronext Paris;01/10/2025;;;;;32.10;EUR;
+;Versement;Euronext Paris;06/01/2026;;;;;1800.00;EUR;
+Amundi MSCI World UCITS ETF - EUR (C);Achat comptant;Euronext Paris;12/01/2026;15;91.40;1371.00;2.90;-1373.90;EUR;
+Sanofi;Encaissement coupons intérêt/dividende;Euronext Paris;02/04/2026;;;;;28.50;EUR;
+;Versement;Euronext Paris;01/06/2026;;;;;1200.00;EUR;
+Sanofi;Achat comptant;Euronext Paris;15/06/2026;8;96.75;774.00;2.90;-776.90;EUR;

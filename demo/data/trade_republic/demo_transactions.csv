@@ -1,17 +1,17 @@
 transaction_id,datetime,date,account_type,category,type,asset_class,name,symbol,shares,price,amount,fee,tax,currency
 demo-0001,2024-03-01T09:00:00,2024-03-01,securities,transfer,TRANSFER_INBOUND,,,,,,,2000.00,0,EUR
-demo-0002,2024-03-04T09:00:00,2024-03-04,securities,trading,BUY,stock,Apple Inc.,US0378331005,6,165.20,-991.20,1.0,0,EUR
-demo-0003,2024-03-04T09:00:00,2024-03-04,securities,trading,BUY,etf,Vanguard FTSE All-World UCITS ETF,IE00BK5BQT80,10,98.40,-984.00,1.0,0,EUR
+demo-0002,2024-03-04T09:00:00,2024-03-04,securities,trading,BUY,stock,Apple Inc.,US0378331005,6,173.21,-1039.26,1.0,0,EUR
+demo-0003,2024-03-04T09:00:00,2024-03-04,securities,trading,BUY,etf,Vanguard FTSE All-World UCITS ETF,IE00BK5BQT80,10,114.94,-1149.40,1.0,0,EUR
 demo-0004,2024-07-10T09:00:00,2024-07-10,securities,transfer,TRANSFER_INBOUND,,,,,,,1500.00,0,EUR
-demo-0005,2024-07-15T09:00:00,2024-07-15,securities,trading,BUY,stock,LVMH,FR0000121014,2,720.00,-1440.00,1.0,0,EUR
-demo-0006,2024-09-20T09:00:00,2024-09-20,securities,trading,DIVIDEND,stock,Apple Inc.,US0378331005,6,,14.40,0,0,EUR
+demo-0005,2024-07-15T09:00:00,2024-07-15,securities,trading,BUY,stock,LVMH,FR0000121014,2,671.72,-1343.44,1.0,0,EUR
+demo-0006,2024-09-20T09:00:00,2024-09-20,securities,trading,DIVIDEND,stock,Apple Inc.,US0378331005,6,,1.50,0,0,EUR
 demo-0007,2025-01-08T09:00:00,2025-01-08,securities,transfer,TRANSFER_INBOUND,,,,,,,1800.00,0,EUR
-demo-0008,2025-01-12T09:00:00,2025-01-12,securities,trading,BUY,stock,Coca-Cola Co.,US1912161007,12,58.30,-699.60,1.0,0,EUR
-demo-0009,2025-01-12T09:00:00,2025-01-12,securities,trading,BUY,etf,Vanguard FTSE All-World UCITS ETF,IE00BK5BQT80,8,101.90,-815.20,1.0,0,EUR
-demo-0010,2025-06-05T09:00:00,2025-06-05,securities,trading,DIVIDEND,stock,Coca-Cola Co.,US1912161007,12,,9.12,0,1.6,EUR
-demo-0011,2025-09-14T09:00:00,2025-09-14,securities,trading,SELL,stock,LVMH,FR0000121014,1,680.00,680.00,1.0,0,EUR
-demo-0012,2025-11-02T09:00:00,2025-11-02,securities,trading,DIVIDEND,stock,Apple Inc.,US0378331005,6,,16.80,0,0,EUR
-demo-0013,2026-02-10T09:00:00,2026-02-10,securities,transfer,TRANSFER_INBOUND,,,,,,,1000.00,0,EUR
-demo-0014,2026-02-14T09:00:00,2026-02-14,securities,trading,BUY,stock,Apple Inc.,US0378331005,4,195.50,-782.00,1.0,0,EUR
-demo-0015,2026-06-20T09:00:00,2026-06-20,securities,trading,DIVIDEND,stock,Coca-Cola Co.,US1912161007,12,,10.08,0,1.76,EUR
-demo-0016,2026-07-05T09:00:00,2026-07-05,securities,trading,DIVIDEND,stock,LVMH,FR0000121014,1,,12.50,0,0,EUR
+demo-0008,2025-01-12T09:00:00,2025-01-12,securities,trading,BUY,stock,Coca-Cola Co.,US1912161007,12,58.54,-702.48,1.0,0,EUR
+demo-0009,2025-01-12T09:00:00,2025-01-12,securities,trading,BUY,etf,Vanguard FTSE All-World UCITS ETF,IE00BK5BQT80,8,133.72,-1069.76,1.0,0,EUR
+demo-0010,2025-06-05T09:00:00,2025-06-05,securities,trading,DIVIDEND,stock,Coca-Cola Co.,US1912161007,12,,6.12,0,0.92,EUR
+demo-0011,2025-09-14T09:00:00,2025-09-14,securities,trading,SELL,stock,LVMH,FR0000121014,1,478.65,478.65,1.0,0,EUR
+demo-0012,2025-11-02T09:00:00,2025-11-02,securities,trading,DIVIDEND,stock,Apple Inc.,US0378331005,6,,1.56,0,0,EUR
+demo-0013,2026-02-10T09:00:00,2026-02-10,securities,transfer,TRANSFER_INBOUND,,,,,,,1100.00,0,EUR
+demo-0014,2026-02-14T09:00:00,2026-02-14,securities,trading,BUY,stock,Apple Inc.,US0378331005,4,255.32,-1021.28,1.0,0,EUR
+demo-0015,2026-06-20T09:00:00,2026-06-20,securities,trading,DIVIDEND,stock,Coca-Cola Co.,US1912161007,12,,6.36,0,0.95,EUR
+demo-0016,2026-07-05T09:00:00,2026-07-05,securities,trading,DIVIDEND,stock,LVMH,FR0000121014,1,,13.00,0,0,EUR

@@ -42,23 +42,30 @@ def write_fortuneo_csv():
     def row(libelle, operation, date, qte, prix, brut, courtage, net):
         return [libelle, operation, "Euronext Paris", date, qte, prix, brut, courtage, net, "EUR", ""]
 
+    # Purchase prices below are the REAL historical closing prices of each
+    # ticker on (or immediately before) each date, pulled from yfinance — not
+    # invented numbers. Using real price history is the only reliable way to
+    # keep the resulting paper gains/losses (and the "avg. monthly return"
+    # metric derived from them) looking like a real portfolio instead of a
+    # fabricated outlier. Quantities are fictional (chosen to keep amounts
+    # around a few thousand euros), everything else about the account is fake.
     rows = [
         row("", "Versement", "01/02/2024", "", "", "", "", "3000.00"),
-        row(FORTUNEO_ETF, "Achat comptant", "05/02/2024", "40", "68.50", "2740.00", "2.90", "-2742.90"),
+        row(FORTUNEO_ETF, "Achat comptant", "05/02/2024", "6", "472.52", "2835.12", "2.90", "-2838.02"),
         row("", "Versement", "03/06/2024", "", "", "", "", "1500.00"),
-        row(FORTUNEO_STOCK, "Achat comptant", "10/06/2024", "15", "92.30", "1384.50", "2.90", "-1387.40"),
-        row("", "Versement", "04/11/2024", "", "", "", "", "2000.00"),
-        row(FORTUNEO_ETF, "Achat comptant", "08/11/2024", "25", "78.20", "1955.00", "2.90", "-1957.90"),
-        row(FORTUNEO_STOCK, "Encaissement coupons intérêt/dividende", "15/03/2025", "", "", "", "", "47.25"),
-        row("", "Versement", "02/05/2025", "", "", "", "", "2500.00"),
-        row(FORTUNEO_ETF, "Achat comptant", "07/05/2025", "28", "85.10", "2382.80", "2.90", "-2385.70"),
-        row(FORTUNEO_STOCK, "Vente comptant", "12/09/2025", "5", "98.40", "492.00", "2.90", "489.10"),
-        row(FORTUNEO_STOCK, "Encaissement coupons intérêt/dividende", "01/10/2025", "", "", "", "", "32.10"),
-        row("", "Versement", "06/01/2026", "", "", "", "", "1800.00"),
-        row(FORTUNEO_ETF, "Achat comptant", "12/01/2026", "15", "91.40", "1371.00", "2.90", "-1373.90"),
-        row(FORTUNEO_STOCK, "Encaissement coupons intérêt/dividende", "02/04/2026", "", "", "", "", "28.50"),
-        row("", "Versement", "01/06/2026", "", "", "", "", "1200.00"),
-        row(FORTUNEO_STOCK, "Achat comptant", "15/06/2026", "8", "96.75", "774.00", "2.90", "-776.90"),
+        row(FORTUNEO_STOCK, "Achat comptant", "10/06/2024", "15", "81.88", "1228.20", "2.90", "-1231.10"),
+        row("", "Versement", "04/11/2024", "", "", "", "", "2500.00"),
+        row(FORTUNEO_ETF, "Achat comptant", "08/11/2024", "4", "560.52", "2242.08", "2.90", "-2244.98"),
+        row(FORTUNEO_STOCK, "Encaissement coupons intérêt/dividende", "15/03/2025", "", "", "", "", "39.00"),
+        row("", "Versement", "02/05/2025", "", "", "", "", "2200.00"),
+        row(FORTUNEO_ETF, "Achat comptant", "07/05/2025", "4", "518.30", "2073.20", "2.90", "-2076.10"),
+        row(FORTUNEO_STOCK, "Vente comptant", "12/09/2025", "5", "76.43", "382.15", "2.90", "379.25"),
+        row(FORTUNEO_STOCK, "Encaissement coupons intérêt/dividende", "01/10/2025", "", "", "", "", "26.00"),
+        row("", "Versement", "06/01/2026", "", "", "", "", "1300.00"),
+        row(FORTUNEO_ETF, "Achat comptant", "12/01/2026", "2", "622.16", "1244.32", "2.90", "-1247.22"),
+        row(FORTUNEO_STOCK, "Encaissement coupons intérêt/dividende", "02/04/2026", "", "", "", "", "27.50"),
+        row("", "Versement", "01/06/2026", "", "", "", "", "650.00"),
+        row(FORTUNEO_STOCK, "Achat comptant", "15/06/2026", "8", "75.54", "604.32", "2.90", "-607.22"),
     ]
 
     with open(path, "w", newline="", encoding="cp1252") as f:
@@ -79,23 +86,29 @@ def write_trade_republic_csv():
     def row(tx_id, date, tx_type, category, asset_class, name, symbol, shares, price, amount, fee=0, tax=0):
         return [tx_id, f"{date}T09:00:00", date, "securities", category, tx_type, asset_class, name, symbol, shares, price, amount, fee, tax, "EUR"]
 
+    # Same note as the Fortuneo CSV: buy/sell prices are the REAL closing price
+    # of each ticker on that date (pulled from yfinance), not invented — this is
+    # what keeps unrealized gains/losses and the "avg. monthly return" metric
+    # realistic instead of an outlier like a World ETF "gaining" hundreds of
+    # percent because a made-up purchase price happened to be far below today's
+    # actual price.
     rows = [
         row("demo-0001", "2024-03-01", "TRANSFER_INBOUND", "transfer", "", "", "", "", "", "", "2000.00"),
-        row("demo-0002", "2024-03-04", "BUY", "trading", "stock", TR_APPLE[1], TR_APPLE[0], "6", "165.20", "-991.20", 1.00),
-        row("demo-0003", "2024-03-04", "BUY", "trading", "etf", TR_VWCE[1], TR_VWCE[0], "10", "98.40", "-984.00", 1.00),
+        row("demo-0002", "2024-03-04", "BUY", "trading", "stock", TR_APPLE[1], TR_APPLE[0], "6", "173.21", "-1039.26", 1.00),
+        row("demo-0003", "2024-03-04", "BUY", "trading", "etf", TR_VWCE[1], TR_VWCE[0], "10", "114.94", "-1149.40", 1.00),
         row("demo-0004", "2024-07-10", "TRANSFER_INBOUND", "transfer", "", "", "", "", "", "", "1500.00"),
-        row("demo-0005", "2024-07-15", "BUY", "trading", "stock", TR_LVMH[1], TR_LVMH[0], "2", "720.00", "-1440.00", 1.00),
-        row("demo-0006", "2024-09-20", "DIVIDEND", "trading", "stock", TR_APPLE[1], TR_APPLE[0], "6", "", "14.40"),
+        row("demo-0005", "2024-07-15", "BUY", "trading", "stock", TR_LVMH[1], TR_LVMH[0], "2", "671.72", "-1343.44", 1.00),
+        row("demo-0006", "2024-09-20", "DIVIDEND", "trading", "stock", TR_APPLE[1], TR_APPLE[0], "6", "", "1.50"),
         row("demo-0007", "2025-01-08", "TRANSFER_INBOUND", "transfer", "", "", "", "", "", "", "1800.00"),
-        row("demo-0008", "2025-01-12", "BUY", "trading", "stock", TR_KO[1], TR_KO[0], "12", "58.30", "-699.60", 1.00),
-        row("demo-0009", "2025-01-12", "BUY", "trading", "etf", TR_VWCE[1], TR_VWCE[0], "8", "101.90", "-815.20", 1.00),
-        row("demo-0010", "2025-06-05", "DIVIDEND", "trading", "stock", TR_KO[1], TR_KO[0], "12", "", "9.12", 0, 1.60),
-        row("demo-0011", "2025-09-14", "SELL", "trading", "stock", TR_LVMH[1], TR_LVMH[0], "1", "680.00", "680.00", 1.00),
-        row("demo-0012", "2025-11-02", "DIVIDEND", "trading", "stock", TR_APPLE[1], TR_APPLE[0], "6", "", "16.80"),
-        row("demo-0013", "2026-02-10", "TRANSFER_INBOUND", "transfer", "", "", "", "", "", "", "1000.00"),
-        row("demo-0014", "2026-02-14", "BUY", "trading", "stock", TR_APPLE[1], TR_APPLE[0], "4", "195.50", "-782.00", 1.00),
-        row("demo-0015", "2026-06-20", "DIVIDEND", "trading", "stock", TR_KO[1], TR_KO[0], "12", "", "10.08", 0, 1.76),
-        row("demo-0016", "2026-07-05", "DIVIDEND", "trading", "stock", TR_LVMH[1], TR_LVMH[0], "1", "", "12.50"),
+        row("demo-0008", "2025-01-12", "BUY", "trading", "stock", TR_KO[1], TR_KO[0], "12", "58.54", "-702.48", 1.00),
+        row("demo-0009", "2025-01-12", "BUY", "trading", "etf", TR_VWCE[1], TR_VWCE[0], "8", "133.72", "-1069.76", 1.00),
+        row("demo-0010", "2025-06-05", "DIVIDEND", "trading", "stock", TR_KO[1], TR_KO[0], "12", "", "6.12", 0, 0.92),
+        row("demo-0011", "2025-09-14", "SELL", "trading", "stock", TR_LVMH[1], TR_LVMH[0], "1", "478.65", "478.65", 1.00),
+        row("demo-0012", "2025-11-02", "DIVIDEND", "trading", "stock", TR_APPLE[1], TR_APPLE[0], "6", "", "1.56"),
+        row("demo-0013", "2026-02-10", "TRANSFER_INBOUND", "transfer", "", "", "", "", "", "", "1100.00"),
+        row("demo-0014", "2026-02-14", "BUY", "trading", "stock", TR_APPLE[1], TR_APPLE[0], "4", "255.32", "-1021.28", 1.00),
+        row("demo-0015", "2026-06-20", "DIVIDEND", "trading", "stock", TR_KO[1], TR_KO[0], "12", "", "6.36", 0, 0.95),
+        row("demo-0016", "2026-07-05", "DIVIDEND", "trading", "stock", TR_LVMH[1], TR_LVMH[0], "1", "", "13.00"),
     ]
 
     with open(path, "w", newline="", encoding="utf-8") as f:

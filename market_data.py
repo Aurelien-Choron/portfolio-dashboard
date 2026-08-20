@@ -1,9 +1,9 @@
-"""Récupération des prix de marché via yfinance, à partir du mapping config/tickers.json.
+"""Fetches market prices via yfinance, from the config/tickers.json mapping.
 
-Le mapping associe une asset_key (ISIN Trade Republic, ou nom d'actif Fortuneo)
-à un ticker Yahoo Finance. Tant qu'un actif n'est pas mappé, son prix "live"
-n'est pas disponible : le dashboard retombe alors sur le prix de revient moyen
-et l'indique explicitement (pas de prix inventé).
+The mapping associates an asset_key (Trade Republic ISIN, or Fortuneo asset name)
+with a Yahoo Finance ticker. As long as an asset isn't mapped, its "live" price
+isn't available: the dashboard then falls back to the average purchase price
+and states so explicitly (never an invented price).
 """
 
 import hashlib
@@ -21,9 +21,9 @@ TICKERS_PATH = os.path.join(config_root(), "tickers.json")
 FEES_PATH = os.path.join(config_root(), "fees.json")
 CACHE_DIR = os.path.join(data_root(), "cache")
 
-# Durées de vie du cache : les devises de cotation ne changent jamais, l'historique
-# ne vaut la peine d'être rafraîchi qu'une fois par jour, seul le dernier prix
-# (proche du live) doit rester frais à l'échelle de la session de travail.
+# Cache lifetimes: a ticker's quote currency essentially never changes, history
+# is only worth refreshing once a day, only the last price (near-live) needs to
+# stay fresh at the scale of a working session.
 CURRENCY_TTL = 7 * 24 * 3600
 HISTORY_TTL = 24 * 3600
 LAST_PRICE_TTL = 15 * 60
@@ -60,7 +60,7 @@ def load_ticker_map() -> dict:
 
 
 def load_fees_map() -> dict:
-    """{asset_key: TER en % par an}, actifs sans frais de gestion (actions) exclus."""
+    """{asset_key: TER in % per year}, assets with no management fee (stocks) excluded."""
     if not os.path.exists(FEES_PATH):
         return {}
     with open(FEES_PATH, "r", encoding="utf-8") as f:
@@ -69,16 +69,15 @@ def load_fees_map() -> dict:
 
 
 def _ticker_currencies(tickers: list[str]) -> dict:
-    """Devise de cotation de chaque ticker (ex. AUD pour DRO.AX, USD pour TTWO).
+    """Quote currency of each ticker (e.g. AUD for DRO.AX, USD for TTWO).
 
-    Le portefeuille est comptabilisé en euros (montants convertis par les courtiers) ;
-    un prix récupéré dans sa devise native doit être reconverti en EUR avant toute
-    comparaison avec le coût d'acquisition, sous peine de fausser la valorisation.
+    The portfolio is accounted for in euros (amounts converted by the brokers);
+    a price fetched in its native currency must be converted back to EUR before
+    any comparison with the acquisition cost, or the valuation would be skewed.
 
-    Mise en cache par ticker individuel (durée longue, une devise de cotation ne
-    change quasiment jamais) et récupération en parallèle des tickers manquants —
-    un appel réseau séquentiel par ticker était le principal goulet d'étranglement
-    du chargement de la page.
+    Cached per individual ticker (long TTL, a quote currency almost never
+    changes) with parallel fetching of the missing tickers — one sequential
+    network call per ticker used to be the page load's main bottleneck.
     """
     currencies = {}
     missing = []
@@ -107,7 +106,7 @@ def _ticker_currencies(tickers: list[str]) -> dict:
 
 
 def _fx_rates_to_eur(currencies: set[str], **download_kwargs) -> dict:
-    """Retourne {devise: pandas.Series de taux EUR->devise} pour convertir un prix natif en EUR."""
+    """Returns {currency: pandas.Series of EUR->currency rates} to convert a native price to EUR."""
     import yfinance as yf
 
     non_eur = {c for c in currencies if c and c != "EUR"}
@@ -133,13 +132,13 @@ def _fx_rates_to_eur(currencies: set[str], **download_kwargs) -> dict:
 
 
 def fetch_last_prices(asset_keys: list[str]) -> dict:
-    """Retourne {asset_key: (dernier_prix_en_eur, date_de_cotation)} pour les actifs mappés.
+    """Returns {asset_key: (last_price_in_eur, quote_date)} for mapped assets.
 
-    La date est celle de la dernière clôture réellement disponible chez le fournisseur :
-    Yahoo Finance publie parfois la séance la plus récente avec un Close vide (encore non
-    consolidé), auquel cas on retombe silencieusement sur une clôture plus ancienne. On la
-    retourne pour que l'appelant l'affiche, plutôt que de faire passer un prix obsolète
-    pour un prix du jour.
+    The date is that of the last close actually available from the provider:
+    Yahoo Finance sometimes publishes the most recent session with an empty Close
+    (not yet consolidated), in which case we silently fall back to an older
+    close. It's returned so the caller can display it, rather than passing off a
+    stale price as today's.
     """
     ticker_map = load_ticker_map()
     mapped = {k: ticker_map[k] for k in asset_keys if k in ticker_map}
@@ -189,7 +188,7 @@ def fetch_last_prices(asset_keys: list[str]) -> dict:
 
 
 def fetch_price_history(asset_keys: list[str], start: pd.Timestamp) -> dict:
-    """Retourne {asset_key: pandas.Series en EUR, indexée par date} pour les actifs mappés."""
+    """Returns {asset_key: pandas.Series in EUR, indexed by date} for mapped assets."""
     ticker_map = load_ticker_map()
     mapped = {k: ticker_map[k] for k in asset_keys if k in ticker_map}
     if not mapped:

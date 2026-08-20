@@ -1,9 +1,9 @@
 {
-  "_readme": "Comptes fictifs de démonstration — aucune donnée réelle.",
+  "_readme": "Fictional demo accounts — no real data.",
   "accounts": [
     {
       "label": "Livret A",
-      "bank": "Banque Demo",
+      "bank": "Demo Bank",
       "category": "Livrets",
       "balance": 8500,
       "rate_pct": 3.0,
@@ -11,22 +11,22 @@
     },
     {
       "label": "LDDS",
-      "bank": "Banque Demo",
+      "bank": "Demo Bank",
       "category": "Livrets",
       "balance": 4200,
       "rate_pct": 3.0,
       "ceiling": 12000
     },
     {
-      "label": "Assurance-vie — Fonds Euro",
-      "bank": "Assureur Demo",
+      "label": "Life Insurance — Euro Fund",
+      "bank": "Demo Insurer",
       "category": "Fonds Euros",
       "balance": 12000,
       "rate_pct": 2.6
     },
     {
-      "label": "Compte courant",
-      "bank": "Banque Demo",
+      "label": "Checking Account",
+      "bank": "Demo Bank",
       "category": "Autres",
       "balance": 1500
     }

@@ -1,9 +1,8 @@
-"""Diversification géographique et sectorielle des positions bourse.
+"""Geographic and sector diversification of investment positions.
 
-yfinance ne donne pas le "look-through" d'un ETF (juste son pays de domiciliation
-légal, inexploitable pour la répartition réelle) : la ventilation vient donc d'un
-mapping saisi à la main dans config/exposure.json, relevé sur la fiche factsheet de
-chaque fonds.
+yfinance doesn't provide an ETF's "look-through" holdings (just its legal
+domicile, useless for a real breakdown): the breakdown therefore comes from a
+mapping entered by hand in config/exposure.json, taken from each fund's factsheet.
 """
 import json
 import os
@@ -23,12 +22,12 @@ def load_exposure() -> dict:
 
 
 def build_diversification(positions: list) -> dict:
-    """positions : liste de {"asset_key", "name", "value"} (positions ouvertes).
+    """positions: list of {"asset_key", "name", "value"} (open positions).
 
-    Retourne la ventilation agrégée du portefeuille par pays et par secteur (clé
-    "portfolio", en €), et le détail ligne par ligne (clé "funds") pour la vue par
-    fonds. Une position absente de config/exposure.json tombe sous "Non renseigné"
-    plutôt que de disparaître silencieusement du total.
+    Returns the portfolio's aggregated breakdown by country and by sector (key
+    "portfolio", in €), and the row-by-row detail (key "funds") for the per-fund
+    view. A position missing from config/exposure.json falls under "Not specified"
+    rather than silently disappearing from the total.
     """
     exposure = load_exposure()
 
@@ -42,7 +41,7 @@ def build_diversification(positions: list) -> dict:
             fund[dim] = (
                 {label: p["value"] * pct / 100 for label, pct in breakdown.items()}
                 if breakdown
-                else {"Non renseigné": p["value"]}
+                else {"Not specified": p["value"]}
             )
             for label, value in fund[dim].items():
                 portfolio[dim][label] = portfolio[dim].get(label, 0.0) + value

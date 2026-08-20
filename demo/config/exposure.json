@@ -1,29 +1,29 @@
 {
-  "_readme": "Ventilation géographique/sectorielle par asset_key (démo, approximée sur factsheets publics).",
+  "_readme": "Geographic/sector breakdown per asset_key (demo, approximated from public factsheets).",
   "Amundi MSCI World UCITS ETF - EUR (C)": {
     "country": {
-      "États-Unis": 70.0,
-      "Japon": 6.0,
-      "Royaume-Uni": 4.0,
+      "United States": 70.0,
+      "Japan": 6.0,
+      "United Kingdom": 4.0,
       "France": 3.0,
-      "Allemagne": 2.5,
-      "Suisse": 2.5,
+      "Germany": 2.5,
+      "Switzerland": 2.5,
       "Canada": 3.0,
-      "Chine": 3.0,
-      "Autres": 6.0
+      "China": 3.0,
+      "Other": 6.0
     },
     "sector": {
-      "Technologie": 27.0,
-      "Financières": 16.0,
-      "Industrie": 11.0,
-      "Santé": 10.0,
-      "Consommation discrétionnaire": 10.0,
+      "Technology": 27.0,
+      "Financials": 16.0,
+      "Industrials": 11.0,
+      "Healthcare": 10.0,
+      "Consumer Discretionary": 10.0,
       "Communication": 8.0,
-      "Consommation de base": 6.0,
-      "Énergie": 4.0,
-      "Matériaux": 3.0,
-      "Services publics": 2.5,
-      "Immobilier": 2.5
+      "Consumer Staples": 6.0,
+      "Energy": 4.0,
+      "Materials": 3.0,
+      "Utilities": 2.5,
+      "Real Estate": 2.5
     }
   },
   "Sanofi": {
@@ -31,15 +31,15 @@
       "France": 100
     },
     "sector": {
-      "Santé": 100
+      "Healthcare": 100
     }
   },
   "US0378331005": {
     "country": {
-      "États-Unis": 100
+      "United States": 100
     },
     "sector": {
-      "Technologie": 100
+      "Technology": 100
     }
   },
   "FR0000121014": {
@@ -47,43 +47,43 @@
       "France": 100
     },
     "sector": {
-      "Consommation discrétionnaire": 100
+      "Consumer Discretionary": 100
     }
   },
   "US1912161007": {
     "country": {
-      "États-Unis": 100
+      "United States": 100
     },
     "sector": {
-      "Consommation de base": 100
+      "Consumer Staples": 100
     }
   },
   "IE00BK5BQT80": {
     "country": {
-      "États-Unis": 62.0,
-      "Japon": 5.5,
-      "Royaume-Uni": 3.5,
-      "Chine": 3.0,
+      "United States": 62.0,
+      "Japan": 5.5,
+      "United Kingdom": 3.5,
+      "China": 3.0,
       "France": 2.8,
       "Canada": 2.7,
-      "Allemagne": 2.0,
-      "Inde": 2.0,
-      "Suisse": 2.0,
-      "Taïwan": 1.8,
-      "Autres": 12.7
+      "Germany": 2.0,
+      "India": 2.0,
+      "Switzerland": 2.0,
+      "Taiwan": 1.8,
+      "Other": 12.7
     },
     "sector": {
-      "Technologie": 24.0,
-      "Financières": 17.0,
-      "Industrie": 12.0,
-      "Santé": 10.0,
-      "Consommation discrétionnaire": 10.5,
+      "Technology": 24.0,
+      "Financials": 17.0,
+      "Industrials": 12.0,
+      "Healthcare": 10.0,
+      "Consumer Discretionary": 10.5,
       "Communication": 7.5,
-      "Consommation de base": 6.0,
-      "Énergie": 4.5,
-      "Matériaux": 3.5,
-      "Services publics": 2.5,
-      "Immobilier": 2.5
+      "Consumer Staples": 6.0,
+      "Energy": 4.5,
+      "Materials": 3.5,
+      "Utilities": 2.5,
+      "Real Estate": 2.5
     }
   }
 }

@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% block title %}Portfolio Dashboard{% endblock %}</title>
 
-<!-- Installation en app sur l'écran d'accueil (PWA) : manifest + icônes iOS/Android. -->
+<!-- Home screen app install (PWA): manifest + iOS/Android icons. -->
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
 <meta name="theme-color" content="#2a78d6">
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
@@ -80,16 +80,16 @@
   .nav-link:hover { background: var(--row-hover); }
   .nav-link.active { background: var(--chip-bg); color: var(--text-primary); }
 
-  /* Chip de delta (héro) : pastille colorée avec triangle de sens, façon Finary. */
+  /* Hero delta chip: colored pill with a direction triangle, Finary-style. */
   .chip-delta { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; font-weight: 600; }
   .chip-delta.is-good { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
   .chip-delta.is-critical { background: color-mix(in srgb, var(--critical) 14%, transparent); color: var(--critical); }
 
-  /* Accent latéral sur une card, pour rattacher visuellement une valeur à son signe. */
+  /* Side accent on a card, to visually tie a value to its sign. */
   .card-accent-good { border-left: 3px solid var(--good); }
   .card-accent-critical { border-left: 3px solid var(--critical); }
 
-  /* Onglets de section (façon Finary) : un seul panneau visible à la fois. */
+  /* Section tabs (Finary-style): only one panel visible at a time. */
   .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
   .tab-btn { flex: none; padding: 10px 16px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
   .tab-btn:hover { color: var(--text-primary); }
@@ -97,19 +97,19 @@
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
-  /* Petit sélecteur à deux options (ex. Pays / Secteur), pour un choix local dans un onglet. */
+  /* Small two-option switch (e.g. Country / Sector), for a local choice within a tab. */
   .pill-btn { padding: 6px 14px; min-height: 40px; display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; cursor: pointer; }
   .pill-btn.active { background: var(--chip-bg); color: var(--text-primary); }
   .pill-btn + .pill-btn { border-left: 1px solid var(--border); }
 
-  /* Cible tactile ≥44px (iOS HIG / Material) sur les contrôles déjà existants. */
+  /* ≥44px touch target (iOS HIG / Material) on existing controls. */
   .tab-btn { min-height: 44px; display: inline-flex; align-items: center; }
   .nav-link { min-height: 40px; display: inline-flex; align-items: center; }
 
-  /* Liste "type Finary" : remplace un tableau dense sur mobile — une ligne = une
-     entité, libellé/contexte à gauche, valeur + delta alignés à droite. Le tableau
-     d'origine reste affiché à partir de md: (voir hidden/md:hidden dans les pages),
-     cette liste ne le remplace jamais, elle prend juste le relai en dessous. */
+  /* "Finary-style" list row: replaces a dense table on mobile — one row = one
+     entity, label/context on the left, value + delta aligned on the right. The
+     original table is still shown from md: up (see hidden/md:hidden in the pages),
+     this list never replaces it, it just takes over below that breakpoint. */
   .list-row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; min-height: 58px; border-bottom: 1px solid var(--grid); }
   .list-row:last-child { border-bottom: none; }
   .list-row:active { background: var(--row-hover); }
@@ -120,17 +120,17 @@
   .list-row-value { font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .list-row-meta { font-size: 0.78rem; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-  /* Barre de nav basse, mobile uniquement (md:hidden) — remplace les liens du
-     header (réservés au desktop, hidden md:flex) comme point d'entrée principal. */
+  /* Bottom nav bar, mobile only (md:hidden) — replaces the header links
+     (desktop-only, hidden md:flex) as the primary entry point. */
   .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; background: var(--surface-1); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
   .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; padding: 5px 4px; font-size: 0.68rem; font-weight: 500; color: var(--text-muted); text-decoration: none; }
   .bottom-nav-item.active { color: var(--info); }
   .bottom-nav-icon { font-size: 1.15rem; line-height: 1; }
 
-  /* Mode compact mobile : les gabarits desktop (cartes, texte, hauteur de ligne,
-     graphiques) forcent trop de scroll sur téléphone — on densifie sous 768px.
-     `.card.p-4` etc. (2 classes) passe devant l'utilitaire Tailwind `.p-4` (1 classe)
-     par spécificité CSS, sans dépendre de l'ordre d'injection du script Tailwind. */
+  /* Compact mobile mode: the desktop templates (cards, text, line height,
+     charts) force too much scrolling on a phone — densify below 768px.
+     `.card.p-4` etc. (2 classes) wins over the Tailwind utility `.p-4` (1 class)
+     by CSS specificity, regardless of the Tailwind script's injection order. */
   @media (max-width: 767px) {
     .card.p-8 { padding: 1.25rem; }
     .card.p-5 { padding: 1rem; }
@@ -140,8 +140,8 @@
     .stat-value { font-size: 1rem; }
     .stat-label { font-size: 0.7rem; margin-bottom: 2px; }
     .section-title { font-size: 0.875rem; }
-    /* Le texte d'explication sous le nom du graphique/tableau est réservé au
-       desktop — sur mobile, le titre seul suffit, le détail est superflu. */
+    /* The explanatory text under a chart/table name is desktop-only — on
+       mobile the title alone is enough, the detail is superfluous. */
     .section-hint { display: none; }
     .chip-delta { padding: 2px 8px; font-size: 0.72rem; }
     .tabs { margin-bottom: 14px; }
@@ -150,9 +150,9 @@
     .list-row-title, .list-row-value { font-size: 0.82rem; }
     .list-row-sub, .list-row-meta { font-size: 0.7rem; }
 
-    /* Graphiques : marges Python déjà réduites, mais le padding de la carte
-       (cf. .card.p-4 ci-dessus, 0.75rem) laisse encore un liseré — on l'annule
-       pour que le tracé colle au bord intérieur de la carte sur mobile. */
+    /* Charts: Python-side margins are already reduced, but the card padding
+       (see .card.p-4 above, 0.75rem) still leaves a strip — cancel it so the
+       plot sits flush against the card's inner edge on mobile. */
     [id^="chart-"] { margin-left: -0.75rem; margin-right: -0.75rem; }
   }
 </style>
@@ -163,10 +163,10 @@
   <div class="flex items-center justify-between mb-5 md:mb-8 flex-wrap gap-3">
     <div class="flex items-center gap-4">
       <h1 class="text-xl md:text-2xl font-semibold">Portfolio Dashboard</h1>
-      <!-- Nav desktop : sur mobile, la bottom-nav en bas d'écran prend le relai. -->
+      <!-- Desktop nav: on mobile, the bottom nav bar takes over. -->
       <nav class="hidden md:flex gap-1">
-        <a href="/" class="nav-link {{ 'active' if active_page == 'bourse' else '' }}">Bourse</a>
-        <a href="/patrimoine" class="nav-link {{ 'active' if active_page == 'patrimoine' else '' }}">Patrimoine global</a>
+        <a href="/" class="nav-link {{ 'active' if active_page == 'bourse' else '' }}">Investments</a>
+        <a href="/patrimoine" class="nav-link {{ 'active' if active_page == 'patrimoine' else '' }}">Net Worth</a>
       </nav>
     </div>
     {% block header_right %}{% endblock %}
@@ -175,12 +175,11 @@
   {% block content %}{% endblock %}
 
   <script>
-    // Les figures Plotly générées côté Python embarquent parfois des couleurs
-    // "var(--xxx)" (grille, ligne zéro) pour suivre le thème clair/sombre — mais le
-    // moteur couleur de Plotly ne résoud pas les custom properties CSS dans un
-    // attribut SVG brut (contrairement à un élément.style.xxx = 'var(...)').
-    // On les résout donc nous-mêmes ici, à l'affichage, en lisant la valeur CSS
-    // réellement calculée pour le thème courant.
+    // Plotly figures generated on the Python side sometimes embed "var(--xxx)"
+    // colors (grid, zero line) to follow the light/dark theme — but Plotly's
+    // color engine doesn't resolve CSS custom properties in a raw SVG attribute
+    // (unlike element.style.xxx = 'var(...)'). So we resolve them ourselves here,
+    // at render time, by reading the CSS value actually computed for the current theme.
     function resolveCssVars(node) {
       if (Array.isArray(node)) return node.map(resolveCssVars);
       if (node && typeof node === 'object') {
@@ -205,17 +204,17 @@
         plot_bgcolor: 'rgba(0,0,0,0)',
         font: { color: rootStyles.getPropertyValue('--text-secondary').trim(), family: 'system-ui, -apple-system, Segoe UI, sans-serif', size: 12 },
       });
-      // Les hauteurs fixes (pensées pour desktop) sont réduites sur mobile pour
-      // limiter le scroll. Exclus : les graphiques dont la hauteur est déjà calculée
-      // dynamiquement par ligne (classement, écart cible — meta.content_height), où
-      // la lisibilité par barre prime sur la densité, et les très petits graphiques
-      // (sparkline, jauge courtier en barre) déjà compacts.
+      // Fixed heights (designed for desktop) are reduced on mobile to limit
+      // scrolling. Excluded: charts whose height is already computed dynamically
+      // per row (ranking, target gap — meta.content_height), where per-bar
+      // readability matters more than density, and already-compact small charts
+      // (sparkline, broker bar gauge).
       const isContentSized = layout && layout.meta && layout.meta.content_height;
       if (!isContentSized && window.innerWidth < 640 && typeof resolved.height === 'number' && resolved.height > 150) {
         resolved.height = Math.round(resolved.height * 0.7);
       }
-      // Libellés d'axe plus petits sur mobile : moins de place perdue en marge
-      // auto-calculée par Plotly (automargin) pour les ticks, plus de place pour le tracé.
+      // Smaller axis labels on mobile: less space lost to Plotly's auto-computed
+      // margin (automargin) for ticks, more room for the plot itself.
       if (window.innerWidth < 640) {
         ['xaxis', 'yaxis'].forEach(function (key) {
           if (resolved[key]) {
@@ -226,8 +225,8 @@
       return resolved;
     }
 
-    // Même chose côté data (ex. la bordure "var(--surface-1)" des marqueurs/parts de
-    // pie) : Plotly ne la résoudrait pas non plus si on ne passait pas par ici.
+    // Same thing on the data side (e.g. the "var(--surface-1)" border of markers/pie
+    // slices): Plotly wouldn't resolve it either without going through here.
     function renderFig(divId, fig, extraConfig) {
       if (!fig || !fig.data) return;
       Plotly.newPlot(divId, resolveCssVars(fig.data), themeLayout(fig.layout), Object.assign({}, config, extraConfig || {}));
@@ -236,27 +235,27 @@
     const config = {
       displayModeBar: false,
       responsive: true,
-      locale: 'fr',
+      locale: 'en',
       locales: {
-        fr: {
+        en: {
           format: {
             decimal: '.',
             thousands: ' ',
             grouping: [3],
             currency: ['', ' €'],
-            days: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'],
-            shortDays: ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'],
-            months: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
-            shortMonths: ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'],
-            date: '%d/%m/%Y',
+            days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            shortDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+            shortMonths: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            date: '%d %b %Y',
           },
         },
       },
     };
 
-    // Onglets de section : un seul .tab-panel visible à la fois par groupe .tabs.
-    // Les graphes Plotly des panneaux inactifs sont initialisés à taille nulle
-    // (display:none au moment du newPlot) — on les redimensionne au premier affichage.
+    // Section tabs: only one .tab-panel visible at a time per .tabs group.
+    // Plotly charts in inactive panels get initialized at zero size
+    // (display:none at newPlot time) — resize them the first time they're shown.
     function initTabs(root) {
       root.querySelectorAll('.tabs').forEach(function (tabs) {
         const buttons = tabs.querySelectorAll('.tab-btn');
@@ -281,14 +280,14 @@
   {% block scripts %}{% endblock %}
 </div>
 
-<!-- Nav mobile : équivalent de la nav desktop (hidden md:flex ci-dessus), point
-     d'entrée principal sur téléphone façon app (Finary, Revolut, ...). -->
+<!-- Mobile nav: equivalent of the desktop nav (hidden md:flex above), primary
+     entry point on phone, app-style (Finary, Revolut, ...). -->
 <nav class="bottom-nav md:hidden">
   <a href="/" class="bottom-nav-item {{ 'active' if active_page == 'bourse' else '' }}">
-    <span class="bottom-nav-icon">📈</span><span>Bourse</span>
+    <span class="bottom-nav-icon">📈</span><span>Investments</span>
   </a>
   <a href="/patrimoine" class="bottom-nav-item {{ 'active' if active_page == 'patrimoine' else '' }}">
-    <span class="bottom-nav-icon">🏦</span><span>Patrimoine</span>
+    <span class="bottom-nav-icon">🏦</span><span>Net Worth</span>
   </a>
 </nav>
 </body>

@@ -1,11 +1,11 @@
-"""Résolution centralisée des dossiers data/ et config/.
+"""Centralized resolution of the data/ and config/ directories.
 
-Par défaut, tout pointe vers le data/ et le config/ à la racine du repo (données
-réelles, jamais versionnées — voir .gitignore). En définissant la variable
-d'environnement PORTFOLIO_ROOT (utilisé pour le déploiement de démo publique),
-l'app bascule entièrement sur un autre dossier ayant la même structure
-(<PORTFOLIO_ROOT>/data, <PORTFOLIO_ROOT>/config) — typiquement demo/, qui ne
-contient que des données fictives versionnées dans Git.
+By default, everything points to the data/ and config/ at the repo root (real
+data, never version-controlled — see .gitignore). Setting the PORTFOLIO_ROOT
+environment variable (used for the public demo deployment) makes the app
+switch entirely to another directory with the same layout
+(<PORTFOLIO_ROOT>/data, <PORTFOLIO_ROOT>/config) — typically demo/, which only
+holds fictional data tracked in Git.
 """
 import os
 
@@ -16,8 +16,8 @@ def project_root() -> str:
     override = os.environ.get("PORTFOLIO_ROOT")
     if not override:
         return _REPO_ROOT
-    # Un override relatif (ex. "demo") est résolu par rapport à la racine du repo,
-    # pas au répertoire courant du process (indépendant de l'endroit d'où l'app est lancée).
+    # A relative override (e.g. "demo") is resolved against the repo root, not
+    # the process's current working directory (independent of where the app is launched from).
     return override if os.path.isabs(override) else os.path.join(_REPO_ROOT, override)
 
 

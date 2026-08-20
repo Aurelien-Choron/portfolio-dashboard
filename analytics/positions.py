@@ -1,4 +1,4 @@
-"""Calcul des positions ouvertes et du PnL réalisé par actif (coût moyen pondéré)."""
+"""Computes open positions and realized PnL per asset (weighted average cost)."""
 
 from dataclasses import dataclass, field
 
@@ -13,7 +13,7 @@ class Position:
     broker: str
     currency: str
     quantity: float = 0.0
-    cost_basis: float = 0.0  # coût total des titres actuellement détenus
+    cost_basis: float = 0.0  # total cost of the shares currently held
     realized_pnl: float = 0.0
     dividends: float = 0.0
     fees_paid: float = 0.0
@@ -25,7 +25,7 @@ class Position:
 
 
 def build_positions(transactions: pd.DataFrame) -> dict[str, Position]:
-    """Reconstruit les positions en rejouant les transactions dans l'ordre chronologique."""
+    """Rebuilds positions by replaying transactions in chronological order."""
     positions: dict[str, Position] = {}
 
     for _, row in transactions.sort_values("date").iterrows():
@@ -50,14 +50,14 @@ def build_positions(transactions: pd.DataFrame) -> dict[str, Position]:
 
         if row["type"] == "BUY":
             qty = row["quantity"] or 0.0
-            cost = abs(row["amount"] or 0.0)  # inclut les frais déjà
+            cost = abs(row["amount"] or 0.0)  # already includes fees
             pos.quantity += qty
             pos.cost_basis += cost
             pos.trades += 1
         elif row["type"] == "SELL":
-            # Trade Republic fournit une quantité déjà négative pour les ventes,
-            # Fortuneo une quantité positive : on normalise avec abs() pour ne pas
-            # additionner au lieu de soustraire selon le courtier.
+            # Trade Republic provides an already-negative quantity for sells,
+            # Fortuneo a positive one: normalize with abs() so we don't add
+            # instead of subtracting depending on the broker.
             qty = abs(row["quantity"] or 0.0)
             proceeds = abs(row["amount"] or 0.0)
             avg_cost = pos.avg_cost

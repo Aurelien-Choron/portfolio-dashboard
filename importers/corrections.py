@@ -1,20 +1,19 @@
-"""Charge des transactions correctives manuelles (data/corrections/*.csv).
+"""Loads manual correction transactions (data/corrections/*.csv).
 
-Sert à compenser un historique de courtier incomplet : quand l'utilisateur connaît
-la valeur actuelle réelle d'une position mais que l'export CSV du courtier ne
-contient pas tous les achats, on ajoute ici un achat correctif daté du jour où
-l'écart a été constaté, au prix du marché de ce jour-là. Le coût d'acquisition de
-ce correctif est donc égal à sa valeur de marché au moment de la correction (P&L
-latent nul sur cette portion) : on ne invente pas de plus/moins-value, seulement
-la quantité manquante.
+Used to compensate for an incomplete broker history: when the user knows a
+position's real current value but the broker's CSV export doesn't include every
+purchase, a corrective buy is added here, dated the day the gap was noticed, at
+that day's market price. This correction's acquisition cost therefore equals its
+market value at the time of correction (zero unrealized P&L on that portion) — no
+gain/loss is invented, only the missing quantity.
 
-Format des CSV (colonnes déjà normalisées, pas de transformation à faire) :
+CSV format (columns already normalized, no transformation needed):
 date;asset_key;quantity;price;amount;note
-- asset_key : ISIN (Trade Republic) ou nom exact de l'actif (Fortuneo), comme dans
+- asset_key: ISIN (Trade Republic) or exact asset name (Fortuneo), as in
   config/tickers.json.
-- amount : toujours négatif (sortie de cash), = -(quantity * price).
+- amount: always negative (cash outflow), = -(quantity * price).
 
-À supprimer (ou vider) dès qu'un historique complet du courtier est importé.
+Delete (or empty) this once a complete broker history has been imported.
 """
 
 import glob
@@ -55,9 +54,9 @@ def load(data_dir: str) -> pd.DataFrame:
 
 
 def _empty() -> pd.DataFrame:
-    # Colonnes explicitement typées : un DataFrame vide non typé (tout en object)
-    # dégraderait le dtype de "date" au concat avec les autres sources dès que
-    # data/corrections/ ne contient aucun fichier (cas normal la plupart du temps).
+    # Explicitly typed columns: an untyped empty DataFrame (all object dtype)
+    # would degrade the "date" column's dtype on concat with the other sources
+    # whenever data/corrections/ has no file in it (the normal case, most of the time).
     dtypes = {
         "date": "datetime64[ns]",
         "quantity": "float64", "price": "float64", "fee": "float64",

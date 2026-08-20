@@ -1,4 +1,4 @@
-"""Agrégation des KPIs de portefeuille à partir des positions et des prix de marché."""
+"""Aggregates portfolio KPIs from positions and market prices."""
 
 import pandas as pd
 
@@ -6,7 +6,7 @@ import market_data
 
 
 def enrich_with_prices(positions_df: pd.DataFrame) -> pd.DataFrame:
-    """Ajoute current_price / price_source / current_value / unrealized_pnl."""
+    """Adds current_price / price_source / current_value / unrealized_pnl."""
     df = positions_df.copy()
     if df.empty:
         df["current_price"] = []
@@ -24,10 +24,10 @@ def enrich_with_prices(positions_df: pd.DataFrame) -> pd.DataFrame:
         if row["asset_key"] in live_prices:
             price, price_date = live_prices[row["asset_key"]]
             current_price.append(price)
-            price_source.append(f"live ({price_date:%d/%m})")
+            price_source.append(f"live ({price_date:%d %b})")
         else:
             current_price.append(row["avg_cost"])
-            price_source.append("estimé (PRU)")
+            price_source.append("estimated (avg. cost)")
 
     df["current_price"] = current_price
     df["price_source"] = price_source
@@ -38,7 +38,7 @@ def enrich_with_prices(positions_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def summary(df: pd.DataFrame, transactions: pd.DataFrame) -> dict:
-    """Calcule les KPIs globaux du portefeuille."""
+    """Computes the portfolio's global KPIs."""
     open_positions = df[df["quantity"] > 1e-9]
 
     total_value = open_positions["current_value"].sum()

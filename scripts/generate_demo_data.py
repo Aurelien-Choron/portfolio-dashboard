@@ -1,12 +1,12 @@
-"""Génère un jeu de données 100% fictif dans demo/, avec la même structure que
-data/ et config/ à la racine, pour alimenter la démo publique du dashboard.
+"""Generates a 100% fictional dataset in demo/, with the same layout as the
+root data/ and config/, to power the dashboard's public demo.
 
-Aucune donnée réelle de l'auteur n'est utilisée : portefeuille et comptes
-inventés, mais construits sur de vrais tickers cotés (Apple, LVMH, Sanofi,
-Coca-Cola, ETF Amundi MSCI World / Vanguard FTSE All-World) pour que la
-démo affiche des prix live crédibles via yfinance.
+No real data from the author is used: the portfolio and accounts are invented,
+but built on real, publicly traded tickers (Apple, LVMH, Sanofi, Coca-Cola,
+Amundi MSCI World / Vanguard FTSE All-World ETFs) so the demo shows credible
+live prices via yfinance.
 
-Usage : python scripts/generate_demo_data.py
+Usage: python scripts/generate_demo_data.py
 """
 import csv
 import json
@@ -16,12 +16,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEMO_DATA = os.path.join(ROOT, "demo", "data")
 DEMO_CONFIG = os.path.join(ROOT, "demo", "config")
 
-# --- Univers fictif ------------------------------------------------------
-# Fortuneo (PEA) : identifié par nom (l'export Fortuneo ne donne pas l'ISIN).
+# --- Fictional universe ---------------------------------------------------
+# Fortuneo (French tax-advantaged account, "PEA"): identified by name (the
+# Fortuneo export doesn't provide an ISIN).
 FORTUNEO_ETF = "Amundi MSCI World UCITS ETF - EUR (C)"
 FORTUNEO_STOCK = "Sanofi"
 
-# Trade Republic (CTO) : identifié par ISIN.
+# Trade Republic (standard brokerage account): identified by ISIN.
 TR_APPLE = ("US0378331005", "Apple Inc.")
 TR_LVMH = ("FR0000121014", "LVMH")
 TR_VWCE = ("IE00BK5BQT80", "Vanguard FTSE All-World UCITS ETF")
@@ -31,6 +32,11 @@ TR_KO = ("US1912161007", "Coca-Cola Co.")
 def write_fortuneo_csv():
     path = os.path.join(DEMO_DATA, "fortuneo", "demo_historique_operations.csv")
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    # Column names and operation labels ("Achat comptant", "Versement", ...) are
+    # kept in French on purpose: they must match Fortuneo's own real CSV export
+    # format byte-for-byte (see importers/fortuneo.py's OPERATION_MAP) — this is
+    # a broker file format, not app-facing text, so it isn't part of the "make
+    # everything English" scope.
     header = ["libellé", "Opération", "Place", "Date", "Qté", "Prix d'éxé", "Montant brut", "Courtage/Prélèvement", "Montant net", "Devise", ""]
 
     def row(libelle, operation, date, qte, prix, brut, courtage, net):
@@ -59,7 +65,7 @@ def write_fortuneo_csv():
         writer = csv.writer(f, delimiter=";")
         writer.writerow(header)
         writer.writerows(rows)
-    print(f"écrit {path}")
+    print(f"wrote {path}")
 
 
 def write_trade_republic_csv():
@@ -96,32 +102,39 @@ def write_trade_republic_csv():
         writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
         writer.writerow(header)
         writer.writerows(rows)
-    print(f"écrit {path}")
+    print(f"wrote {path}")
 
 
 def write_accounts_json():
     path = os.path.join(DEMO_DATA, "accounts", "accounts.json")
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    # "category" values (Livrets, Fonds Euros, Autres) intentionally match the
+    # French taxonomy used internally by analytics/patrimoine.py — see the note
+    # at the top of that file for why it isn't translated.
+    # Account "label" values: Livret A / LDDS are the actual French regulated
+    # savings-account product names (comparable to keeping "Roth IRA" or "401(k)"
+    # untranslated in an English portfolio piece) — kept as-is since there's no
+    # direct English equivalent. Generic ones (checking account) are translated.
     data = {
-        "_readme": "Comptes fictifs de démonstration — aucune donnée réelle.",
+        "_readme": "Fictional demo accounts — no real data.",
         "accounts": [
-            {"label": "Livret A", "bank": "Banque Demo", "category": "Livrets", "balance": 8500, "rate_pct": 3.0, "ceiling": 22950},
-            {"label": "LDDS", "bank": "Banque Demo", "category": "Livrets", "balance": 4200, "rate_pct": 3.0, "ceiling": 12000},
-            {"label": "Assurance-vie — Fonds Euro", "bank": "Assureur Demo", "category": "Fonds Euros", "balance": 12000, "rate_pct": 2.6},
-            {"label": "Compte courant", "bank": "Banque Demo", "category": "Autres", "balance": 1500},
+            {"label": "Livret A", "bank": "Demo Bank", "category": "Livrets", "balance": 8500, "rate_pct": 3.0, "ceiling": 22950},
+            {"label": "LDDS", "bank": "Demo Bank", "category": "Livrets", "balance": 4200, "rate_pct": 3.0, "ceiling": 12000},
+            {"label": "Life Insurance — Euro Fund", "bank": "Demo Insurer", "category": "Fonds Euros", "balance": 12000, "rate_pct": 2.6},
+            {"label": "Checking Account", "bank": "Demo Bank", "category": "Autres", "balance": 1500},
         ],
     }
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    print(f"écrit {path}")
+    print(f"wrote {path}")
 
 
 def write_config():
     os.makedirs(DEMO_CONFIG, exist_ok=True)
 
     tickers = {
-        "_readme": "Mapping asset_key -> ticker Yahoo Finance (démo).",
+        "_readme": "Mapping of asset_key -> Yahoo Finance ticker (demo).",
         FORTUNEO_ETF: "CW8.PA",
         FORTUNEO_STOCK: "SAN.PA",
         TR_APPLE[0]: "AAPL",
@@ -131,7 +144,7 @@ def write_config():
     }
 
     fees = {
-        "_readme": "TER annuel en % (démo). null = pas de frais de gestion (action en direct).",
+        "_readme": "Annual TER in % (demo). null = no management fee (individual stock).",
         FORTUNEO_ETF: 0.38,
         FORTUNEO_STOCK: None,
         TR_APPLE[0]: None,
@@ -140,8 +153,10 @@ def write_config():
         TR_KO[0]: None,
     }
 
+    # Values intentionally match the French taxonomy used internally (see the
+    # note at the top of analytics/patrimoine.py) — "Actions" here means "Stocks".
     asset_classes = {
-        "_readme": "Classe d'actif par asset_key (démo).",
+        "_readme": "Asset class per asset_key (demo).",
         FORTUNEO_ETF: "Actions",
         FORTUNEO_STOCK: "Actions",
         TR_APPLE[0]: "Actions",
@@ -151,7 +166,7 @@ def write_config():
     }
 
     target_allocation = {
-        "_readme": "Répartition cible du patrimoine total par classe d'actif, en % (démo, valeurs d'exemple).",
+        "_readme": "Target allocation of total net worth by asset class, in % (demo, example values).",
         "Actions": 45,
         "Obligations": 10,
         "Fonds Euros": 20,
@@ -160,31 +175,31 @@ def write_config():
     }
 
     exposure = {
-        "_readme": "Ventilation géographique/sectorielle par asset_key (démo, approximée sur factsheets publics).",
+        "_readme": "Geographic/sector breakdown per asset_key (demo, approximated from public factsheets).",
         FORTUNEO_ETF: {
             "country": {
-                "États-Unis": 70.0, "Japon": 6.0, "Royaume-Uni": 4.0, "France": 3.0,
-                "Allemagne": 2.5, "Suisse": 2.5, "Canada": 3.0, "Chine": 3.0, "Autres": 6.0,
+                "United States": 70.0, "Japan": 6.0, "United Kingdom": 4.0, "France": 3.0,
+                "Germany": 2.5, "Switzerland": 2.5, "Canada": 3.0, "China": 3.0, "Other": 6.0,
             },
             "sector": {
-                "Technologie": 27.0, "Financières": 16.0, "Industrie": 11.0, "Santé": 10.0,
-                "Consommation discrétionnaire": 10.0, "Communication": 8.0, "Consommation de base": 6.0,
-                "Énergie": 4.0, "Matériaux": 3.0, "Services publics": 2.5, "Immobilier": 2.5,
+                "Technology": 27.0, "Financials": 16.0, "Industrials": 11.0, "Healthcare": 10.0,
+                "Consumer Discretionary": 10.0, "Communication": 8.0, "Consumer Staples": 6.0,
+                "Energy": 4.0, "Materials": 3.0, "Utilities": 2.5, "Real Estate": 2.5,
             },
         },
-        FORTUNEO_STOCK: {"country": {"France": 100}, "sector": {"Santé": 100}},
-        TR_APPLE[0]: {"country": {"États-Unis": 100}, "sector": {"Technologie": 100}},
-        TR_LVMH[0]: {"country": {"France": 100}, "sector": {"Consommation discrétionnaire": 100}},
-        TR_KO[0]: {"country": {"États-Unis": 100}, "sector": {"Consommation de base": 100}},
+        FORTUNEO_STOCK: {"country": {"France": 100}, "sector": {"Healthcare": 100}},
+        TR_APPLE[0]: {"country": {"United States": 100}, "sector": {"Technology": 100}},
+        TR_LVMH[0]: {"country": {"France": 100}, "sector": {"Consumer Discretionary": 100}},
+        TR_KO[0]: {"country": {"United States": 100}, "sector": {"Consumer Staples": 100}},
         TR_VWCE[0]: {
             "country": {
-                "États-Unis": 62.0, "Japon": 5.5, "Royaume-Uni": 3.5, "Chine": 3.0, "France": 2.8,
-                "Canada": 2.7, "Allemagne": 2.0, "Inde": 2.0, "Suisse": 2.0, "Taïwan": 1.8, "Autres": 12.7,
+                "United States": 62.0, "Japan": 5.5, "United Kingdom": 3.5, "China": 3.0, "France": 2.8,
+                "Canada": 2.7, "Germany": 2.0, "India": 2.0, "Switzerland": 2.0, "Taiwan": 1.8, "Other": 12.7,
             },
             "sector": {
-                "Technologie": 24.0, "Financières": 17.0, "Industrie": 12.0, "Santé": 10.0,
-                "Consommation discrétionnaire": 10.5, "Communication": 7.5, "Consommation de base": 6.0,
-                "Énergie": 4.5, "Matériaux": 3.5, "Services publics": 2.5, "Immobilier": 2.5,
+                "Technology": 24.0, "Financials": 17.0, "Industrials": 12.0, "Healthcare": 10.0,
+                "Consumer Discretionary": 10.5, "Communication": 7.5, "Consumer Staples": 6.0,
+                "Energy": 4.5, "Materials": 3.5, "Utilities": 2.5, "Real Estate": 2.5,
             },
         },
     }
@@ -197,7 +212,7 @@ def write_config():
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
             f.write("\n")
-        print(f"écrit {path}")
+        print(f"wrote {path}")
 
 
 if __name__ == "__main__":
@@ -205,5 +220,5 @@ if __name__ == "__main__":
     write_trade_republic_csv()
     write_accounts_json()
     write_config()
-    print("\nJeu de données de démo généré dans demo/. Pour tester : "
+    print("\nDemo dataset generated in demo/. To try it: "
           "$env:PORTFOLIO_ROOT = (Resolve-Path demo); python dashboard/app.py")

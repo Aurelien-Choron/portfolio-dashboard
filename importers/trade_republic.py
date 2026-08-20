@@ -1,12 +1,11 @@
-"""Parseur pour les exports de transactions Trade Republic.
+"""Parser for Trade Republic transaction exports.
 
-Format observé : CSV séparé par ',', encodage UTF-8, champs entre guillemets,
-une ligne par mouvement (les ordres BUY/SELL apparaissent en 2 lignes :
-la part fractionnée puis la part entière, à additionner par transaction_id
-distincts mais même trade).
+Observed format: CSV separated by ',', UTF-8 encoding, quoted fields, one row
+per movement (BUY/SELL orders appear as 2 rows: the fractional share then the
+whole share, to be summed — distinct transaction_id, same trade).
 
-Colonnes utiles : datetime, date, account_type, category, type, asset_class,
-name, symbol (en réalité l'ISIN), shares, price, amount, fee, tax, currency.
+Useful columns: datetime, date, account_type, category, type, asset_class,
+name, symbol (actually the ISIN), shares, price, amount, fee, tax, currency.
 """
 
 import glob
@@ -31,7 +30,7 @@ def _map_type(row_type: str) -> str:
 
 
 def load(data_dir: str) -> pd.DataFrame:
-    """Charge et normalise tous les CSV Trade Republic présents dans data_dir."""
+    """Loads and normalizes every Trade Republic CSV found in data_dir."""
     files = sorted(glob.glob(os.path.join(data_dir, "*.csv")))
     if not files:
         return _empty()
@@ -62,9 +61,9 @@ def load(data_dir: str) -> pd.DataFrame:
 
 
 def _empty() -> pd.DataFrame:
-    # Colonnes explicitement typées : un DataFrame vide non typé (tout en object)
-    # dégraderait le dtype de "date" au concat avec les autres sources dès que
-    # data/trade_republic/ ne contient aucun CSV.
+    # Explicitly typed columns: an untyped empty DataFrame (all object dtype)
+    # would degrade the "date" column's dtype on concat with the other sources
+    # whenever data/trade_republic/ has no CSV in it.
     columns = [
         "date", "broker", "account", "type", "name", "isin",
         "quantity", "price", "fee", "tax", "amount", "currency", "raw_operation",

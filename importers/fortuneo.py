@@ -1,9 +1,9 @@
-"""Parseur pour les exports 'Historique des opérations' de Fortuneo.
+"""Parser for Fortuneo's "transaction history" exports.
 
-Format observé : CSV séparé par ';', encodage Windows-1252, décimales en point,
-dates DD/MM/YYYY, une colonne finale vide (';' de fin de ligne).
+Observed format: CSV separated by ';', Windows-1252 encoding, dot decimals,
+DD/MM/YYYY dates, one empty trailing column (trailing ';' at end of line).
 
-Colonnes sources :
+Source columns:
 libellé;Opération;Place;Date;Qté;Prix d'éxé;Montant brut;Courtage/Prélèvement;Montant net;Devise;
 """
 
@@ -12,12 +12,14 @@ import os
 
 import pandas as pd
 
-# Libellés d'opération Fortuneo -> type normalisé.
-# Les opérations "OST de création de coupons" / "ANNUL." sont des écritures
-# techniques liées au détachement de coupons optionnels : elles sont gardées
-# en type OTHER (visibles dans le journal) mais exclues des totaux de
-# dividendes/cash-flow pour éviter tout double comptage, faute de certitude
-# sur leur traitement comptable exact.
+# Fortuneo operation labels -> normalized type.
+# These dict keys are the literal French strings Fortuneo's own CSV export uses
+# for its "Opération" column — they must stay in French to keep parsing real
+# Fortuneo exports, independent of the app's own display language.
+# "OST de création de coupons" / "ANNUL." entries are technical bookkeeping
+# entries tied to optional coupon detachment: they're kept as type OTHER
+# (visible in the activity log) but excluded from dividend/cash-flow totals to
+# avoid any double counting, since their exact accounting treatment isn't certain.
 OPERATION_MAP = {
     "achat comptant": "BUY",
     "vente comptant": "SELL",
@@ -37,7 +39,7 @@ def _map_type(operation: str) -> str:
 
 
 def load(data_dir: str) -> pd.DataFrame:
-    """Charge et normalise tous les CSV Fortuneo présents dans data_dir."""
+    """Loads and normalizes every Fortuneo CSV found in data_dir."""
     files = sorted(glob.glob(os.path.join(data_dir, "*.csv")))
     if not files:
         return _empty()
@@ -46,7 +48,7 @@ def load(data_dir: str) -> pd.DataFrame:
     for path in files:
         df = pd.read_csv(path, sep=";", encoding="cp1252", dtype=str)
         df = df.rename(columns=lambda c: c.strip())
-        df = df.dropna(axis=1, how="all")  # colonne fantôme du ';' final
+        df = df.dropna(axis=1, how="all")  # phantom column from the trailing ';'
         frames.append(df)
 
     raw = pd.concat(frames, ignore_index=True)
@@ -71,9 +73,9 @@ def load(data_dir: str) -> pd.DataFrame:
 
 
 def _empty() -> pd.DataFrame:
-    # Colonnes explicitement typées : un DataFrame vide non typé (tout en object)
-    # dégraderait le dtype de "date" au concat avec les autres sources dès que
-    # data/fortuneo/ ne contient aucun CSV.
+    # Explicitly typed columns: an untyped empty DataFrame (all object dtype)
+    # would degrade the "date" column's dtype on concat with the other sources
+    # whenever data/fortuneo/ has no CSV in it.
     columns = [
         "date", "broker", "account", "type", "name", "isin",
         "quantity", "price", "fee", "tax", "amount", "currency", "raw_operation",

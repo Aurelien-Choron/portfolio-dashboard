@@ -1,4 +1,4 @@
-"""Dashboard Flask : analyse de portefeuille (Fortuneo + Trade Republic)."""
+"""Flask dashboard: portfolio analysis (Fortuneo + Trade Republic)."""
 
 import json
 import os
@@ -31,39 +31,53 @@ COLOR_RED = "#e34948"
 COLOR_MUTED = "#898781"
 COLOR_GOOD = "#0ca30c"
 COLOR_CRITICAL = "#d03b3b"
-# Palette catégorielle à ordre fixe (voir dataviz skill) : la couleur suit l'entité, jamais son rang.
+# Fixed-order categorical palette (see dataviz skill): color follows the entity, never its rank.
 CATEGORICAL_PALETTE = [COLOR_BLUE, COLOR_ORANGE, COLOR_AQUA, COLOR_YELLOW, COLOR_MAGENTA, COLOR_GREEN, COLOR_VIOLET, COLOR_RED]
-BROKER_LABELS = {"fortuneo": "Fortuneo", "trade_republic": "Trade Republic", "correction_manuelle": "Correction manuelle"}
-# Couleur fixée par courtier (identité), jamais par rang/tri — un courtier garde sa
-# couleur même si son poids dans le portefeuille passe devant ou derrière l'autre.
+BROKER_LABELS = {"fortuneo": "Fortuneo", "trade_republic": "Trade Republic", "correction_manuelle": "Manual correction"}
+# Color fixed per broker (identity), never by rank/sort order — a broker keeps its
+# color even if its weight in the portfolio moves ahead of or behind the other.
 BROKER_COLORS = {"fortuneo": COLOR_BLUE, "trade_republic": COLOR_ORANGE, "correction_manuelle": COLOR_MUTED}
 BROKER_ORDER = ["fortuneo", "trade_republic", "correction_manuelle"]
 
-# Diversification géo/sectorielle : ordre fixe des libellés les plus probables (voir
-# dataviz skill — couleur par entité, jamais par rang). Au-delà des 8 slots de la
-# palette catégorielle, un libellé tombe en COLOR_MUTED plutôt que de générer une
-# teinte à la volée — il reste identifiable dans la liste via son icône/drapeau.
-COUNTRY_ORDER = ["États-Unis", "France", "Allemagne", "Chine", "Japon", "Royaume-Uni", "Taïwan", "Corée du Sud"]
+# Net worth category taxonomy: kept in French internally (Actions, Obligations,
+# Fonds Euros, Livrets, Autres) because it's the storage key shared with each
+# user's private config/*.json (asset_classes.json, target_allocation.json) and
+# data/accounts/accounts.json — none of which are tracked in Git. Renaming the
+# taxonomy itself would silently break anyone's existing local setup. This dict
+# is a display-only translation layer used by patrimoine.html.
+CATEGORY_LABELS = {
+    "Actions": "Stocks",
+    "Obligations": "Bonds",
+    "Fonds Euros": "Euro Funds",
+    "Livrets": "Savings Accounts",
+    "Autres": "Other",
+}
+
+# Geo/sector diversification: fixed order of the most likely labels (see dataviz
+# skill — color by entity, never by rank). Beyond the categorical palette's 8
+# slots, a label falls back to COLOR_MUTED instead of generating a color on the
+# fly — it stays identifiable in the list via its icon/label.
+COUNTRY_ORDER = ["United States", "France", "Germany", "China", "Japan", "United Kingdom", "Taiwan", "South Korea"]
 COUNTRY_COLORS = dict(zip(COUNTRY_ORDER, CATEGORICAL_PALETTE))
 COUNTRY_ICONS = {
-    "États-Unis": "🇺🇸", "France": "🇫🇷", "Allemagne": "🇩🇪", "Chine": "🇨🇳", "Japon": "🇯🇵",
-    "Royaume-Uni": "🇬🇧", "Taïwan": "🇹🇼", "Corée du Sud": "🇰🇷", "Australie": "🇦🇺", "Italie": "🇮🇹",
-    "Canada": "🇨🇦", "Suisse": "🇨🇭", "Pays-Bas": "🇳🇱", "Inde": "🇮🇳", "Or physique": "🥇",
-    "Danemark": "🇩🇰", "Suède": "🇸🇪", "Hong Kong": "🇭🇰", "Espagne": "🇪🇸", "Singapour": "🇸🇬",
-    "Brésil": "🇧🇷", "Arabie Saoudite": "🇸🇦", "Afrique du Sud": "🇿🇦", "Mexique": "🇲🇽",
-    "Indonésie": "🇮🇩", "Thaïlande": "🇹🇭", "Malaisie": "🇲🇾", "Émirats arabes unis": "🇦🇪",
-    "Autres": "🌍", "Non renseigné": "❔",
+    "United States": "🇺🇸", "France": "🇫🇷", "Germany": "🇩🇪", "China": "🇨🇳", "Japan": "🇯🇵",
+    "United Kingdom": "🇬🇧", "Taiwan": "🇹🇼", "South Korea": "🇰🇷", "Australia": "🇦🇺", "Italy": "🇮🇹",
+    "Canada": "🇨🇦", "Switzerland": "🇨🇭", "Netherlands": "🇳🇱", "India": "🇮🇳", "Physical gold": "🥇",
+    "Denmark": "🇩🇰", "Sweden": "🇸🇪", "Hong Kong": "🇭🇰", "Spain": "🇪🇸", "Singapore": "🇸🇬",
+    "Brazil": "🇧🇷", "Saudi Arabia": "🇸🇦", "South Africa": "🇿🇦", "Mexico": "🇲🇽",
+    "Indonesia": "🇮🇩", "Thailand": "🇹🇭", "Malaysia": "🇲🇾", "United Arab Emirates": "🇦🇪",
+    "Other": "🌍", "Not specified": "❔",
 }
 SECTOR_ORDER = [
-    "Technologie", "Financières", "Industrie", "Consommation discrétionnaire",
-    "Santé", "Communication", "Consommation de base", "Énergie",
+    "Technology", "Financials", "Industrials", "Consumer Discretionary",
+    "Healthcare", "Communication", "Consumer Staples", "Energy",
 ]
 SECTOR_COLORS = dict(zip(SECTOR_ORDER, CATEGORICAL_PALETTE))
 SECTOR_ICONS = {
-    "Technologie": "💻", "Financières": "🏦", "Industrie": "🏭", "Consommation discrétionnaire": "🛍️",
-    "Santé": "🏥", "Communication": "📡", "Consommation de base": "🥫", "Énergie": "⚡",
-    "Matériaux": "🧱", "Services publics": "🔌", "Immobilier": "🏠", "Matières premières": "🥇",
-    "Autres": "🌍", "Non renseigné": "❔",
+    "Technology": "💻", "Financials": "🏦", "Industrials": "🏭", "Consumer Discretionary": "🛍️",
+    "Healthcare": "🏥", "Communication": "📡", "Consumer Staples": "🥫", "Energy": "⚡",
+    "Materials": "🧱", "Utilities": "🔌", "Real Estate": "🏠", "Commodities": "🥇",
+    "Other": "🌍", "Not specified": "❔",
 }
 
 
@@ -73,15 +87,15 @@ def _fmt_eur(value: float) -> str:
     return f"{value:,.0f} €".replace(",", " ")
 
 
-def fr_number(value, decimals: int = 0, signed: bool = False) -> str:
-    """Filtre Jinja : formate un nombre à la française (espace en séparateur de milliers, 10 000 et non 10,000)."""
+def format_number(value, decimals: int = 0, signed: bool = False) -> str:
+    """Jinja filter: formats a number with a space as the thousands separator (10 000, not 10,000)."""
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "—"
     fmt = f"{{:{'+' if signed else ''},.{decimals}f}}"
     return fmt.format(value).replace(",", " ")
 
 
-app.jinja_env.filters["fr"] = fr_number
+app.jinja_env.filters["fr"] = format_number
 
 
 def _hex_to_rgb(hex_color: str) -> tuple:
@@ -99,8 +113,8 @@ def _lerp_color(c1_hex: str, c2_hex: str, t: float) -> str:
 
 
 def _diverging_color(value: float, bound: float) -> str:
-    """Rouge (perte) → gris neutre (0) → vert (gain), poles diverging + midpoint gris
-    (voir dataviz skill : jamais une teinte au centre d'un diverging)."""
+    """Red (loss) → neutral gray (0) → green (gain), diverging poles with a gray
+    midpoint (see dataviz skill: never a hue at the center of a diverging scale)."""
     if bound <= 0 or pd.isna(value):
         return COLOR_MUTED
     t = max(-1.0, min(1.0, value / bound))
@@ -110,19 +124,19 @@ def _diverging_color(value: float, bound: float) -> str:
 
 
 def _contrast_text_color(hex_color: str) -> str:
-    """Texte blanc ou encre sombre selon la luminance du fond — un texte blanc fixe
-    devient illisible sur les teintes claires du dégradé (proche du gris neutre)."""
+    """White or dark ink text depending on background luminance — a fixed white
+    text becomes unreadable on the gradient's lighter hues (close to neutral gray)."""
     r, g, b = _hex_to_rgb(hex_color)
     luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
     return "#12120f" if luminance > 0.6 else "#ffffff"
 
 
 def _build_allocation_treemap_fig(df: pd.DataFrame) -> dict:
-    """Un rectangle par position ouverte : taille = valeur, couleur = plus-value latente
-    (rouge = perte, vert = gain) — remplace la barre horizontale, illisible sur ce
-    portefeuille avec un écart de poids de 29 % à 0,6 % (micro-lignes invisibles), et
-    ajoute une dimension que la barre ne montrait pas : ce qui pèse le plus n'est pas
-    forcément ce qui performe le mieux."""
+    """One rectangle per open position: size = value, color = unrealized gain/loss
+    (red = loss, green = gain) — replaces the horizontal bar, unreadable on a
+    portfolio with weights ranging from 29% down to 0.6% (invisible micro-rows),
+    and adds a dimension the bar didn't show: what weighs the most isn't
+    necessarily what performs best."""
     open_pos = df[df["quantity"] > 1e-9].copy()
     total = open_pos["current_value"].sum()
     if open_pos.empty or total <= 0:
@@ -147,26 +161,26 @@ def _build_allocation_treemap_fig(df: pd.DataFrame) -> dict:
             textinfo="text",
             textfont=dict(size=12, color=text_colors),
             marker=dict(colors=colors),
-            # Un vrai espace (surface derrière) sépare les tuiles plutôt qu'une bordure
-            # peinte dessus — même logique que le "surface gap" des barres empilées.
+            # A real gap (background showing through) separates tiles rather than a
+            # border painted on top — same logic as the "surface gap" of stacked bars.
             tiling=dict(pad=2),
             customdata=pnl_pct,
-            hovertemplate="%{label}<br>%{value:,.0f} € (%{percentParent:.1%})<br>Plus-value latente : %{customdata:+.1f} %<extra></extra>",
+            hovertemplate="%{label}<br>%{value:,.0f} € (%{percentParent:.1%})<br>Unrealized gain/loss: %{customdata:+.1f} %<extra></extra>",
         )
     )
     fig.update_layout(
         margin=dict(l=0, r=0, t=0, b=0),
         height=260,
-        # Les tuiles trop petites pour leur texte le perdent plutôt que de l'afficher
-        # débordant/tronqué — le détail reste disponible au survol et dans le tableau.
+        # Tiles too small for their text lose it rather than showing it
+        # overflowing/truncated — detail stays available on hover and in the table.
         uniformtext=dict(minsize=10, mode="hide"),
     )
     return fig.to_dict()
 
 
 def _build_broker_fig(broker_df: pd.DataFrame) -> dict:
-    """Repli en barre empilée quand la jauge balance (2 courtiers) ne s'applique pas
-    (0, 1 ou 3+ courtiers actifs) — voir _build_broker_gauge_fig."""
+    """Falls back to a stacked bar when the balance gauge (2 brokers) doesn't apply
+    (0, 1, or 3+ active brokers) — see _build_broker_gauge_fig."""
     active = broker_df[broker_df["current_value"] > 1e-9]
     if active.empty:
         return {}
@@ -179,7 +193,7 @@ def _build_broker_fig(broker_df: pd.DataFrame) -> dict:
         traces.append(
             go.Bar(
                 x=[row["current_value"]],
-                y=["Répartition"],
+                y=["Allocation"],
                 orientation="h",
                 name=label,
                 marker=dict(color=color),
@@ -204,11 +218,11 @@ def _build_broker_fig(broker_df: pd.DataFrame) -> dict:
 
 
 def _build_broker_gauge_fig(broker_df: pd.DataFrame) -> dict:
-    """Jauge balance en demi-cercle entre les deux courtiers principaux : la valeur
-    de la jauge est le poids (%) du premier, le reste de l'arc porte la couleur du
-    second — chaque courtier garde sa couleur habituelle (BROKER_COLORS).
-    Ne s'applique que pour exactement 2 courtiers actifs ; au-delà (ou en-deçà),
-    _build_broker_fig (barre empilée) reste la forme la plus lisible."""
+    """Half-circle balance gauge between the two main brokers: the gauge value is
+    the weight (%) of the first, the rest of the arc carries the second's color —
+    each broker keeps its usual color (BROKER_COLORS).
+    Only applies for exactly 2 active brokers; beyond (or below) that,
+    _build_broker_fig (stacked bar) remains the most readable form."""
     active = broker_df[broker_df["current_value"] > 1e-9]
     if len(active) != 2:
         return {}
@@ -238,8 +252,8 @@ def _build_broker_gauge_fig(broker_df: pd.DataFrame) -> dict:
                 steps=[dict(range=[0, 100], color=color_b)],
                 threshold=dict(line=dict(color=COLOR_MUTED, width=2), thickness=0.9, value=50),
             ),
-            # Le demi-cercle + le nombre sont poussés dans le tiers haut du cadre,
-            # pour laisser une bande basse dégagée aux deux labels de courtier.
+            # The half-circle + number are pushed into the top third of the frame,
+            # leaving a clear bottom band for the two broker labels.
             domain=dict(x=[0, 1], y=[0.32, 1]),
         )
     )
@@ -263,8 +277,8 @@ def _build_broker_gauge_fig(broker_df: pd.DataFrame) -> dict:
 
 
 def _build_sparkline_fig(hist: pd.DataFrame) -> dict:
-    """Mini-courbe décorative sous la valeur héro — tendance seule, pas d'axes ni
-    de tooltip (le détail complet vit dans le graphe « Évolution du portefeuille »)."""
+    """Decorative mini-curve under the hero value — trend only, no axes or
+    tooltip (full detail lives in the "Portfolio value over time" chart)."""
     if hist.empty:
         return {}
     tail = hist.tail(180)
@@ -295,19 +309,19 @@ def _build_performance_fig(hist: pd.DataFrame, events: pd.DataFrame) -> dict:
     fig.add_trace(
         go.Scatter(
             x=hist["date"], y=hist["invested_capital"],
-            name="Capital net investi",
+            name="Net invested capital",
             mode="lines",
             line=dict(color=COLOR_MUTED, width=2, dash="dot"),
-            hovertemplate="%{x|%d/%m/%Y}<br>%{y:,.0f} €<extra></extra>",
+            hovertemplate="%{x|%d %b %Y}<br>%{y:,.0f} €<extra></extra>",
         )
     )
     fig.add_trace(
         go.Scatter(
             x=hist["date"], y=hist["portfolio_value"],
-            name="Valeur du portefeuille",
+            name="Portfolio value",
             mode="lines",
             line=dict(color=COLOR_BLUE, width=2),
-            hovertemplate="%{x|%d/%m/%Y}<br>%{y:,.0f} €<extra></extra>",
+            hovertemplate="%{x|%d %b %Y}<br>%{y:,.0f} €<extra></extra>",
         )
     )
 
@@ -318,31 +332,31 @@ def _build_performance_fig(hist: pd.DataFrame, events: pd.DataFrame) -> dict:
             fig.add_trace(
                 go.Scatter(
                     x=buys["date"], y=buys["y"],
-                    name="Achat",
+                    name="Buy",
                     mode="markers",
                     marker=dict(symbol="triangle-up", size=10, color=COLOR_AQUA, line=dict(width=1.5, color="var(--surface-1)")),
                     customdata=list(zip(buys["name"], buys["amount"])),
-                    hovertemplate="Achat — %{customdata[0]}<br>%{customdata[1]:,.0f} €<extra></extra>",
+                    hovertemplate="Buy — %{customdata[0]}<br>%{customdata[1]:,.0f} €<extra></extra>",
                 )
             )
         if not sells.empty:
             fig.add_trace(
                 go.Scatter(
                     x=sells["date"], y=sells["y"],
-                    name="Vente",
+                    name="Sell",
                     mode="markers",
                     marker=dict(symbol="triangle-down", size=10, color=COLOR_VIOLET, line=dict(width=1.5, color="var(--surface-1)")),
                     customdata=list(zip(sells["name"], sells["amount"])),
-                    hovertemplate="Vente — %{customdata[0]}<br>%{customdata[1]:,.0f} €<extra></extra>",
+                    hovertemplate="Sell — %{customdata[0]}<br>%{customdata[1]:,.0f} €<extra></extra>",
                 )
             )
 
     fig.update_layout(
         margin=dict(l=2, r=2, t=6, b=2),
         height=380,
-        # fixedrange sur les deux axes : sans ça, un swipe tactile qui démarre sur le
-        # graphique est capté par Plotly comme un pan/zoom au lieu de faire défiler la
-        # page — le graphique semble "bloqué" au toucher. Le hover/tap reste actif.
+        # fixedrange on both axes: without it, a touch swipe starting on the chart
+        # gets captured by Plotly as a pan/zoom instead of scrolling the page — the
+        # chart feels "stuck" to touch. Hover/tap stays active.
         xaxis=dict(showgrid=False, fixedrange=True),
         yaxis=dict(showgrid=True, gridcolor="var(--grid)", tickformat=",.0f", ticksuffix=" €", fixedrange=True, tickfont=dict(size=11)),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
@@ -352,22 +366,22 @@ def _build_performance_fig(hist: pd.DataFrame, events: pd.DataFrame) -> dict:
 
 
 def _truncate_label(name: str, max_len: int = 24) -> str:
-    """Tronque un libellé d'axe trop long (le nom complet reste dans le survol via
-    customdata) — sur un graphique en barres horizontales, un nom de fonds de 30+
-    caractères peut à lui seul doubler la marge auto-calculée par Plotly."""
+    """Truncates an axis label that's too long (the full name stays available on
+    hover via customdata) — on a horizontal bar chart, a 30+ character fund name
+    can by itself double the margin Plotly auto-computes."""
     name = str(name)
     return name if len(name) <= max_len else name[: max_len - 1].rstrip() + "…"
 
 
 def _build_ranking_fig(asset_perf: pd.DataFrame) -> dict:
-    """Classement des fonds par rendement mensuel moyen (%) — pour repérer d'un coup d'œil
-    les meilleurs et moins bons performeurs, indépendamment de leur ancienneté."""
+    """Ranks funds by average monthly return (%) — to spot the best and worst
+    performers at a glance, regardless of how long they've been held."""
     ranked = asset_perf.dropna(subset=["monthly_avg_pct"]).sort_values("monthly_avg_pct", ascending=True)
     if ranked.empty:
         return {}
 
     colors = [COLOR_GOOD if v >= 0 else COLOR_CRITICAL for v in ranked["monthly_avg_pct"]]
-    labels = [f"{v:+.2f} %/mois" for v in ranked["monthly_avg_pct"]]
+    labels = [f"{v:+.2f} %/mo" for v in ranked["monthly_avg_pct"]]
     display_names = [_truncate_label(n) for n in ranked["name"]]
 
     fig = go.Figure(
@@ -381,7 +395,7 @@ def _build_ranking_fig(asset_perf: pd.DataFrame) -> dict:
             textfont=dict(size=12),
             cliponaxis=False,
             customdata=ranked["name"],
-            hovertemplate="%{customdata}<br>%{x:+.2f} %/mois<extra></extra>",
+            hovertemplate="%{customdata}<br>%{x:+.2f} %/mo<extra></extra>",
         )
     )
     span = max(ranked["monthly_avg_pct"].abs().max(), 0.1)
@@ -396,17 +410,17 @@ def _build_ranking_fig(asset_perf: pd.DataFrame) -> dict:
         yaxis=dict(showgrid=False, automargin=True, tickfont=dict(size=13), fixedrange=True),
         showlegend=False,
         bargap=0.3,
-        # Hauteur calculée par barre (voir plus haut) : exempté du rétrécissement
-        # mobile générique (base.html/themeLayout), qui casserait l'épaisseur de barre.
+        # Height computed per bar (see above): exempted from the generic mobile
+        # shrink (base.html/themeLayout), which would break the bar thickness.
         meta=dict(content_height=True),
     )
     return fig.to_dict()
 
 
 def _build_pie(slices: list, total_label: str = "Total") -> dict:
-    # Couleur assignée par position dans la liste d'ORIGINE (avant filtrage des valeurs
-    # nulles) : une catégorie à 0 € aujourd'hui garde son slot de couleur pour le jour où
-    # elle ne sera plus vide, au lieu de décaler la couleur de toutes les suivantes.
+    # Color assigned by position in the ORIGINAL list (before filtering out zero
+    # values): a category at €0 today keeps its color slot for the day it's no
+    # longer empty, instead of shifting the color of every category after it.
     colored = [(s, c) for s, c in zip(slices, CATEGORICAL_PALETTE) if s["value"] > 1e-9]
     if not colored:
         return {}
@@ -442,12 +456,12 @@ def _build_pie(slices: list, total_label: str = "Total") -> dict:
 
 
 def _build_target_gap_fig(comparison: list) -> dict:
-    """Écart (actuel - cible) en points de pourcentage, par catégorie."""
+    """Gap (actual - target) in percentage points, by category."""
     rows = [c for c in comparison if c["target_pct"] is not None]
     if not rows:
         return {}
     rows = sorted(rows, key=lambda c: c["gap_pct"])
-    cats = [c["category"] for c in rows]
+    cats = [CATEGORY_LABELS.get(c["category"], c["category"]) for c in rows]
     gaps = [c["gap_pct"] for c in rows]
     colors = [COLOR_BLUE if g < 0 else COLOR_RED for g in gaps]
     labels = [f"{g:+.1f} pt" for g in gaps]
@@ -462,7 +476,7 @@ def _build_target_gap_fig(comparison: list) -> dict:
             textposition="outside",
             textfont=dict(size=12),
             cliponaxis=False,
-            hovertemplate="%{y}<br>Écart : %{x:+.1f} pt vs cible<extra></extra>",
+            hovertemplate="%{y}<br>Gap: %{x:+.1f} pt vs target<extra></extra>",
         )
     )
     span = max(max(abs(g) for g in gaps), 2)
@@ -477,18 +491,18 @@ def _build_target_gap_fig(comparison: list) -> dict:
         yaxis=dict(showgrid=False, automargin=True, tickfont=dict(size=13), fixedrange=True),
         showlegend=False,
         bargap=0.35,
-        # Cf. _build_ranking_fig : hauteur par barre, exemptée du rétrécissement mobile.
+        # See _build_ranking_fig: per-bar height, exempted from the mobile shrink.
         meta=dict(content_height=True),
     )
     return fig.to_dict()
 
 
 def _bucket_diversification(rows: list, colors: dict, icons: dict, top_n: int = 10) -> list:
-    """Garde les top_n lignes par valeur, regroupe le reste dans 'Autres'. La couleur
-    suit l'identité du libellé (dict fixe, 8 teintes), jamais son rang dans ce
-    classement — au-delà de 8 entités distinctes, le gris neutre est réutilisé
-    plutôt que de générer une teinte à la volée (voir dataviz skill) ; l'identité
-    reste portée par l'icône/le libellé dans la liste, pas par la seule couleur."""
+    """Keeps the top_n rows by value, groups the rest under 'Other'. Color follows
+    the label's identity (fixed dict, 8 hues), never its rank in this ranking —
+    beyond 8 distinct entities, neutral gray is reused rather than generating a
+    color on the fly (see dataviz skill); identity stays carried by the
+    icon/label in the list, not by color alone."""
     rows = sorted(rows, key=lambda r: -r["value"])
     total = sum(r["value"] for r in rows)
     if total <= 0:
@@ -496,12 +510,12 @@ def _bucket_diversification(rows: list, colors: dict, icons: dict, top_n: int = 
     head, tail = rows[:top_n], rows[top_n:]
     if tail:
         tail_value = sum(r["value"] for r in tail)
-        existing_autres = next((r for r in head if r["label"] == "Autres"), None)
-        if existing_autres:
-            existing_autres = dict(existing_autres, value=existing_autres["value"] + tail_value)
-            head = [existing_autres if r["label"] == "Autres" else r for r in head]
+        existing_other = next((r for r in head if r["label"] == "Other"), None)
+        if existing_other:
+            existing_other = dict(existing_other, value=existing_other["value"] + tail_value)
+            head = [existing_other if r["label"] == "Other" else r for r in head]
         else:
-            head = head + [{"label": "Autres", "value": tail_value}]
+            head = head + [{"label": "Other", "value": tail_value}]
     head.sort(key=lambda r: -r["value"])
     return [
         {
@@ -671,7 +685,10 @@ def patrimoine():
 
     data = patrimoine_mod.build_patrimoine(bourse_value, bourse_by_broker, bourse_positions)
 
-    category_slices = [{"label": c["category"], "value": c["value"]} for c in data["comparison"]]
+    category_slices = [
+        {"label": CATEGORY_LABELS.get(c["category"], c["category"]), "value": c["value"]}
+        for c in data["comparison"]
+    ]
 
     figs = {
         "repartition": _build_pie(category_slices),
@@ -688,14 +705,15 @@ def patrimoine():
         accounts=data["accounts"],
         comparison=data["comparison"],
         by_category=data["by_category"],
+        category_labels=CATEGORY_LABELS,
         figs_json=json.dumps(figs, cls=plotly.utils.PlotlyJSONEncoder),
         last_update=pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"),
     )
 
 
 def _lan_ip() -> str:
-    """Meilleure estimation de l'IP locale (celle utilisée pour joindre l'extérieur),
-    pour afficher l'URL à ouvrir depuis le téléphone sans dépendre d'un vrai réseau."""
+    """Best-effort local IP guess (the one used to reach the outside world), to
+    display the URL to open from a phone without depending on a real network lookup."""
     import socket
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -709,5 +727,5 @@ def _lan_ip() -> str:
 
 
 if __name__ == "__main__":
-    print(f"Sur le même Wi-Fi, depuis ton téléphone : http://{_lan_ip()}:5050")
+    print(f"On the same Wi-Fi, from your phone: http://{_lan_ip()}:5050")
     app.run(debug=True, host="0.0.0.0", port=5050)

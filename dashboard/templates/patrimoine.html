@@ -1,85 +1,85 @@
 {% extends "base.html" %}
-{% block title %}Patrimoine global — Portfolio Dashboard{% endblock %}
+{% block title %}Net Worth — Portfolio Dashboard{% endblock %}
 
 {% block header_right %}
-<span class="ink-muted text-sm">Mis à jour le {{ last_update }}</span>
+<span class="ink-muted text-sm">Last updated {{ last_update }}</span>
 {% endblock %}
 
 {% block content %}
 
   <div class="card p-3 mb-8 text-sm ink-secondary">
-    ⚠️ Les soldes/taux des comptes sont réels. La répartition <strong>cible</strong> (<code>config/target_allocation.json</code>) reste un exemple fictif — remplace-la par tes vraies cibles dès que tu les as.
-    « Autres » (or, etc.) est une catégorie à préciser plus tard.
+    ⚠️ Account balances/rates are real. The <strong>target</strong> allocation (<code>config/target_allocation.json</code>) is still a fictional example — replace it with your real targets once you have them.
+    "Other" (gold, etc.) is a category to refine later.
   </div>
 
   <!-- ============================================================ -->
-  <!-- 1. VUE D'ENSEMBLE — tout le patrimoine, bourse comprise       -->
+  <!-- 1. OVERVIEW — whole net worth, investments included           -->
   <!-- ============================================================ -->
   <div class="mb-4">
-    <div class="section-title">Vue d'ensemble</div>
-    <div class="section-hint">Bourse + épargne, tous comptes confondus, par classe d'actif.</div>
+    <div class="section-title">Overview</div>
+    <div class="section-hint">Investments + savings, all accounts combined, by asset class.</div>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 mb-8">
     <div class="card p-5 flex flex-col justify-center">
-      <div class="stat-label">Patrimoine total</div>
+      <div class="stat-label">Total net worth</div>
       <div class="hero-value">{{ total|fr }} €</div>
       <div class="text-sm mt-1 ink-secondary">
-        dont {{ bourse_value|fr }} € en bourse et {{ epargne_total|fr }} € en épargne
+        including {{ bourse_value|fr }} € in investments and {{ epargne_total|fr }} € in savings
       </div>
     </div>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
       <div class="card p-4">
-        <div class="stat-label">Actions</div>
+        <div class="stat-label">Stocks</div>
         <div class="stat-value">{{ (by_category.get('Actions').value if by_category.get('Actions') else 0)|fr }} €</div>
-        <div class="ink-muted text-xs mt-1">{{ (by_category.get('Actions').actual_pct if by_category.get('Actions') else 0)|fr(1) }} % du total</div>
+        <div class="ink-muted text-xs mt-1">{{ (by_category.get('Actions').actual_pct if by_category.get('Actions') else 0)|fr(1) }} % of total</div>
       </div>
       <div class="card p-4">
-        <div class="stat-label">Obligations</div>
+        <div class="stat-label">Bonds</div>
         <div class="stat-value">{{ (by_category.get('Obligations').value if by_category.get('Obligations') else 0)|fr }} €</div>
       </div>
       <div class="card p-4">
-        <div class="stat-label">Fonds Euros</div>
+        <div class="stat-label">Euro Funds</div>
         <div class="stat-value">{{ (by_category.get('Fonds Euros').value if by_category.get('Fonds Euros') else 0)|fr }} €</div>
-        <div class="ink-muted text-xs mt-1">PEI, PER</div>
+        <div class="ink-muted text-xs mt-1">Employee savings, retirement plans</div>
       </div>
       <div class="card p-4">
-        <div class="stat-label">Livrets</div>
+        <div class="stat-label">Savings Accounts</div>
         <div class="stat-value">{{ (by_category.get('Livrets').value if by_category.get('Livrets') else 0)|fr }} €</div>
-        <div class="ink-muted text-xs mt-1">Livret A, PEL, Livret+, compte à terme, compte courant</div>
+        <div class="ink-muted text-xs mt-1">Regulated savings, term deposits, checking</div>
       </div>
       <div class="card p-4">
-        <div class="stat-label">Autres</div>
+        <div class="stat-label">Other</div>
         <div class="stat-value">{{ (by_category.get('Autres').value if by_category.get('Autres') else 0)|fr }} €</div>
-        <div class="ink-muted text-xs mt-1">Or</div>
+        <div class="ink-muted text-xs mt-1">Gold</div>
       </div>
     </div>
   </div>
 
   <!-- ============================================================ -->
-  <!-- ONGLETS                                                        -->
+  <!-- TABS                                                           -->
   <!-- ============================================================ -->
   <div class="tabs mt-4">
-    <button class="tab-btn active" data-tab-target="tab-repartition">Répartition</button>
-    <button class="tab-btn" data-tab-target="tab-objectifs">Objectifs</button>
-    <button class="tab-btn" data-tab-target="tab-comptes">Comptes</button>
+    <button class="tab-btn active" data-tab-target="tab-repartition">Allocation</button>
+    <button class="tab-btn" data-tab-target="tab-objectifs">Targets</button>
+    <button class="tab-btn" data-tab-target="tab-comptes">Accounts</button>
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Onglet 1 — RÉPARTITION                                       -->
+  <!-- Tab 1 — ALLOCATION                                            -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-repartition" class="tab-panel active">
     <div class="mb-4">
-      <div class="section-title">Répartition du patrimoine</div>
-      <div class="section-hint">Poids de chaque classe d'actif dans le total — détail compte par compte dans l'onglet Comptes.</div>
+      <div class="section-title">Net worth allocation</div>
+      <div class="section-hint">Weight of each asset class in the total — per-account detail in the Accounts tab.</div>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-repartition"></div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Répartition par banque</div>
-      <div class="section-hint">Même patrimoine, vu par établissement — bourse ventilée par courtier, épargne par banque.</div>
+      <div class="section-title">Allocation by bank</div>
+      <div class="section-hint">Same net worth, viewed by institution — investments broken down by broker, savings by bank.</div>
     </div>
     <div class="card p-4 mb-6">
       <div id="chart-bank-repartition"></div>
@@ -87,12 +87,12 @@
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Onglet 2 — OBJECTIFS                                          -->
+  <!-- Tab 2 — TARGETS                                               -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-objectifs" class="tab-panel">
     <div class="mb-4">
-      <div class="section-title">Suis-je aligné avec mes cibles ?</div>
-      <div class="section-hint">Écart entre la répartition actuelle et la répartition cible définie dans <code>config/target_allocation.json</code>. Bleu = sous-pondéré (marge pour investir), rouge = sur-pondéré.</div>
+      <div class="section-title">Am I on track with my targets?</div>
+      <div class="section-hint">Gap between the current allocation and the target allocation defined in <code>config/target_allocation.json</code>. Blue = underweight (room to invest), red = overweight.</div>
     </div>
     <div class="card p-4 mb-6">
       <div id="chart-target-gap"></div>
@@ -102,12 +102,12 @@
       <div class="overflow-x-auto hidden md:block">
         <table>
           <thead>
-            <tr><th>Catégorie</th><th>Montant</th><th>Actuel</th><th>Cible</th><th>Écart</th></tr>
+            <tr><th>Category</th><th>Amount</th><th>Current</th><th>Target</th><th>Gap</th></tr>
           </thead>
           <tbody>
             {% for c in comparison %}
             <tr>
-              <td class="ink-primary">{{ c.category }}</td>
+              <td class="ink-primary">{{ category_labels.get(c.category, c.category) }}</td>
               <td class="tabular">{{ c.value|fr }} €</td>
               <td class="tabular">{{ c.actual_pct|fr(1) }} %</td>
               <td class="tabular ink-secondary">{{ c.target_pct|fr(1) if c.target_pct is not none else "—" }}{{ " %" if c.target_pct is not none else "" }}</td>
@@ -121,8 +121,8 @@
         {% for c in comparison %}
         <div class="list-row">
           <div class="list-row-main">
-            <div class="list-row-title">{{ c.category }}</div>
-            <div class="list-row-sub">{{ c.value|fr }} € · cible {{ c.target_pct|fr(1) if c.target_pct is not none else "—" }}{{ " %" if c.target_pct is not none else "" }}</div>
+            <div class="list-row-title">{{ category_labels.get(c.category, c.category) }}</div>
+            <div class="list-row-sub">{{ c.value|fr }} € · target {{ c.target_pct|fr(1) if c.target_pct is not none else "—" }}{{ " %" if c.target_pct is not none else "" }}</div>
           </div>
           <div class="list-row-end">
             <div class="list-row-value">{{ c.actual_pct|fr(1) }} %</div>
@@ -135,32 +135,32 @@
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Onglet 3 — COMPTES                                            -->
+  <!-- Tab 3 — ACCOUNTS                                              -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-comptes" class="tab-panel">
     <div class="mb-4">
-      <div class="section-title">Détail des comptes</div>
-      <div class="section-hint">Hors bourse — voir la page Bourse pour le détail des positions.</div>
+      <div class="section-title">Account detail</div>
+      <div class="section-hint">Excludes investments — see the Investments page for position detail.</div>
     </div>
     <div class="card p-4 mb-6">
       <div class="overflow-x-auto hidden md:block">
         <table>
           <thead>
-            <tr><th>Compte</th><th>Banque</th><th>Catégorie</th><th>Solde</th><th>Taux</th><th>Plafond / échéance</th></tr>
+            <tr><th>Account</th><th>Bank</th><th>Category</th><th>Balance</th><th>Rate</th><th>Ceiling / maturity</th></tr>
           </thead>
           <tbody>
             {% for a in accounts %}
             <tr>
               <td class="ink-primary">{{ a.label }}</td>
               <td class="ink-secondary">{{ a.bank }}</td>
-              <td class="ink-secondary">{{ a.category }}</td>
+              <td class="ink-secondary">{{ category_labels.get(a.category, a.category) }}</td>
               <td class="tabular">{{ a.balance|fr }} €</td>
               <td class="tabular">{{ a.rate_pct|fr(2) if a.rate_pct is not none else "—" }}{{ " %" if a.rate_pct is not none else "" }}</td>
               <td class="tabular ink-secondary">
                 {%- if a.ceiling_pct is not none -%}
-                  {{ a.ceiling_pct|fr(0) }} % du plafond ({{ a.ceiling|fr }} €)
+                  {{ a.ceiling_pct|fr(0) }} % of ceiling ({{ a.ceiling|fr }} €)
                 {%- elif a.maturity_date_fr -%}
-                  Échéance {{ a.maturity_date_fr }}
+                  Matures {{ a.maturity_date_fr }}
                 {%- else -%}
                   —
                 {%- endif -%}
@@ -175,16 +175,16 @@
         <div class="list-row">
           <div class="list-row-main">
             <div class="list-row-title">{{ a.label }}</div>
-            <div class="list-row-sub">{{ a.bank }} · {{ a.category }}</div>
+            <div class="list-row-sub">{{ a.bank }} · {{ category_labels.get(a.category, a.category) }}</div>
           </div>
           <div class="list-row-end">
             <div class="list-row-value">{{ a.balance|fr }} €</div>
             <div class="list-row-meta ink-secondary">
               {%- if a.rate_pct is not none -%}{{ a.rate_pct|fr(2) }} %{%- endif -%}
               {%- if a.ceiling_pct is not none -%}
-                {{ ' · ' if a.rate_pct is not none }}{{ a.ceiling_pct|fr(0) }} % plafond
+                {{ ' · ' if a.rate_pct is not none }}{{ a.ceiling_pct|fr(0) }} % of ceiling
               {%- elif a.maturity_date_fr -%}
-                {{ ' · ' if a.rate_pct is not none }}éch. {{ a.maturity_date_fr }}
+                {{ ' · ' if a.rate_pct is not none }}matures {{ a.maturity_date_fr }}
               {%- endif -%}
             </div>
           </div>

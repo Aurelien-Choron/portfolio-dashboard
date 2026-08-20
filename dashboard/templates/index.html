@@ -1,108 +1,108 @@
 {% extends "base.html" %}
-{% block title %}Bourse — Portfolio Dashboard{% endblock %}
+{% block title %}Investments — Portfolio Dashboard{% endblock %}
 
 {% block header_right %}
 {% if not empty %}
-<span class="ink-muted text-sm">Mis à jour le {{ last_update }}</span>
+<span class="ink-muted text-sm">Last updated {{ last_update }}</span>
 {% endif %}
 {% endblock %}
 
 {% block content %}
   {% if empty %}
   <div class="card p-8 text-center ink-secondary">
-    Aucune transaction trouvée. Dépose tes exports CSV dans
-    <code class="ink-primary">data/fortuneo/</code> et
-    <code class="ink-primary">data/trade_republic/</code>, puis recharge la page.
+    No transactions found. Drop your CSV exports into
+    <code class="ink-primary">data/fortuneo/</code> and
+    <code class="ink-primary">data/trade_republic/</code>, then reload the page.
   </div>
   {% else %}
 
   <!-- ============================================================ -->
-  <!-- VUE D'ENSEMBLE — toujours visible, quel que soit l'onglet     -->
+  <!-- OVERVIEW — always visible, regardless of the active tab       -->
   <!-- ============================================================ -->
   <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 mb-4">
     <div class="card p-5 flex flex-col justify-center">
-      <div class="stat-label">Valeur totale du portefeuille</div>
+      <div class="stat-label">Total portfolio value</div>
       <div class="hero-value">{{ summary.total_value|fr }} €</div>
       <div class="mt-2">
         <span class="chip-delta {{ 'is-good' if summary.unrealized_pnl_pct >= 0 else 'is-critical' }}">
           {{ '▲' if summary.unrealized_pnl_pct >= 0 else '▼' }} {{ summary.unrealized_pnl_pct|fr(1, signed=True) }} %
         </span>
-        <span class="ink-muted text-xs ml-1">depuis l'achat des positions ouvertes</span>
+        <span class="ink-muted text-xs ml-1">since open positions were bought</span>
       </div>
       <div id="chart-sparkline" class="mt-2"></div>
     </div>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
       <div class="card p-4 {{ 'card-accent-good' if summary.unrealized_pnl >= 0 else 'card-accent-critical' }}">
-        <div class="stat-label" title="Gain ou perte sur les positions encore détenues, si elles étaient vendues aujourd'hui">Plus-value latente (non réalisée)</div>
+        <div class="stat-label" title="Gain or loss on positions still held, if sold today">Unrealized gain/loss</div>
         <div class="stat-value {{ 'delta-good' if summary.unrealized_pnl >= 0 else 'delta-critical' }}">{{ summary.unrealized_pnl|fr(signed=True) }} €</div>
       </div>
       <div class="card p-4 {{ 'card-accent-good' if summary.realized_pnl >= 0 else 'card-accent-critical' }}">
-        <div class="stat-label" title="Gain ou perte déjà encaissé sur les titres déjà vendus">Plus-value réalisée</div>
+        <div class="stat-label" title="Gain or loss already booked on securities already sold">Realized gain/loss</div>
         <div class="stat-value {{ 'delta-good' if summary.realized_pnl >= 0 else 'delta-critical' }}">{{ summary.realized_pnl|fr(signed=True) }} €</div>
       </div>
       <div class="card p-4">
-        <div class="stat-label" title="Hors intérêts du compte courant, sans lien avec la performance boursière">Dividendes perçus</div>
+        <div class="stat-label" title="Excludes checking-account interest — unrelated to market performance">Dividends received</div>
         <div class="stat-value">{{ summary.dividends|fr }} €</div>
       </div>
       <div class="card p-4">
-        <div class="stat-label" title="Courtage payé aux courtiers sur les ordres passés">Frais de courtage payés</div>
+        <div class="stat-label" title="Brokerage fees paid on executed orders">Brokerage fees paid</div>
         <div class="stat-value">{{ summary.fees|fr }} €</div>
       </div>
       <div class="card p-4">
-        <div class="stat-label">Coût des positions ouvertes</div>
+        <div class="stat-label">Cost of open positions</div>
         <div class="stat-value">{{ summary.total_cost|fr }} €</div>
       </div>
       <div class="card p-4">
-        <div class="stat-label">Positions ouvertes</div>
-        <div class="stat-value">{{ summary.nb_positions }} <span class="ink-muted text-sm font-normal">({{ summary.nb_prix_live }} en prix live)</span></div>
+        <div class="stat-label">Open positions</div>
+        <div class="stat-value">{{ summary.nb_positions }} <span class="ink-muted text-sm font-normal">({{ summary.nb_prix_live }} live-priced)</span></div>
       </div>
     </div>
   </div>
 
   {% if summary.nb_prix_live < summary.nb_positions %}
   <div class="card p-3 mb-6 text-sm ink-secondary">
-    ⚠️ {{ summary.nb_prix_live }}/{{ summary.nb_positions }} positions ont un prix de marché en direct (via yfinance).
-    Les autres sont valorisées à leur prix moyen d'achat faute de ticker mappé dans
-    <code>config/tickers.json</code> — voir la colonne « source du prix » du tableau des positions (onglet Répartition).
+    ⚠️ {{ summary.nb_prix_live }}/{{ summary.nb_positions }} positions have a live market price (via yfinance).
+    The others are valued at their average purchase price for lack of a ticker mapped in
+    <code>config/tickers.json</code> — see the "price source" column in the positions table (Allocation tab).
   </div>
   {% endif %}
 
   <!-- ============================================================ -->
-  <!-- ONGLETS — Performance d'abord : c'est ce qui prime.           -->
+  <!-- TABS — Performance first: that's what matters most.           -->
   <!-- ============================================================ -->
   <div class="tabs mt-4">
     <button class="tab-btn active" data-tab-target="tab-performance">Performance</button>
-    <button class="tab-btn" data-tab-target="tab-repartition">Répartition</button>
-    <button class="tab-btn" data-tab-target="tab-frais">Frais &amp; arbitrage</button>
+    <button class="tab-btn" data-tab-target="tab-repartition">Allocation</button>
+    <button class="tab-btn" data-tab-target="tab-frais">Fees &amp; Rebalancing</button>
     <button class="tab-btn" data-tab-target="tab-diversification">Diversification</button>
-    <button class="tab-btn" data-tab-target="tab-journal">Journal</button>
+    <button class="tab-btn" data-tab-target="tab-journal">Activity</button>
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Onglet 1 — PERFORMANCE                                       -->
+  <!-- Tab 1 — PERFORMANCE                                          -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-performance" class="tab-panel active">
     <div class="mb-4">
-      <div class="section-title">Évolution du portefeuille</div>
-      <div class="section-hint">▲ = achat, ▼ = vente — survolez un repère pour voir l'actif et le montant.</div>
+      <div class="section-title">Portfolio value over time</div>
+      <div class="section-hint">▲ = buy, ▼ = sell — hover a marker to see the asset and amount.</div>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-performance"></div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Classement par rendement mensuel moyen</div>
-      <div class="section-hint">Normalisé par ancienneté : un fonds détenu depuis peu et un autre détenu depuis des années restent comparables.</div>
+      <div class="section-title">Ranking by average monthly return</div>
+      <div class="section-hint">Normalized by holding period: a fund held for a few months and one held for years remain comparable.</div>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-ranking"></div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Détail par actif</div>
+      <div class="section-title">Detail by asset</div>
       <div class="section-hint">
-        Rendement total = (plus-value réalisée + latente + dividendes) / total investi depuis toujours sur cet actif.
-        Rendement mensuel moyen = rendement total ÷ nombre de mois depuis le premier achat (moyenne simple, pas un taux composé).
+        Total return = (realized + unrealized gain + dividends) / total ever invested in this asset.
+        Average monthly return = total return ÷ number of months since the first purchase (simple average, not a compounded rate).
       </div>
     </div>
     <div class="card p-4 mb-6">
@@ -110,9 +110,9 @@
         <table>
           <thead>
             <tr>
-              <th>Actif</th><th>Courtier</th><th>Total investi</th><th>Total désinvesti</th>
-              <th>Plus-value réalisée</th><th>Plus-value latente</th><th>Dividendes</th><th>Gain total</th>
-              <th>Rendement total</th><th>Rdt. mensuel moyen (%)</th><th>Rdt. mensuel moyen (€)</th><th>Détenu depuis</th>
+              <th>Asset</th><th>Broker</th><th>Total invested</th><th>Total divested</th>
+              <th>Realized gain</th><th>Unrealized gain</th><th>Dividends</th><th>Total gain</th>
+              <th>Total return</th><th>Avg. monthly return (%)</th><th>Avg. monthly return (€)</th><th>Held for</th>
             </tr>
           </thead>
           <tbody>
@@ -129,7 +129,7 @@
               <td class="tabular {{ 'delta-good' if p.total_return_pct >= 0 else 'delta-critical' }}">{{ p.total_return_pct|fr(1, signed=True) if p.total_return_pct is not none else "—" }} %</td>
               <td class="tabular {{ 'delta-good' if p.monthly_avg_pct >= 0 else 'delta-critical' }}">{{ p.monthly_avg_pct|fr(2, signed=True) if p.monthly_avg_pct is not none else "—" }} %</td>
               <td class="tabular {{ 'delta-good' if p.monthly_avg_eur >= 0 else 'delta-critical' }}">{{ p.monthly_avg_eur|fr(signed=True) if p.monthly_avg_eur is not none else "—" }} €</td>
-              <td class="tabular ink-secondary">{{ p.months_held|fr(0) }} mois</td>
+              <td class="tabular ink-secondary">{{ p.months_held|fr(0) }} mo</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -140,7 +140,7 @@
         <div class="list-row">
           <div class="list-row-main">
             <div class="list-row-title">{{ p.name }}</div>
-            <div class="list-row-sub">{{ broker_labels.get(p.broker, p.broker) }} · investi {{ p.total_bought|fr }} € · {{ p.months_held|fr(0) }} mois</div>
+            <div class="list-row-sub">{{ broker_labels.get(p.broker, p.broker) }} · invested {{ p.total_bought|fr }} € · {{ p.months_held|fr(0) }} mo</div>
           </div>
           <div class="list-row-end">
             <div class="list-row-value {{ 'delta-good' if p.total_return_pct >= 0 else 'delta-critical' }}">{{ p.total_return_pct|fr(1, signed=True) if p.total_return_pct is not none else "—" }} %</div>
@@ -153,15 +153,15 @@
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Onglet 2 — RÉPARTITION                                       -->
+  <!-- Tab 2 — ALLOCATION                                           -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-repartition" class="tab-panel">
     <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mb-8">
       <div class="card p-4">
         <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
           <div>
-            <h2 class="text-sm font-medium">Répartition par actif</h2>
-            <div class="ink-muted text-xs hidden md:block">Taille = poids dans le portefeuille, couleur = plus-value latente</div>
+            <h2 class="text-sm font-medium">Allocation by asset</h2>
+            <div class="ink-muted text-xs hidden md:block">Size = weight in portfolio, color = unrealized gain/loss</div>
           </div>
           <div class="flex items-center gap-2 text-xs ink-secondary shrink-0">
             <span class="tabular">−{{ allocation_pnl_bound|fr(0) }} %</span>
@@ -172,22 +172,22 @@
         <div id="chart-allocation"></div>
       </div>
       <div class="card p-4 flex flex-col self-start">
-        <h2 class="text-xs font-medium mb-1 ink-muted">Répartition par courtier</h2>
+        <h2 class="text-xs font-medium mb-1 ink-muted">Allocation by broker</h2>
         <div id="chart-broker"></div>
       </div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Positions ouvertes</div>
-      <div class="section-hint">Inventaire : ce que tu détiens et sa valorisation actuelle. Le détail des gains/rendements est dans l'onglet Performance.</div>
+      <div class="section-title">Open positions</div>
+      <div class="section-hint">Inventory: what you hold and its current valuation. Gain/return detail is in the Performance tab.</div>
     </div>
     <div class="card p-4 mb-6">
       <div class="overflow-x-auto hidden md:block">
         <table>
           <thead>
             <tr>
-              <th>Actif</th><th>Courtier</th><th>Quantité</th><th>Prix moyen d'achat</th><th>Prix actuel</th>
-              <th>Valeur</th><th>Source du prix</th>
+              <th>Asset</th><th>Broker</th><th>Quantity</th><th>Avg. purchase price</th><th>Current price</th>
+              <th>Value</th><th>Price source</th>
             </tr>
           </thead>
           <tbody>
@@ -223,18 +223,18 @@
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Onglet 3 — FRAIS & ARBITRAGE                                  -->
+  <!-- Tab 3 — FEES & REBALANCING                                   -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-frais" class="tab-panel">
     <div class="mb-4">
-      <div class="section-title">Frais des fonds</div>
-      <div class="section-hint">Frais de gestion annuels (TER) des ETF/fonds détenus — prélevés en continu par l'émetteur, déjà inclus dans le prix, mais pas dans « Frais de courtage payés » ci-dessus.</div>
+      <div class="section-title">Fund fees</div>
+      <div class="section-hint">Annual management fees (TER) of the ETFs/funds held — charged continuously by the issuer, already baked into the price, but not included in "Brokerage fees paid" above.</div>
     </div>
     <div class="card p-4 mb-8">
       <div class="overflow-x-auto hidden md:block">
         <table>
           <thead>
-            <tr><th>Fonds</th><th>Courtier</th><th>Frais annuels (TER)</th><th>Valeur de la position</th><th>Coût estimé / an</th></tr>
+            <tr><th>Fund</th><th>Broker</th><th>Annual fee (TER)</th><th>Position value</th><th>Estimated cost / year</th></tr>
           </thead>
           <tbody>
             {% for f in fees_rows %}
@@ -249,8 +249,8 @@
           </tbody>
           <tfoot>
             <tr>
-              <td class="ink-secondary font-medium" colspan="4">Total estimé</td>
-              <td class="tabular font-semibold">{{ total_annual_fees|fr(2) }} €/an</td>
+              <td class="ink-secondary font-medium" colspan="4">Estimated total</td>
+              <td class="tabular font-semibold">{{ total_annual_fees|fr(2) }} €/yr</td>
             </tr>
           </tfoot>
         </table>
@@ -263,27 +263,27 @@
             <div class="list-row-sub">{{ broker_labels.get(f.broker, f.broker) }} · TER {{ f.ter_pct|fr(2) }} % · {{ f.current_value|fr }} €</div>
           </div>
           <div class="list-row-end">
-            <div class="list-row-value">{{ f.annual_fee_eur|fr(2) }} € <span class="ink-muted text-xs font-normal">/an</span></div>
+            <div class="list-row-value">{{ f.annual_fee_eur|fr(2) }} € <span class="ink-muted text-xs font-normal">/yr</span></div>
           </div>
         </div>
         {% endfor %}
         <div class="list-row">
-          <div class="list-row-main"><div class="list-row-title ink-secondary">Total estimé</div></div>
-          <div class="list-row-end"><div class="list-row-value">{{ total_annual_fees|fr(2) }} €/an</div></div>
+          <div class="list-row-main"><div class="list-row-title ink-secondary">Estimated total</div></div>
+          <div class="list-row-end"><div class="list-row-value">{{ total_annual_fees|fr(2) }} €/yr</div></div>
         </div>
       </div>
-      <div class="section-hint mt-3">Les actions en direct (DroneShield, Take-Two, Leonardo, Rheinmetall) n'ont pas de frais de gestion — seuls les ETF/ETC en ont.</div>
+      <div class="section-hint mt-3">Individual stocks have no management fees — only ETFs/ETCs do.</div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Où investir votre prochain versement</div>
-      <div class="section-hint">Comparatif de décision : poids actuel dans le portefeuille, performance et frais de chaque ligne. Triée par poids croissant (les plus sous-représentées en premier) — à vous d'arbitrer.</div>
+      <div class="section-title">Where to invest your next contribution</div>
+      <div class="section-hint">Decision helper: current weight in the portfolio, performance and fees for each line. Sorted by ascending weight (most under-represented first) — the call is yours.</div>
     </div>
     <div class="card p-4 mb-6">
       <div class="overflow-x-auto hidden md:block">
         <table>
           <thead>
-            <tr><th>Actif</th><th>Courtier</th><th>Poids actuel</th><th>Rdt. mensuel moyen</th><th>Frais annuels (TER)</th></tr>
+            <tr><th>Asset</th><th>Broker</th><th>Current weight</th><th>Avg. monthly return</th><th>Annual fee (TER)</th></tr>
           </thead>
           <tbody>
             {% for p in invest_next %}
@@ -307,7 +307,7 @@
           </div>
           <div class="list-row-end">
             <div class="list-row-value">{{ p.allocation_pct|fr(1) }} %</div>
-            <div class="list-row-meta {{ 'delta-good' if p.monthly_avg_pct >= 0 else 'delta-critical' }}">{{ p.monthly_avg_pct|fr(2, signed=True) if p.monthly_avg_pct is not none else "—" }} %/mois</div>
+            <div class="list-row-meta {{ 'delta-good' if p.monthly_avg_pct >= 0 else 'delta-critical' }}">{{ p.monthly_avg_pct|fr(2, signed=True) if p.monthly_avg_pct is not none else "—" }} %/mo</div>
           </div>
         </div>
         {% endfor %}
@@ -316,21 +316,21 @@
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Onglet 4 — DIVERSIFICATION                                    -->
+  <!-- Tab 4 — DIVERSIFICATION                                      -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-diversification" class="tab-panel">
     <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
       <div>
-        <div class="section-title">Diversification géographique et sectorielle</div>
-        <div class="section-hint">Calculée à partir de la composition de chaque fonds (saisie dans <code>config/exposure.json</code> d'après sa fiche factsheet — un instantané à rafraîchir de temps en temps, pas une donnée temps réel).</div>
+        <div class="section-title">Geographic &amp; sector diversification</div>
+        <div class="section-hint">Computed from each fund's composition (entered in <code>config/exposure.json</code> from its factsheet — a snapshot to refresh occasionally, not real-time data).</div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <div class="flex rounded-lg overflow-hidden border" style="border-color: var(--border);">
-          <button type="button" class="pill-btn active" id="div-dim-country" data-dim="country">Pays</button>
-          <button type="button" class="pill-btn" id="div-dim-sector" data-dim="sector">Secteur</button>
+          <button type="button" class="pill-btn active" id="div-dim-country" data-dim="country">Country</button>
+          <button type="button" class="pill-btn" id="div-dim-sector" data-dim="sector">Sector</button>
         </div>
         <select id="div-fund-select" class="text-xs rounded-lg border px-3 py-1.5" style="border-color: var(--border); background: var(--surface-1); color: var(--text-primary); min-height: 40px;">
-          <option value="__portfolio__">Tout le portefeuille</option>
+          <option value="__portfolio__">Whole portfolio</option>
           {% for f in diversification.funds %}
           <option value="{{ f.asset_key }}">{{ f.name }}</option>
           {% endfor %}
@@ -346,15 +346,15 @@
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Onglet 5 — JOURNAL                                            -->
+  <!-- Tab 5 — ACTIVITY                                             -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-journal" class="tab-panel">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <div class="card p-4">
-        <h2 class="text-sm font-medium mb-3">Dernières transactions</h2>
+        <h2 class="text-sm font-medium mb-3">Recent transactions</h2>
         <div class="overflow-x-auto hidden md:block">
           <table>
-            <thead><tr><th>Date</th><th>Type</th><th>Actif</th><th>Courtier</th><th>Montant</th></tr></thead>
+            <thead><tr><th>Date</th><th>Type</th><th>Asset</th><th>Broker</th><th>Amount</th></tr></thead>
             <tbody>
               {% for t in recent_tx %}
               <tr>
@@ -383,10 +383,10 @@
         </div>
       </div>
       <div class="card p-4">
-        <h2 class="text-sm font-medium mb-3">Dividendes perçus</h2>
+        <h2 class="text-sm font-medium mb-3">Dividends received</h2>
         <div class="overflow-x-auto hidden md:block">
           <table>
-            <thead><tr><th>Date</th><th>Actif</th><th>Courtier</th><th>Montant</th></tr></thead>
+            <thead><tr><th>Date</th><th>Asset</th><th>Broker</th><th>Amount</th></tr></thead>
             <tbody>
               {% for d in dividends %}
               <tr>
@@ -429,15 +429,15 @@
   renderFig('chart-allocation', figs.allocation);
   renderFig('chart-broker', figs.broker);
 
-  // Onglet Diversification : la carte (pays/secteur, tout le portefeuille ou un
-  // seul fonds) est recalculée côté client à partir des données déjà agrégées
-  // côté serveur — pas d'aller-retour réseau pour changer de vue.
+  // Diversification tab: the chart (country/sector, whole portfolio or a single
+  // fund) is recomputed client-side from data already aggregated server-side —
+  // no network round-trip to switch views.
   const diversification = {{ diversification_json | safe }};
   let divDimension = 'country';
   let divFundKey = '__portfolio__';
 
   function fmtEur(v) {
-    return Math.round(v).toLocaleString('fr-FR') + ' €';
+    return Math.round(v).toLocaleString('en-US').replace(/,/g, ' ') + ' €';
   }
 
   function currentDiversificationRows() {

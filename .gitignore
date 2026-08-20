@@ -4,7 +4,7 @@ __pycache__/
 venv/
 *.log
 
-# Données personnelles : jamais versionnées
+# Personal data: never version-controlled
 data/fortuneo/*.csv
 data/trade_republic/*.csv
 data/processed/*.csv
@@ -15,14 +15,14 @@ config/tickers.json
 config/fees.json
 config/asset_classes.json
 config/target_allocation.json
-# (demo/data/... et demo/config/... ne sont PAS concernés par ces règles :
-# ancrées à la racine, elles ne s'appliquent qu'à data/ et config/ eux-mêmes.
-# demo/ contient volontairement des équivalents fictifs, committés pour la démo publique.)
+# (demo/data/... and demo/config/... are NOT affected by these rules: anchored
+# to the repo root, they only apply to data/ and config/ themselves.
+# demo/ intentionally holds fictional equivalents, committed for the public demo.)
 
-# Cache de prix marché (market_data.py) : régénéré automatiquement
+# Market price cache (market_data.py): regenerated automatically
 data/cache/
 
-# demo/ : seuls les fichiers "source" (CSV + config) sont committés — le cache
-# de prix et le journal normalisé qu'une exécution locale y régénère ne le sont pas.
+# demo/: only the "source" files (CSV + config) are committed — the price
+# cache and normalized journal a local run regenerates there are not.
 demo/data/cache/
 demo/data/processed/

@@ -1,11 +1,12 @@
-"""Performance par actif depuis le premier achat : rendement total et mensualisé.
+"""Per-asset performance since the first purchase: total and monthly return.
 
-Méthode (volontairement simple, cohérente avec le reste du projet — pas de TRI/XIRR) :
-- rendement total = (plus-value réalisée + plus-value latente + dividendes) / total investi
-  (total investi = somme de tous les achats jamais faits sur cet actif, pas seulement
-  le coût des titres encore détenus : un aller-retour soldé compte pour son capital engagé).
-- rendement mensuel moyen = rendement total / nombre de mois écoulés depuis le premier achat
-  (moyenne simple sur toute la période, pas un taux composé/annualisé).
+Method (deliberately simple, consistent with the rest of the project — no IRR/XIRR):
+- total return = (realized gain + unrealized gain + dividends) / total invested
+  (total invested = sum of every purchase ever made on this asset, not just the
+  cost of the shares still held: a fully closed round trip still counts its
+  committed capital).
+- average monthly return = total return / number of months since the first purchase
+  (simple average over the whole period, not a compounded/annualized rate).
 """
 
 import pandas as pd
@@ -46,11 +47,11 @@ def build_asset_performance(transactions: pd.DataFrame, positions_df: pd.DataFra
     df["total_sold"] = df["total_sold"].fillna(0.0)
 
     df["total_gain"] = df["realized_pnl"] + df["unrealized_pnl"] + df["dividends"]
-    total_bought_safe = df["total_bought"].mask(df["total_bought"] == 0)  # NaN (pas pd.NA) pour rester comparable en Jinja
+    total_bought_safe = df["total_bought"].mask(df["total_bought"] == 0)  # NaN (not pd.NA), to stay comparable in Jinja
     df["total_return_pct"] = (df["total_gain"] / total_bought_safe) * 100
 
     months_held = (today - df["first_buy_date"]).dt.days / DAYS_PER_MONTH
-    df["months_held"] = months_held.clip(lower=1 / DAYS_PER_MONTH)  # évite la division par ~0 le jour même
+    df["months_held"] = months_held.clip(lower=1 / DAYS_PER_MONTH)  # avoids dividing by ~0 on the purchase day itself
     df["monthly_avg_pct"] = df["total_return_pct"] / df["months_held"]
     df["monthly_avg_eur"] = df["total_gain"] / df["months_held"]
 

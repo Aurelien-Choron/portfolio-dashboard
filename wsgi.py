@@ -1,12 +1,11 @@
-"""Point d'entrée WSGI pour un serveur de production (gunicorn).
+"""WSGI entry point for a production server (gunicorn).
 
-dashboard/app.py est un script, pas un module de package (pas de __init__.py) :
-son propre sys.path.insert() suffit pour ses imports internes (market_data,
-analytics...), mais gunicorn a besoin d'un chemin d'import stable pour trouver
-l'objet Flask lui-même. On ajoute donc dashboard/ au sys.path ici et on
-réexporte `app` tel quel.
+dashboard/app.py is a script, not a package module (no __init__.py): its own
+sys.path.insert() is enough for its internal imports (market_data,
+analytics...), but gunicorn needs a stable import path to find the Flask
+object itself. So we add dashboard/ to sys.path here and re-export `app` as is.
 
-Usage : gunicorn wsgi:app
+Usage: gunicorn wsgi:app
 """
 import os
 import sys

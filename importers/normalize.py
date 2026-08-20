@@ -1,4 +1,4 @@
-"""Combine les imports Fortuneo + Trade Republic en un journal unique normalisé."""
+"""Combines the Fortuneo + Trade Republic imports into a single normalized journal."""
 
 import os
 
@@ -13,14 +13,14 @@ COLUMNS = [
 
 
 def asset_key(row) -> str:
-    """Clé d'agrégation d'un actif : ISIN si connu, sinon nom normalisé."""
+    """An asset's aggregation key: ISIN if known, otherwise its normalized name."""
     if row.get("isin"):
         return str(row["isin"])
-    return str(row.get("name") or "INCONNU").strip()
+    return str(row.get("name") or "UNKNOWN").strip()
 
 
 def load_all(data_root: str) -> pd.DataFrame:
-    """Charge, normalise et fusionne toutes les sources CSV disponibles."""
+    """Loads, normalizes, and merges every available CSV source."""
     fortuneo_df = fortuneo.load(os.path.join(data_root, "fortuneo"))
     tr_df = trade_republic.load(os.path.join(data_root, "trade_republic"))
     corrections_df = corrections.load(os.path.join(data_root, "corrections"))

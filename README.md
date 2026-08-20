@@ -1,107 +1,107 @@
 # 📊 Portfolio Dashboard
 
-Dashboard d'analyse de portefeuille boursier (PEA + CTO) à partir des exports CSV
-de courtiers (Fortuneo, Trade Republic). Reconstruit les positions et le PnL
-depuis le journal de transactions brut (pas d'API courtier), calcule les
-dividendes, les frais de gestion, la diversification géographique/sectorielle,
-et compare le patrimoine global (bourse + épargne) à une allocation cible.
+A stock portfolio analysis dashboard built from broker CSV exports (Fortuneo,
+Trade Republic). Rebuilds positions and PnL from the raw transaction journal
+(no broker API), computes dividends, management fees, geographic/sector
+diversification, and compares total net worth (investments + savings) against
+a target allocation.
 
-**[➡ Voir la démo en ligne](https://à-compléter-après-déploiement.onrender.com)**
-*(données 100 % fictives — voir [Confidentialité](#-confidentialité) ci-dessous.
-Le service gratuit s'endort après 15 min d'inactivité : le premier chargement
-peut prendre ~30 s.)*
+**[➡ Live demo](https://à-compléter-après-déploiement.onrender.com)**
+*(100% fictional data — see [Privacy](#privacy) below. The free-tier service
+sleeps after 15 min of inactivity: the first load can take ~30s.)*
 
-## Fonctionnalités
+## Features
 
-- **Reconstruction de positions** au coût moyen pondéré à partir du journal brut
-  (achats/ventes/dividendes), sans dépendre d'une API de courtier.
-- **Prix live** via [yfinance](https://pypi.org/project/yfinance/) pour les
-  actifs mappés (`config/tickers.json`), avec repli explicite sur le prix de
-  revient moyen pour les autres — jamais de prix inventé.
-- **Vue Bourse** : performance dans le temps, classement des actifs, répartition
-  par courtier, diversification géographique/sectorielle, frais de gestion
-  annuels, journal des transactions/dividendes.
-- **Vue Patrimoine global** : bourse + comptes d'épargne (Livret A, PEL,
-  assurance-vie...), comparaison à une allocation cible avec écarts.
-- **PWA installable** sur téléphone (icône d'accueil, plein écran), pensé
-  mobile-first (listes tactiles, graphiques compacts, navigation par onglets).
+- **Position reconstruction** at weighted average cost from the raw journal
+  (buys/sells/dividends), with no dependency on a broker API.
+- **Live prices** via [yfinance](https://pypi.org/project/yfinance/) for
+  mapped assets (`config/tickers.json`), with an explicit fallback to average
+  purchase price for the rest — never an invented price.
+- **Investments view**: performance over time, asset ranking, allocation by
+  broker, geographic/sector diversification, annual management fees,
+  transaction/dividend activity log.
+- **Net Worth view**: investments + savings accounts (regulated savings,
+  retirement plans, life insurance...), comparison against a target allocation
+  with gaps highlighted.
+- **Installable PWA** on a phone (home-screen icon, full screen), built
+  mobile-first (tap-friendly lists, compact charts, tab navigation).
 
 ## Architecture
 
 ```
 portfolio-dashboard/
-├── data/                    # Données RÉELLES — jamais commitées (.gitignore)
-│   ├── fortuneo/             # Exports "Historique des opérations" Fortuneo
-│   ├── trade_republic/       # Exports "transactions_*.csv" Trade Republic
-│   ├── accounts/accounts.json  # Comptes d'épargne, saisis à la main
-│   └── processed/            # transactions.csv normalisé (généré)
-├── config/                  # Mappings personnels — jamais commités (.gitignore)
-│   ├── tickers.json          # asset_key -> ticker Yahoo Finance
-│   ├── fees.json              # asset_key -> TER annuel (%)
-│   ├── asset_classes.json     # asset_key -> classe d'actif
-│   ├── target_allocation.json # allocation cible du patrimoine (%)
-│   └── exposure.json          # asset_key -> ventilation pays/secteur
-├── demo/                    # Équivalent 100 % FICTIF de data/ + config/,
-│   │                          committé pour la démo publique
-│   └── ...                   # même structure que data/ et config/
+├── data/                    # REAL data — never committed (.gitignore)
+│   ├── fortuneo/             # Fortuneo "transaction history" exports
+│   ├── trade_republic/       # Trade Republic "transactions_*.csv" exports
+│   ├── accounts/accounts.json  # Savings accounts, entered by hand
+│   └── processed/            # Normalized transactions.csv (generated)
+├── config/                  # Personal mappings — never committed (.gitignore)
+│   ├── tickers.json          # asset_key -> Yahoo Finance ticker
+│   ├── fees.json              # asset_key -> annual TER (%)
+│   ├── asset_classes.json     # asset_key -> asset class
+│   ├── target_allocation.json # target net worth allocation (%)
+│   └── exposure.json          # asset_key -> country/sector breakdown
+├── demo/                    # 100% FICTIONAL equivalent of data/ + config/,
+│   │                          committed for the public demo
+│   └── ...                   # same layout as data/ and config/
 ├── scripts/
-│   └── generate_demo_data.py # (Re)génère demo/ à partir de zéro
+│   └── generate_demo_data.py # (Re)generates demo/ from scratch
 ├── importers/
-│   ├── fortuneo.py            # Parseur Fortuneo (CSV ';', cp1252)
-│   ├── trade_republic.py      # Parseur Trade Republic (CSV ',', UTF-8)
-│   ├── corrections.py         # Achats correctifs manuels (historique incomplet)
-│   └── normalize.py           # Fusionne toutes les sources en un journal commun
+│   ├── fortuneo.py            # Fortuneo parser (CSV ';', cp1252)
+│   ├── trade_republic.py      # Trade Republic parser (CSV ',', UTF-8)
+│   ├── corrections.py         # Manual corrective buys (incomplete history)
+│   └── normalize.py           # Merges every source into one common journal
 ├── analytics/
-│   ├── positions.py           # Coût moyen pondéré + PnL réalisé
-│   ├── kpis.py                 # Agrégation des KPIs globaux
-│   ├── performance.py          # Valeur du portefeuille dans le temps
-│   ├── performance_by_asset.py # Performance par actif
-│   ├── patrimoine.py           # Vue patrimoine global (bourse + épargne)
-│   └── exposure.py             # Diversification géographique/sectorielle
-├── market_data.py            # Prix live via yfinance (+ cache disque)
-├── paths.py                  # Résolution data/config, override via PORTFOLIO_ROOT
+│   ├── positions.py           # Weighted average cost + realized PnL
+│   ├── kpis.py                 # Global KPI aggregation
+│   ├── performance.py          # Portfolio value over time
+│   ├── performance_by_asset.py # Per-asset performance
+│   ├── patrimoine.py           # Net worth view (investments + savings)
+│   └── exposure.py             # Geographic/sector diversification
+├── market_data.py            # Live prices via yfinance (+ disk cache)
+├── paths.py                  # data/config resolution, override via PORTFOLIO_ROOT
 ├── dashboard/
-│   ├── app.py                  # Serveur Flask + génération des graphiques Plotly
-│   └── templates/               # base.html, index.html (Bourse), patrimoine.html
-├── wsgi.py                    # Point d'entrée gunicorn (déploiement)
-├── main.py                    # Import CSV + résumé en ligne de commande
-├── Procfile / render.yaml     # Déploiement Render
+│   ├── app.py                  # Flask server + Plotly chart generation
+│   └── templates/               # base.html, index.html (Investments), patrimoine.html
+├── wsgi.py                    # gunicorn entry point (deployment)
+├── main.py                    # CSV import + command-line summary
+├── Procfile / render.yaml     # Render deployment
 └── requirements.txt
 ```
 
-## Setup (avec tes propres données)
+## Setup (with your own data)
 
 ```bash
 pip install -r requirements.txt
 ```
 
-1. Déposer les exports CSV dans `data/fortuneo/` et `data/trade_republic/`
-   (plusieurs fichiers acceptés par dossier, dédupliqués automatiquement).
-2. Renseigner `data/accounts/accounts.json` avec tes comptes d'épargne (voir
-   `analytics/patrimoine.py` pour le schéma attendu).
-3. (Optionnel mais recommandé) Compléter `config/tickers.json` avec les tickers
-   Yahoo Finance de chaque actif détenu, pour obtenir des prix live plutôt que le
-   prix de revient moyen (PRU). Vérifier chaque ticker sur
-   [finance.yahoo.com](https://finance.yahoo.com) avant de le renseigner —
-   un mauvais ticker fausserait la valorisation.
-4. Compléter `config/asset_classes.json`, `config/fees.json`,
-   `config/target_allocation.json` et `config/exposure.json` selon les mêmes clés.
-5. Lancer le résumé en ligne de commande :
+1. Drop your CSV exports into `data/fortuneo/` and `data/trade_republic/`
+   (multiple files per folder are supported, deduplicated automatically).
+2. Fill in `data/accounts/accounts.json` with your savings accounts (see
+   `analytics/patrimoine.py` for the expected schema).
+3. (Optional but recommended) Fill in `config/tickers.json` with the Yahoo
+   Finance ticker of every asset you hold, to get live prices instead of the
+   average purchase price. Check each ticker on
+   [finance.yahoo.com](https://finance.yahoo.com) before entering it — a wrong
+   ticker would skew the valuation.
+4. Fill in `config/asset_classes.json`, `config/fees.json`,
+   `config/target_allocation.json`, and `config/exposure.json` using the same keys.
+5. Run the command-line summary:
    ```bash
    python main.py
    ```
-6. Lancer le dashboard :
+6. Start the dashboard:
    ```bash
    python dashboard/app.py
    ```
-   Puis ouvrir **http://localhost:5050** (accessible aussi depuis le même
-   Wi-Fi via l'IP affichée au démarrage — utile pour tester sur mobile).
+   Then open **http://localhost:5050** (also reachable from the same Wi-Fi
+   via the IP printed at startup — handy for testing on a phone).
 
-## Mode démo (sans données personnelles)
+## Demo mode (no personal data)
 
-L'app peut tourner entièrement sur un jeu de données fictif, via la variable
-d'environnement `PORTFOLIO_ROOT` qui redirige `data/` et `config/` vers un autre
-dossier de même structure :
+The app can run entirely on a fictional dataset, via the `PORTFOLIO_ROOT`
+environment variable, which redirects `data/` and `config/` to another
+directory with the same layout:
 
 ```bash
 # Windows PowerShell
@@ -110,65 +110,66 @@ $env:PORTFOLIO_ROOT = "demo"; python dashboard/app.py
 PORTFOLIO_ROOT=demo python dashboard/app.py
 ```
 
-Le contenu de `demo/` est généré par `scripts/generate_demo_data.py` — un
-portefeuille et des comptes entièrement inventés, construits sur de vrais
-tickers cotés (Apple, LVMH, Sanofi, Coca-Cola, ETF monde) pour que les prix
-live restent crédibles. C'est ce dossier qui alimente le déploiement public.
+The contents of `demo/` are generated by `scripts/generate_demo_data.py` — a
+fully invented portfolio and set of accounts, built on real, publicly traded
+tickers (Apple, LVMH, Sanofi, Coca-Cola, world-equity ETFs) so live prices stay
+credible. This is the folder that powers the public deployment.
 
-## Déploiement (Render)
+## Deployment (Render)
 
-Le repo inclut un `render.yaml` prêt à l'emploi :
+The repo includes a ready-to-use `render.yaml`:
 
-1. Créer un compte [Render](https://render.com) et connecter le repo GitHub.
-2. **New +** → **Blueprint**, sélectionner ce repo — Render lit `render.yaml`
-   et configure automatiquement le service (`gunicorn wsgi:app`,
+1. Create a [Render](https://render.com) account and connect the GitHub repo.
+2. **New +** → **Blueprint**, select this repo — Render reads `render.yaml`
+   and configures the service automatically (`gunicorn wsgi:app`,
    `PORTFOLIO_ROOT=demo`).
-3. Déployer. Le plan gratuit s'endort après 15 min d'inactivité (premier
-   chargement plus lent après une pause).
+3. Deploy. The free plan sleeps after 15 min of inactivity (slower first load
+   after a pause).
 
-Le serveur de dev Flask (`python dashboard/app.py`) n'est **pas** utilisé en
-production — `wsgi.py` + `gunicorn` s'en chargent.
+The Flask dev server (`python dashboard/app.py`) is **not** used in
+production — `wsgi.py` + `gunicorn` handle that.
 
-## Formats CSV supportés
+## Supported CSV formats
 
 ### Fortuneo — "Historique des opérations bourse"
-CSV `;`, encodage Windows-1252, colonnes : `libellé;Opération;Place;Date;Qté;Prix
-d'éxé;Montant brut;Courtage/Prélèvement;Montant net;Devise`.
+CSV `;`-separated, Windows-1252 encoding, columns: `libellé;Opération;Place;Date;Qté;Prix
+d'éxé;Montant brut;Courtage/Prélèvement;Montant net;Devise`. (Column names are
+in French because they mirror Fortuneo's own real export format.)
 
-### Trade Republic — export "Transactions"
-CSV `,` avec guillemets, UTF-8, colonnes : `datetime,date,account_type,category,
-type,asset_class,name,symbol,shares,price,amount,fee,tax,currency,...`. Le champ
-`symbol` contient en réalité l'ISIN.
+### Trade Republic — "Transactions" export
+CSV `,`-separated with quotes, UTF-8, columns: `datetime,date,account_type,category,
+type,asset_class,name,symbol,shares,price,amount,fee,tax,currency,...`. The
+`symbol` field actually holds the ISIN.
 
-## Notes de calcul
+## Calculation notes
 
-- **Coût moyen pondéré** : chaque achat augmente la quantité et le coût total
-  détenu ; chaque vente retire la quantité vendue au coût moyen courant et
-  déclenche le PnL réalisé correspondant.
-- **Dividendes Fortuneo** : seules les lignes `Encaissement coupons
-  intérêt/dividende` sont comptées comme dividende réel. Les lignes `OST de
-  création de coupons` / `ANNUL. OST...` (écritures techniques de détachement
-  de coupon optionnel) sont conservées dans le journal mais exclues des totaux,
-  faute de certitude sur leur traitement comptable exact — à vérifier
-  ponctuellement contre le relevé Fortuneo si une précision au centime est
-  nécessaire.
-- **Capital net investi** (graphique de performance) = flux de trésorerie net
-  vers les investissements (achats − ventes), pas le coût de revient comptable
-  strict des positions ouvertes.
-- **Prix historiques** : pour les actifs sans ticker mappé, l'historique de prix
-  est approximé par le prix de revient moyen actuel (ligne plate) — la courbe de
-  performance n'est donc fiable que pour les actifs mappés dans
+- **Weighted average cost**: every buy increases the quantity and total cost
+  held; every sell removes the sold quantity at the current average cost and
+  triggers the corresponding realized PnL.
+- **Fortuneo dividends**: only rows labeled `Encaissement coupons
+  intérêt/dividende` count as a real dividend. Rows labeled `OST de création de
+  coupons` / `ANNUL. OST...` (technical bookkeeping entries tied to optional
+  coupon detachment) are kept in the journal but excluded from the totals,
+  since their exact accounting treatment isn't certain — worth double-checking
+  against the Fortuneo statement if cent-level precision is needed.
+- **Net invested capital** (performance chart) = net cash flow into
+  investments (purchases − sale proceeds), not the strict accounting cost
+  basis of open positions.
+- **Historical prices**: for assets without a mapped ticker, the price history
+  is approximated by the current average purchase price (a flat line) — the
+  performance curve is therefore only reliable for assets mapped in
   `config/tickers.json`.
 
-## Confidentialité
+## Privacy
 
-Aucune donnée personnelle n'est envoyée où que ce soit ni committée dans Git :
+No personal data is ever sent anywhere or committed to Git:
 
 - `data/fortuneo/*.csv`, `data/trade_republic/*.csv`, `data/processed/*.csv`,
-  `data/accounts/` et tous les fichiers de `config/*.json` (tickers, frais,
-  classes d'actif, allocation cible, exposition — ils révèlent la composition
-  exacte du portefeuille réel) sont exclus via `.gitignore`.
-- La démo publique tourne exclusivement sur `demo/`, un jeu de données fictif
-  committé volontairement (voir [Mode démo](#mode-démo-sans-données-personnelles)).
-- Tout le calcul tourne en local (ou sur l'instance de déploiement que tu
-  contrôles) ; le seul appel réseau sortant est vers Yahoo Finance pour les prix.
+  `data/accounts/`, `data/corrections/*.csv`, and every file under
+  `config/*.json` (tickers, fees, asset classes, target allocation, exposure —
+  they reveal the exact composition of the real portfolio) are excluded via
+  `.gitignore`.
+- The public demo runs exclusively on `demo/`, a fictional dataset committed
+  on purpose (see [Demo mode](#demo-mode-no-personal-data)).
+- All computation runs locally (or on the deployment instance you control);
+  the only outbound network call is to Yahoo Finance for prices.

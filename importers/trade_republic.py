@@ -53,7 +53,13 @@ def load(data_dir: str) -> pd.DataFrame:
     out["price"] = pd.to_numeric(raw["price"], errors="coerce")
     out["fee"] = pd.to_numeric(raw["fee"], errors="coerce").abs().fillna(0.0)
     out["tax"] = pd.to_numeric(raw["tax"], errors="coerce").abs().fillna(0.0)
-    out["amount"] = pd.to_numeric(raw["amount"], errors="coerce")
+    # "amount" must be the actual net cash movement booked to the account.
+    # Trade Republic's raw "amount" is gross of withholding tax: on
+    # INTEREST_PAYMENT/DIVIDEND rows it's reduced by "tax" before the cash
+    # balance is credited (e.g. a 47.16 EUR gross interest payment with 14.79
+    # EUR withheld actually credits 32.37 EUR) — nothing downstream (kpis.py,
+    # positions.py) ever reads "tax" separately, so it must be netted in here.
+    out["amount"] = pd.to_numeric(raw["amount"], errors="coerce") - out["tax"]
     out["currency"] = raw["currency"].str.strip()
     out["raw_operation"] = raw["type"].str.strip()
 

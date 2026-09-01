@@ -68,6 +68,26 @@ def load_fees_map() -> dict:
     return {k: v for k, v in data.items() if v is not None and not k.startswith("_")}
 
 
+def _as_series(data, column: str) -> pd.Series:
+    """Normalizes a yfinance "Close" result to a Series.
+
+    yfinance returns a plain DataFrame when a single symbol is requested and a
+    column-per-symbol DataFrame otherwise, so `data[col] if len(cols) > 1 else data`
+    silently yields a DataFrame in the single-symbol case. Dividing a price Series
+    by that DataFrame then broadcasts into an empty frame instead of raising — the
+    price simply disappears. This shows up only when the portfolio holds exactly
+    one foreign currency, which is why it can stay hidden for a long time.
+    """
+    if isinstance(data, pd.Series):
+        return data
+    if column in getattr(data, "columns", []):
+        result = data[column]
+        return result.iloc[:, 0] if isinstance(result, pd.DataFrame) else result
+    if getattr(data, "ndim", 1) == 2 and data.shape[1] >= 1:
+        return data.iloc[:, 0]
+    return pd.Series(dtype="float64")
+
+
 def _ticker_currencies(tickers: list[str]) -> dict:
     """Quote currency of each ticker (e.g. AUD for DRO.AX, USD for TTWO).
 
@@ -122,8 +142,7 @@ def _fx_rates_to_eur(currencies: set[str], **download_kwargs) -> dict:
     rates = {}
     for currency, pair in pairs.items():
         try:
-            series = data[pair] if len(pairs) > 1 else data
-            series = series.dropna()
+            series = _as_series(data, pair).dropna()
             if not series.empty:
                 rates[currency] = series
         except Exception:
@@ -167,8 +186,7 @@ def fetch_last_prices(asset_keys: list[str]) -> dict:
     prices = {}
     for asset_key, ticker in mapped.items():
         try:
-            series = data[ticker] if len(tickers) > 1 else data
-            last_valid = series.dropna()
+            last_valid = _as_series(data, ticker).dropna()
             if last_valid.empty:
                 continue
             price = float(last_valid.iloc[-1])
@@ -187,18 +205,23 @@ def fetch_last_prices(asset_keys: list[str]) -> dict:
     return prices
 
 
-def fetch_price_history(asset_keys: list[str], start: pd.Timestamp) -> dict:
-    """Returns {asset_key: pandas.Series in EUR, indexed by date} for mapped assets."""
-    ticker_map = load_ticker_map()
-    mapped = {k: ticker_map[k] for k in asset_keys if k in ticker_map}
-    if not mapped:
+def fetch_ticker_history(tickers: list[str], start: pd.Timestamp) -> dict:
+    """Returns {ticker: pandas.Series in EUR, indexed by date}.
+
+    Works on raw Yahoo tickers rather than the portfolio's asset_keys, so callers
+    that need series outside config/tickers.json — typically the long-history
+    proxies used by scripts/build_strategy.py, where the line actually held is too
+    recent to carry a statistic — go through the same download, FX conversion and
+    cache as the rest of the app.
+    """
+    tickers = sorted({t for t in tickers if t})
+    if not tickers:
         return {}
 
-    tickers = sorted(set(mapped.values()))
-    cache_key = _cache_key("history", start.date().isoformat(), *tickers)
+    cache_key = _cache_key("ticker_history", pd.Timestamp(start).date().isoformat(), *tickers)
     cached = _cache_get(cache_key, HISTORY_TTL)
     if cached is not None:
-        return {k: v for k, v in cached.items() if k in mapped}
+        return cached
 
     try:
         import yfinance as yf
@@ -214,10 +237,9 @@ def fetch_price_history(asset_keys: list[str], start: pd.Timestamp) -> dict:
     fx_rates = _fx_rates_to_eur(set(currencies.values()), start=start)
 
     histories = {}
-    for asset_key, ticker in mapped.items():
+    for ticker in tickers:
         try:
-            series = data[ticker] if len(tickers) > 1 else data
-            series = series.dropna()
+            series = _as_series(data, ticker).dropna()
             if series.empty:
                 continue
             currency = currencies.get(ticker, "EUR")
@@ -226,9 +248,24 @@ def fetch_price_history(asset_keys: list[str], start: pd.Timestamp) -> dict:
                 if fx_series is None or fx_series.empty:
                     continue
                 series = (series / fx_series.reindex(series.index).ffill()).dropna()
-            histories[asset_key] = series
+            histories[ticker] = series
         except Exception:
             continue
 
     _cache_set(cache_key, histories)
     return histories
+
+
+def fetch_price_history(asset_keys: list[str], start: pd.Timestamp) -> dict:
+    """Returns {asset_key: pandas.Series in EUR, indexed by date} for mapped assets."""
+    ticker_map = load_ticker_map()
+    mapped = {k: ticker_map[k] for k in asset_keys if k in ticker_map}
+    if not mapped:
+        return {}
+
+    by_ticker = fetch_ticker_history(list(mapped.values()), start)
+    return {
+        asset_key: by_ticker[ticker]
+        for asset_key, ticker in mapped.items()
+        if ticker in by_ticker
+    }

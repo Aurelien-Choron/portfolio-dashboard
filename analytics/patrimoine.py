@@ -16,12 +16,17 @@ import json
 import os
 from datetime import datetime
 
+from analytics import strategy as strategy_mod
 from paths import config_root, data_root
 
 ACCOUNTS_PATH = os.path.join(data_root(), "accounts", "accounts.json")
 TARGET_PATH = os.path.join(config_root(), "target_allocation.json")
 ASSET_CLASSES_PATH = os.path.join(config_root(), "asset_classes.json")
 DEFAULT_ASSET_CLASS = "Actions"
+# Display-only category for the investment envelopes listed in the account table.
+# Deliberately NOT part of CATEGORY_ORDER: it is not an asset class, and the
+# comparison against targets still splits those positions line by line.
+INVESTMENT_CATEGORY = "__INVESTMENTS__"
 # Fixed order: a category's color must stay the same across reloads, regardless
 # of its current weight (see dataviz skill — color follows the entity, never its rank).
 CATEGORY_ORDER = ["Actions", "Obligations", "Fonds Euros", "Livrets", "Autres"]
@@ -58,6 +63,19 @@ def load_accounts() -> list:
 
 
 def load_target_allocation() -> dict:
+    """Target allocation per asset class, in % of total net worth.
+
+    When a strategic allocation exists (config/strategy.json), its per-line
+    targets are rolled up to asset classes and win: they are the single source of
+    truth, so this page can never contradict the Strategy page. Otherwise the
+    hand-written config/target_allocation.json is used, unchanged.
+    """
+    policy = strategy_mod.load_policy()
+    if policy:
+        derived = strategy_mod.class_targets(policy)
+        if derived:
+            return derived
+
     if not os.path.exists(TARGET_PATH):
         return {}
     with open(TARGET_PATH, "r", encoding="utf-8") as f:
@@ -71,6 +89,63 @@ def load_asset_classes() -> dict:
     with open(ASSET_CLASSES_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
     return {k: v for k, v in data.items() if not k.startswith("_")}
+
+
+def build_investment_accounts(bourse_by_broker: dict, broker_labels: dict | None = None) -> list:
+    """The investment envelopes, seen as accounts — because a PEA is an account.
+
+    bourse_by_broker: {raw broker code: market value} for open positions.
+
+    The account table used to stop at savings, which meant the reader had to add
+    two pages together to get their own total. The individual *positions* still
+    belong on the Investments page; what belongs here is the envelope, what it is
+    worth, and — for the PEA — how much of the contribution ceiling is gone,
+    which is the constraint that actually binds the strategy.
+
+    Grouped by tax envelope when config/strategy.json defines one (several
+    brokers can feed the same envelope), by broker otherwise.
+    """
+    broker_labels = broker_labels or {}
+    policy = strategy_mod.load_policy() or {}
+    broker_env = {k: v for k, v in (policy.get("broker_envelopes") or {}).items()
+                  if not k.startswith("_")}
+    envelopes = policy.get("envelopes") or {}
+
+    grouped = {}
+    for broker, value in bourse_by_broker.items():
+        if value <= 0:
+            continue
+        key = broker_env.get(broker) or broker
+        row = grouped.setdefault(key, {"value": 0.0, "brokers": []})
+        row["value"] += value
+        row["brokers"].append(broker_labels.get(broker, broker))
+
+    rows = []
+    for key, row in grouped.items():
+        env = envelopes.get(key) or {}
+        ceiling = env.get("ceiling_eur")
+        contributed = env.get("contributed_eur")
+        # A PEA's ceiling caps what you PAY IN, not what the account is worth —
+        # showing value/ceiling would quietly overstate the room left, so the
+        # ratio is built from contributions and says so.
+        ceiling_label = None
+        if ceiling and contributed is not None:
+            ceiling_label = (f"{contributed:,.0f} € paid in of {ceiling:,.0f} €"
+                             .replace(",", " "))
+        rows.append({
+            "id": f"envelope_{key.lower()}",
+            "label": key,
+            "bank": " · ".join(dict.fromkeys(row["brokers"])),
+            "category": INVESTMENT_CATEGORY,
+            "balance": row["value"],
+            "rate_pct": None,
+            "ceiling": ceiling,
+            "ceiling_pct": (contributed / ceiling * 100) if (ceiling and contributed) else None,
+            "ceiling_label": ceiling_label,
+            "maturity_date_fr": None,
+            "is_investment": True,
+        })
+    return sorted(rows, key=lambda r: -r["balance"])
 
 
 def build_patrimoine(

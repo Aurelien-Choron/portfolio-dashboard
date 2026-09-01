@@ -7,11 +7,6 @@
 
 {% block content %}
 
-  <div class="card p-3 mb-8 text-sm ink-secondary">
-    ⚠️ Account balances/rates are real. The <strong>target</strong> allocation (<code>config/target_allocation.json</code>) is still a fictional example — replace it with your real targets once you have them.
-    "Other" (gold, etc.) is a category to refine later.
-  </div>
-
   <!-- ============================================================ -->
   <!-- 1. OVERVIEW — whole net worth, investments included           -->
   <!-- ============================================================ -->
@@ -61,7 +56,6 @@
   <!-- ============================================================ -->
   <div class="tabs mt-4">
     <button class="tab-btn active" data-tab-target="tab-repartition">Allocation</button>
-    <button class="tab-btn" data-tab-target="tab-objectifs">Targets</button>
     <button class="tab-btn" data-tab-target="tab-comptes">Accounts</button>
   </div>
 
@@ -87,60 +81,12 @@
   </div>
 
   <!-- ---------------------------------------------------------- -->
-  <!-- Tab 2 — TARGETS                                               -->
-  <!-- ---------------------------------------------------------- -->
-  <div id="tab-objectifs" class="tab-panel">
-    <div class="mb-4">
-      <div class="section-title">Am I on track with my targets?</div>
-      <div class="section-hint">Gap between the current allocation and the target allocation defined in <code>config/target_allocation.json</code>. Blue = underweight (room to invest), red = overweight.</div>
-    </div>
-    <div class="card p-4 mb-6">
-      <div id="chart-target-gap"></div>
-    </div>
-
-    <div class="card p-4 mb-6">
-      <div class="overflow-x-auto hidden md:block">
-        <table>
-          <thead>
-            <tr><th>Category</th><th>Amount</th><th>Current</th><th>Target</th><th>Gap</th></tr>
-          </thead>
-          <tbody>
-            {% for c in comparison %}
-            <tr>
-              <td class="ink-primary">{{ category_labels.get(c.category, c.category) }}</td>
-              <td class="tabular">{{ c.value|fr }} €</td>
-              <td class="tabular">{{ c.actual_pct|fr(1) }} %</td>
-              <td class="tabular ink-secondary">{{ c.target_pct|fr(1) if c.target_pct is not none else "—" }}{{ " %" if c.target_pct is not none else "" }}</td>
-              <td class="tabular {{ 'delta-critical' if c.gap_pct is not none and c.gap_pct > 0 else ('delta-info' if c.gap_pct is not none else '') }}">{{ c.gap_pct|fr(1, signed=True) if c.gap_pct is not none else "—" }}{{ " pt" if c.gap_pct is not none else "" }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="md:hidden">
-        {% for c in comparison %}
-        <div class="list-row">
-          <div class="list-row-main">
-            <div class="list-row-title">{{ category_labels.get(c.category, c.category) }}</div>
-            <div class="list-row-sub">{{ c.value|fr }} € · target {{ c.target_pct|fr(1) if c.target_pct is not none else "—" }}{{ " %" if c.target_pct is not none else "" }}</div>
-          </div>
-          <div class="list-row-end">
-            <div class="list-row-value">{{ c.actual_pct|fr(1) }} %</div>
-            <div class="list-row-meta {{ 'delta-critical' if c.gap_pct is not none and c.gap_pct > 0 else ('delta-info' if c.gap_pct is not none else '') }}">{{ c.gap_pct|fr(1, signed=True) if c.gap_pct is not none else "—" }}{{ " pt" if c.gap_pct is not none else "" }}</div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-
-  <!-- ---------------------------------------------------------- -->
-  <!-- Tab 3 — ACCOUNTS                                              -->
+  <!-- Tab 2 — ACCOUNTS                                              -->
   <!-- ---------------------------------------------------------- -->
   <div id="tab-comptes" class="tab-panel">
     <div class="mb-4">
       <div class="section-title">Account detail</div>
-      <div class="section-hint">Excludes investments — see the Investments page for position detail.</div>
+      <div class="section-hint">Savings and investment envelopes together — this table adds up to your net worth. Position-by-position detail lives on the <a href="/" class="delta-info">Investments</a> page.</div>
     </div>
     <div class="card p-4 mb-6">
       <div class="overflow-x-auto hidden md:block">
@@ -151,13 +97,18 @@
           <tbody>
             {% for a in accounts %}
             <tr>
-              <td class="ink-primary">{{ a.label }}</td>
+              <td class="ink-primary">
+                {{ a.label }}
+                {% if a.is_investment %}<span class="chip">market value</span>{% endif %}
+              </td>
               <td class="ink-secondary">{{ a.bank }}</td>
               <td class="ink-secondary">{{ category_labels.get(a.category, a.category) }}</td>
               <td class="tabular">{{ a.balance|fr }} €</td>
               <td class="tabular">{{ a.rate_pct|fr(2) if a.rate_pct is not none else "—" }}{{ " %" if a.rate_pct is not none else "" }}</td>
               <td class="tabular ink-secondary">
-                {%- if a.ceiling_pct is not none -%}
+                {%- if a.ceiling_label -%}
+                  {{ a.ceiling_label }}
+                {%- elif a.ceiling_pct is not none -%}
                   {{ a.ceiling_pct|fr(0) }} % of ceiling ({{ a.ceiling|fr }} €)
                 {%- elif a.maturity_date_fr -%}
                   Matures {{ a.maturity_date_fr }}
@@ -168,20 +119,33 @@
             </tr>
             {% endfor %}
           </tbody>
+          <tfoot>
+            <tr style="border-top: 2px solid var(--baseline);">
+              <td class="ink-primary font-semibold">Net worth</td>
+              <td></td><td></td>
+              <td class="tabular font-semibold">{{ accounts|sum(attribute='balance')|fr }} €</td>
+              <td></td><td></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
       <div class="md:hidden">
         {% for a in accounts %}
         <div class="list-row">
           <div class="list-row-main">
-            <div class="list-row-title">{{ a.label }}</div>
+            <div class="list-row-title">
+              {{ a.label }}
+              {% if a.is_investment %}<span class="chip">market value</span>{% endif %}
+            </div>
             <div class="list-row-sub">{{ a.bank }} · {{ category_labels.get(a.category, a.category) }}</div>
           </div>
           <div class="list-row-end">
             <div class="list-row-value">{{ a.balance|fr }} €</div>
             <div class="list-row-meta ink-secondary">
               {%- if a.rate_pct is not none -%}{{ a.rate_pct|fr(2) }} %{%- endif -%}
-              {%- if a.ceiling_pct is not none -%}
+              {%- if a.ceiling_label -%}
+                {{ ' · ' if a.rate_pct is not none }}{{ a.ceiling_label }}
+              {%- elif a.ceiling_pct is not none -%}
                 {{ ' · ' if a.rate_pct is not none }}{{ a.ceiling_pct|fr(0) }} % of ceiling
               {%- elif a.maturity_date_fr -%}
                 {{ ' · ' if a.rate_pct is not none }}matures {{ a.maturity_date_fr }}
@@ -202,7 +166,6 @@
 
   renderFig('chart-repartition', figs.repartition);
   renderFig('chart-bank-repartition', figs.bank_repartition);
-  renderFig('chart-target-gap', figs.target_gap);
 
   initTabs(document);
 </script>

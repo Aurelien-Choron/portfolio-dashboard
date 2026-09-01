@@ -28,3 +28,6 @@ data/cache/
 # cache and normalized journal a local run regenerates there are not.
 demo/data/cache/
 demo/data/processed/
+
+# Local working notes for Claude Code (personal runbooks, not project docs)
+.claude/

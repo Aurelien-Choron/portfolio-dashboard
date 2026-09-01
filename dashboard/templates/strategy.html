@@ -1,0 +1,634 @@
+{% extends "base.html" %}
+{% block title %}Strategy — Portfolio Dashboard{% endblock %}
+
+{% block header_right %}
+<div class="text-right">
+  <div class="ink-muted text-xs">Updated {{ last_update }}</div>
+  {% if not no_policy %}<div class="ink-secondary text-xs">{{ data.profile }} profile · set {{ data.as_of }}</div>{% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% if no_policy %}
+  <div class="card p-8 text-center">
+    <div class="text-4xl mb-3">🎯</div>
+    <div class="section-title mb-2">No strategy defined yet</div>
+    <div class="ink-secondary text-sm mx-auto" style="max-width: 46ch;">
+      Create <code>config/strategy.json</code> with your target allocation, then run
+      <code>python scripts/build_strategy.py</code> to compute the risk figures behind it.
+    </div>
+  </div>
+{% else %}
+
+  <!-- ============================================================ -->
+  <!-- Headline: the one number that matters                        -->
+  <!-- ============================================================ -->
+  <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4 md:gap-6 mb-6">
+    <div class="card p-5 md:p-8">
+      <div class="stat-label">New money to move out of savings</div>
+      <div class="hero-value {{ 'delta-critical' if data.to_deploy_eur > 0 else 'delta-good' }}">
+        {{ data.to_deploy_eur|fr }} €
+      </div>
+      <div class="ink-secondary text-sm mt-2">
+        {{ data.invested_now_pct|fr(1) }} % of your net worth is invested today, against a target of
+        {{ data.invested_target_pct|fr(1) }} %.
+        {% if data.reallocate_eur > 0 %}
+        Separately, <span class="ink-primary font-medium">{{ data.reallocate_eur|fr }} €</span> is
+        already invested and only changes line — free, inside the PEA.
+        {% endif %}
+        {% if data.discretionary_eur > 1 %}
+        A further <span class="ink-primary font-medium">{{ data.discretionary_eur|fr }} €</span> of
+        trading headroom stays optional: the plan never tells you to use it.
+        {% endif %}
+      </div>
+      <div class="mt-4 pt-4" style="border-top: 1px solid var(--grid);">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div><div class="stat-label">Net worth</div><div class="stat-value tabular">{{ data.total|fr }} €</div></div>
+          <div><div class="stat-label">Invested</div><div class="stat-value tabular">{{ data.invested_now_eur|fr }} €</div></div>
+          <div><div class="stat-label">Guaranteed savings</div><div class="stat-value tabular">{{ data.cash_now_eur|fr }} €</div></div>
+          <div><div class="stat-label">Actions to take</div><div class="stat-value tabular">{{ data.backlog|length }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5 md:p-8">
+      <div class="section-title mb-3">Risk, now vs target</div>
+      {% if current_risk and analytics %}
+      <table>
+        <thead><tr><th>&nbsp;</th><th>Today</th><th>Target</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="ink-secondary">Volatility</td>
+            <td class="tabular">{{ current_risk.vol_pct|fr(1) }} %</td>
+            <td class="tabular font-semibold">{{ analytics.target_portfolio.vol_pct|fr(1) }} %</td>
+          </tr>
+          <tr>
+            <td class="ink-secondary">Expected return, net</td>
+            <td class="tabular">{{ current_risk.ret_pct|fr(2) }} %</td>
+            <td class="tabular font-semibold delta-good">{{ analytics.target_portfolio.ret_pct|fr(2) }} %</td>
+          </tr>
+          <tr>
+            <td class="ink-secondary">Beta vs world equities</td>
+            <td class="tabular">{{ current_risk.beta|fr(2) }}</td>
+            <td class="tabular font-semibold">{{ analytics.target_portfolio.beta|fr(2) }}</td>
+          </tr>
+          <tr>
+            <td class="ink-secondary">Sharpe ratio</td>
+            <td class="tabular">{{ current_risk.sharpe|fr(3) }}</td>
+            <td class="tabular font-semibold">{{ analytics.target_portfolio.sharpe|fr(3) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="section-hint mt-3">
+        Measured over {{ analytics.window.observations }} weekly returns in euros
+        ({{ analytics.window.start }} → {{ analytics.window.end }}), against
+        {{ analytics.benchmark.label }}.
+      </div>
+      {% else %}
+      <div class="ink-secondary text-sm">
+        Risk figures not computed yet. Run <code>python scripts/build_strategy.py</code>.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="tabs" id="strategy-tabs">
+    <button class="tab-btn active" data-tab-target="tab-plan">Action plan</button>
+    <button class="tab-btn" data-tab-target="tab-target">Target allocation</button>
+    <button class="tab-btn" data-tab-target="tab-risk">Risk &amp; frontier</button>
+  </div>
+
+  <!-- ---------------------------------------------------------- -->
+  <!-- Tab 1 — ACTION PLAN                                          -->
+  <!-- ---------------------------------------------------------- -->
+  <div id="tab-plan" class="tab-panel active">
+
+    <div class="card p-4 md:p-5 mb-8">
+      <div class="flex items-baseline justify-between gap-3 flex-wrap mb-4">
+        <div>
+          <div class="section-title">What to do, in order</div>
+          <div class="section-hint">Grouped by what each step actually costs you. Tick them off as you go — progress is saved in this browser.</div>
+        </div>
+        <div class="ink-muted text-xs shrink-0">
+          <span id="task-progress" class="ink-secondary font-medium">0</span> done ·
+          <button type="button" id="task-reset" class="linkish">reset</button>
+        </div>
+      </div>
+
+      {% for phase in data.phases %}
+      {% set items = data.backlog | selectattr('phase', 'equalto', phase.key) | list %}
+      {% if items %}
+      <div class="phase">
+        <div class="phase-head">{{ phase.title }}</div>
+        <div class="phase-hint">{{ phase.hint }}</div>
+        {% for a in items %}
+        <div class="task" data-task-id="{{ a.id }}">
+          <input type="checkbox" aria-label="Mark done: {{ a.action }} {{ a.label }}">
+          <div class="task-body">
+            <div class="task-title">
+              <span class="task-idx">{{ a.order }}</span>
+              <span class="chip {{ 'delta-critical' if a.action in ('SELL', 'TRIM') else ('delta-good' if a.action == 'BUY' else '') }}">{{ a.action }}</span>
+              <span>{{ a.label }}</span>
+              {% if a.optional %}<span class="chip">optional</span>{% endif %}
+              {% if a.too_small %}<span class="chip delta-critical">order too small</span>{% endif %}
+              {% if a.deferred_eur > 1 %}
+                {% if a.available_now_eur > 1 %}
+                <span class="chip">{{ a.available_now_eur|fr }} € now, rest {{ a.deferred_until }}</span>
+                {% else %}
+                <span class="chip delta-critical">not before {{ a.deferred_until }}</span>
+                {% endif %}
+              {% endif %}
+            </div>
+            <div class="task-meta">
+              <span>📍 {{ a.envelope }}</span>
+              {% if a.tax != "—" %}<span>🧾 {{ a.tax }}</span>{% endif %}
+            </div>
+            <div class="task-why">{{ a.why }}</div>
+
+            {% if a.funding_plan %}
+            <div class="task-funding">
+              <span class="task-funding-label">Money comes from</span>
+              {% for f in a.funding_plan %}
+              <span class="task-funding-row">
+                <span>{{ f.label }}{% if f.bank %} <span class="ink-muted">· {{ f.bank }}</span>{% endif %}</span>
+                <span class="tabular">{{ f.amount_eur|fr }} €{% if f.available_from %} <span class="delta-critical">from {{ f.available_from }}</span>{% endif %}</span>
+              </span>
+              {% endfor %}
+              {% if a.unfunded_eur > 1 %}
+              <span class="task-funding-row delta-critical">
+                <span>Not covered by any account — future savings</span>
+                <span class="tabular">{{ a.unfunded_eur|fr }} €</span>
+              </span>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            {% if a.instrument %}{% set i = a.instrument %}
+            <div class="fund">
+              <div class="fund-head">
+                <span class="fund-tag">{{ 'Fund to buy' if a.is_new_line else 'Fund' }}</span>
+                <span class="fund-name">{{ i.name }}</span>
+                <code class="fund-isin">{{ i.isin }}</code>
+                {% if i.ticker %}<span class="chip">{{ i.ticker }}</span>{% endif %}
+              </div>
+              <div class="fund-specs">
+                {% if i.ter_pct is not none %}<span><b class="tabular">{{ i.ter_pct|fr(2) }} %</b> ongoing charge</span>{% endif %}
+                {% if i.aum %}<span><b>{{ i.aum }}</b> under management</span>{% endif %}
+                {% if i.issuer %}<span>{{ i.issuer }}{% if i.domicile %} · {{ i.domicile }}{% endif %}</span>{% endif %}
+                {% if i.replication %}<span>{{ i.replication }}</span>{% endif %}
+                {% if i.distribution %}<span>{{ i.distribution }}</span>{% endif %}
+              </div>
+              <div class="fund-why">{{ i.why }}</div>
+              {% if i.alternatives %}
+              <div class="fund-alt">
+                {% for alt in i.alternatives %}
+                <div class="fund-alt-row">
+                  <span class="fund-alt-name">{{ alt.name }}{% if alt.isin and alt.isin != '—' %} <code class="fund-isin">{{ alt.isin }}</code>{% endif %}</span>
+                  <span class="fund-alt-why">{{ alt.why_not }}</span>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+              {% if i.checked_on %}
+              <div class="fund-checked">Figures checked {{ i.checked_on }}{% if i.source %} · {{ i.source }}{% endif %} — confirm on the product sheet before the order.</div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          <div class="task-amount">
+            {% if a.amount_eur > 0 %}{{ a.amount_eur|fr }} €{% else %}—{% endif %}
+            {% if a.cost_eur > 0 %}<small>{{ a.cost_eur|fr(2) }} € fee</small>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endfor %}
+
+      <div class="mt-4 pt-4 flex flex-wrap gap-x-8 gap-y-2 justify-between text-sm" style="border-top: 1px solid var(--grid);">
+        <span class="ink-secondary">
+          Total brokerage for the whole plan
+          {% if data.total %}<span class="ink-muted text-xs">— {{ (data.total_cost_eur / data.total * 100)|fr(3) }} % of net worth</span>{% endif %}
+        </span>
+        <span class="tabular font-semibold">{{ data.total_cost_eur|fr(2) }} €</span>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <div class="section-title">Where the money comes from</div>
+      <div class="section-hint">Each purchase above already names its account. This is the same money seen from the other side — the worst-paid euro is spent first, and each account keeps whatever the plan told it to keep.</div>
+    </div>
+    <div class="card p-4 mb-6">
+      <div class="overflow-x-auto hidden md:block">
+        <table class="table-wide">
+          <thead>
+            <tr>
+              <th>Account</th><th>Available</th><th>Used by this plan</th>
+              <th>Left after</th><th>When</th><th>Why this one</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in data.funding.sources %}
+            <tr>
+              <td>
+                <div class="font-medium">{{ s.label }}</div>
+                {% if s.bank %}<div class="ink-muted text-xs">{{ s.bank }}</div>{% endif %}
+              </td>
+              <td class="tabular">{{ s.usable_eur|fr }} €</td>
+              <td class="tabular font-semibold">{{ s.used_eur|fr }} €</td>
+              <td class="tabular ink-secondary">{{ (s.usable_eur - s.used_eur)|fr }} €</td>
+              <td>
+                {% if s.locked %}<span class="chip delta-critical">{{ s.available_from }}</span>
+                {% else %}<span class="chip delta-good">now</span>{% endif %}
+              </td>
+              <td class="ink-muted text-xs" style="max-width: 34ch;">{{ s.note }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="md:hidden">
+        {% for s in data.funding.sources %}
+        <div class="list-row">
+          <div>
+            <div class="font-medium">{{ s.label }}</div>
+            <div class="ink-muted text-xs">
+              {{ s.bank }} · {% if s.locked %}locked until {{ s.available_from }}{% else %}available now{% endif %}
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="tabular font-semibold">{{ s.used_eur|fr }} €</div>
+            <div class="ink-muted text-xs tabular">of {{ s.usable_eur|fr }} €</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="mt-4 pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4" style="border-top: 1px solid var(--grid);">
+        <div><div class="stat-label">Plan needs</div><div class="stat-value tabular">{{ data.funding.need_eur|fr }} €</div></div>
+        <div><div class="stat-label">Liquid today</div><div class="stat-value tabular">{{ data.funding.now_pool_eur|fr }} €</div></div>
+        <div><div class="stat-label">Locked until maturity</div><div class="stat-value tabular">{{ data.funding.locked_pool_eur|fr }} €</div></div>
+        <div>
+          <div class="stat-label">Not covered</div>
+          <div class="stat-value tabular {{ 'delta-critical' if data.funding.unfunded_eur > 1 else 'delta-good' }}">{{ data.funding.unfunded_eur|fr }} €</div>
+        </div>
+      </div>
+
+      {% if data.funding.locked_pool_eur > 1 %}
+      <div class="section-hint mt-3">
+        The purchases marked <span class="ink-primary">not before</span> a date are the ones waiting on a
+        locked account. Nothing forces you to wait: ask what breaking it early actually costs, and
+        compare that number against the interest given up — the plan prices the order, not the penalty.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ---------------------------------------------------------- -->
+  <!-- Tab 2 — TARGET ALLOCATION                                    -->
+  <!-- ---------------------------------------------------------- -->
+  <div id="tab-target" class="tab-panel">
+
+    <div class="mb-4">
+      <div class="section-title">Today against the target</div>
+      <div class="section-hint">Every line as a share of total net worth. A line is left alone while it stays inside its tolerance band.</div>
+    </div>
+    <div class="card p-4 mb-6">
+      <div id="chart-mix"></div>
+    </div>
+
+    <div class="card p-4 mb-8">
+      <div class="overflow-x-auto hidden md:block">
+        <table class="table-wide">
+          <thead>
+            <tr>
+              <th style="width: 30%;">Line</th><th>Envelope</th>
+              <th>Now €</th><th>Target €</th><th>Now %</th><th>Target %</th>
+              <th>Gap €</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in data.targets %}
+            <tr>
+              <td class="ink-primary wrap">
+                {{ t.label }}
+                {% if t.instrument %}
+                <div class="ink-muted text-xs">
+                  <code class="fund-isin">{{ t.instrument.isin }}</code>
+                  {{ t.instrument.ticker }} · {{ t.instrument.ter_pct|fr(2) }} % · {{ t.instrument.aum }}
+                </div>
+                {% elif t.ticker %}<div class="ink-muted text-xs">{{ t.ticker }}</div>{% endif %}
+              </td>
+              <td class="ink-secondary">{{ t.envelope or "—" }}</td>
+              <td class="tabular">{{ t.current_eur|fr }} €</td>
+              <td class="tabular font-medium">{{ t.target_eur|fr }} €</td>
+              <td class="tabular ink-secondary">{{ t.current_pct|fr(1) }} %</td>
+              <td class="tabular ink-secondary">{{ t.target_pct|fr(1) }} %</td>
+              <td class="tabular {{ 'delta-critical' if t.drift_eur > 0 else 'delta-info' }}">{{ t.drift_eur|fr(0, signed=True) }} €</td>
+              <td>
+                {% if t.role == 'exit' %}<span class="chip delta-critical">close</span>
+                {% elif t.role == 'unassigned' %}<span class="chip delta-critical">unplanned</span>
+                {% elif t.status == 'on' %}<span class="chip delta-good">on target</span>
+                {% elif t.status == 'over' %}<span class="chip delta-critical">over</span>
+                {% else %}<span class="chip delta-info">under</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td class="ink-secondary font-medium wrap">
+                Trading sleeve
+                <div class="ink-muted text-xs">a cap, not a target</div>
+              </td>
+              <td class="ink-secondary">{{ data.sleeve.preferred_envelope }}</td>
+              <td class="tabular">{{ data.sleeve.used_eur|fr }} €</td>
+              <td class="tabular font-medium">≤ {{ data.sleeve.cap_eur|fr }} €</td>
+              <td class="tabular ink-secondary">{{ data.sleeve.used_pct|fr(1) }} %</td>
+              <td class="tabular ink-secondary">≤ {{ data.sleeve.cap_pct|fr(1) }} %</td>
+              <td class="tabular ink-muted">{{ data.sleeve.headroom_eur|fr }} € free</td>
+              <td>
+                {% if data.sleeve.over_eur > 1 %}<span class="chip delta-critical">over cap</span>
+                {% else %}<span class="chip delta-good">within cap</span>{% endif %}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="md:hidden">
+        {% for t in data.targets %}
+        <div class="list-row">
+          <div class="list-row-main">
+            <div class="list-row-title">{{ t.label }}</div>
+            <div class="list-row-sub">{{ t.current_pct|fr(1) }} % → {{ t.target_pct|fr(1) }} % · {{ t.envelope or "—" }}</div>
+          </div>
+          <div class="list-row-end">
+            <div class="list-row-value">{{ t.current_eur|fr }} €</div>
+            <div class="list-row-meta {{ 'delta-critical' if t.drift_eur > 0 else 'delta-info' }}">{{ t.drift_eur|fr(0, signed=True) }} €</div>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="list-row">
+          <div class="list-row-main">
+            <div class="list-row-title">Trading sleeve</div>
+            <div class="list-row-sub">{{ data.sleeve.used_pct|fr(1) }} % of a {{ data.sleeve.cap_pct|fr(1) }} % cap</div>
+          </div>
+          <div class="list-row-end">
+            <div class="list-row-value">{{ data.sleeve.used_eur|fr }} €</div>
+            <div class="list-row-meta ink-muted">{{ data.sleeve.headroom_eur|fr }} € free</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <div class="section-title">Gap to target, in points of net worth</div>
+      <div class="section-hint">Blue = below target, red = above. Grey lines are inside their band and need nothing.</div>
+    </div>
+    <div class="card p-4 mb-8">
+      <div id="chart-drift"></div>
+    </div>
+
+    <div class="mb-4">
+      <div class="section-title">Envelope capacity</div>
+      <div class="section-hint">The PEA ceiling applies to contributions, not to value: gains never consume it. What the PEA cannot take has to be routed on, not silently parked on a taxable account.</div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      {% for e in data.envelopes %}
+      <div class="card p-4 {{ 'card-accent-critical' if e.overflow_eur > 1 else '' }}">
+        <div class="flex items-baseline justify-between gap-3 mb-1">
+          <div class="section-title">{{ e.label }}</div>
+          {% if e.tax_pct %}<span class="chip">{{ e.tax_pct|fr(1) }} % tax</span>{% endif %}
+        </div>
+        <div class="stat-value tabular mb-2">{{ e.current_eur|fr }} € held</div>
+
+        {% if e.fill_pct is not none %}
+        <div class="ink-secondary text-xs mb-1">
+          {{ e.contributed_eur|fr }} € paid in of {{ e.ceiling_eur|fr }} € — {{ e.room_eur|fr }} € of room left
+        </div>
+        <div style="height: 8px; border-radius: 999px; background: var(--chip-bg); overflow: hidden;">
+          <div style="height: 100%; width: {{ [e.fill_pct, 100]|min }}%; background: {{ 'var(--critical)' if e.fill_pct > 90 else 'var(--info)' }};"></div>
+        </div>
+        {% endif %}
+
+        {% if e.targeted_eur > 1 %}
+        <div class="ink-secondary text-xs mt-3">Targeted: {{ e.targeted_eur|fr }} €</div>
+        {% endif %}
+        {% if e.overflow_eur > 1 %}
+        <div class="delta-critical text-xs mt-1 font-medium">
+          {{ e.overflow_eur|fr }} € cannot fit → route to {{ e.overflow_to }}
+        </div>
+        {% endif %}
+        {% if e.note %}<div class="ink-muted text-xs mt-2" style="white-space: normal;">{{ e.note }}</div>{% endif %}
+      </div>
+      {% endfor %}
+
+      <div class="card p-4 {{ 'card-accent-critical' if data.sleeve.over_eur > 1 else '' }}">
+        <div class="flex items-baseline justify-between gap-3 mb-1">
+          <div class="section-title">Trading sleeve</div>
+          <span class="chip">cap {{ data.sleeve.cap_pct|fr(1) }} %</span>
+        </div>
+        <div class="stat-value tabular mb-2">{{ data.sleeve.used_eur|fr }} € of {{ data.sleeve.cap_eur|fr }} €</div>
+        <div style="height: 8px; border-radius: 999px; background: var(--chip-bg); overflow: hidden;">
+          <div style="height: 100%; width: {{ [data.sleeve.usage_ratio, 100]|min }}%; background: {{ 'var(--critical)' if data.sleeve.over_eur > 1 else 'var(--info)' }};"></div>
+        </div>
+        <div class="ink-secondary text-xs mt-2">
+          {{ data.sleeve.headroom_eur|fr }} € of headroom — yours to use or not.
+        </div>
+        <div class="ink-muted text-xs mt-2" style="white-space: normal;">
+          Never refill this sleeve from the core after a loss: that single rule is what keeps it from drifting.
+        </div>
+        {% if data.sleeve.positions %}
+        <div class="mt-3 pt-3" style="border-top: 1px solid var(--grid);">
+          {% for p in data.sleeve.positions %}
+          <div class="flex justify-between text-xs py-1">
+            <span class="ink-secondary">{{ p.name }}</span>
+            <span class="tabular">{{ p.value|fr }} €</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------------------------------------------------- -->
+  <!-- Tab 3 — RISK & FRONTIER                                      -->
+  <!-- ---------------------------------------------------------- -->
+  <div id="tab-risk" class="tab-panel">
+    {% if not analytics %}
+      <div class="card p-8 text-center">
+        <div class="text-4xl mb-3">📐</div>
+        <div class="section-title mb-2">Risk figures not computed yet</div>
+        <div class="ink-secondary text-sm mx-auto" style="max-width: 46ch;">
+          Run <code>python scripts/build_strategy.py</code> to measure volatility, beta,
+          correlations and the efficient frontier. The other tabs work without it.
+        </div>
+      </div>
+    {% else %}
+
+    <div class="mb-4">
+      <div class="section-title">The efficient frontier</div>
+      <div class="section-hint">Expected return after tax against volatility. What matters is the vertical distance between “Today” and the curve: that gap is return given up at the risk already being taken.</div>
+    </div>
+    <div class="card p-4 mb-8">
+      <div id="chart-frontier"></div>
+      <div class="section-hint mt-3">
+        Expected returns are judgements, not measurements: CAPM with a
+        {{ analytics.equity_risk_premium_pct|fr(1) }} % equity risk premium over a
+        {{ analytics.risk_free_gross_pct|fr(2) }} % risk-free rate, then net of each envelope's tax.
+        Volatility, beta and correlations are measured over
+        {{ analytics.window.observations }} weekly returns.
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <div class="section-title">Line by line</div>
+      <div class="section-hint">Past return is not expected return — the two columns deliberately disagree. A line held through a proxy is marked: it is too recent to carry its own statistic.</div>
+    </div>
+    <div class="card p-4 mb-8">
+      <div class="overflow-x-auto hidden md:block">
+        <table>
+          <thead>
+            <tr><th>Line</th><th>Volatility</th><th>Beta</th><th>Corr. to world</th><th>Past 10 y</th><th>Expected net</th><th>Sharpe</th><th>Worst fall</th></tr>
+          </thead>
+          <tbody>
+            {% for a in analytics.assets %}
+            <tr>
+              <td class="ink-primary wrap">
+                {{ a.label }}
+                {% if a.proxy %}<span class="chip" title="{{ a.proxy_reason }}">proxy {{ a.proxy }}</span>{% endif %}
+              </td>
+              <td class="tabular">{{ a.vol_pct|fr(1) }} %</td>
+              <td class="tabular">{{ a.beta|fr(2) }}</td>
+              <td class="tabular ink-secondary">{{ a.corr_market|fr(2) }}</td>
+              <td class="tabular ink-secondary">{{ a.cagr_hist_pct|fr(1) }} %</td>
+              <td class="tabular font-medium">{{ a.expected_net_pct|fr(2) }} %</td>
+              <td class="tabular">{{ a.sharpe_net|fr(3) }}</td>
+              <td class="tabular delta-critical">{{ a.max_dd_pct|fr(1) }} %</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="md:hidden">
+        {% for a in analytics.assets %}
+        <div class="list-row">
+          <div class="list-row-main">
+            <div class="list-row-title">{{ a.label }}</div>
+            <div class="list-row-sub">vol {{ a.vol_pct|fr(1) }} % · beta {{ a.beta|fr(2) }} · Sharpe {{ a.sharpe_net|fr(2) }}</div>
+          </div>
+          <div class="list-row-end">
+            <div class="list-row-value">{{ a.expected_net_pct|fr(2) }} %</div>
+            <div class="list-row-meta ink-muted">expected, net</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <div class="section-title">What actually diversifies what</div>
+      <div class="section-hint">Pairs near 100 are duplicates, not diversification. Gold's near-zero row is the only genuine decorrelation in this portfolio.</div>
+    </div>
+    <div class="card p-4 mb-8">
+      <div id="chart-correlation"></div>
+    </div>
+
+    {% if stress %}
+    <div class="mb-4">
+      <div class="section-title">Loss in a crisis</div>
+      <div class="section-hint">The 2016-2026 window contains no systemic bear market, so its worst drawdown is misleadingly mild. These are explicit shocks applied to the whole net worth, savings included.</div>
+    </div>
+    <div class="card p-4 mb-6">
+      <div id="chart-stress"></div>
+      <div class="overflow-x-auto mt-4">
+        <table>
+          <thead><tr><th>Scenario</th><th>Today</th><th>Today €</th><th>Target</th><th>Target €</th></tr></thead>
+          <tbody>
+            {% for s in stress %}
+            <tr>
+              <td class="ink-primary wrap">{{ s.scenario }}</td>
+              <td class="tabular delta-critical">{{ s.current_pct|fr(1) }} %</td>
+              <td class="tabular delta-critical">{{ (s.current_pct / 100 * data.total)|fr }} €</td>
+              <td class="tabular delta-critical">{{ s.target_pct|fr(1) }} %</td>
+              <td class="tabular delta-critical">{{ (s.target_pct / 100 * data.total)|fr }} €</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if tolerance_pct %}
+      <div class="section-hint mt-3">
+        Your stated tolerance is {{ tolerance_pct|fr(0) }} %, or
+        {{ (tolerance_pct / 100 * data.total)|fr }} €. The target allocation is sized to sit at
+        that limit in a 2008-style crash, not below it.
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% endif %}
+  </div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if not no_policy %}
+<script>
+  const figs = {{ figs_json|safe }};
+  initTabs(document);
+  ['drift', 'mix', 'frontier', 'correlation', 'stress'].forEach(function (name) {
+    renderFig('chart-' + name, figs[name]);
+  });
+
+  // Ticking an action off. State lives in this browser only — the app never
+  // writes to disk, so the checkmarks are a personal memo, not shared data.
+  // Task ids deliberately exclude amounts: a purchase stays the same task even
+  // after prices move it by a few euros.
+  function initChecklist(attr, storageKey, progressId, resetId) {
+    const rows = Array.prototype.slice.call(document.querySelectorAll('[' + attr + ']'));
+    if (!rows.length) return;
+    let done;
+    try { done = new Set(JSON.parse(localStorage.getItem(storageKey) || '[]')); }
+    catch (e) { done = new Set(); }
+
+    function save() {
+      try { localStorage.setItem(storageKey, JSON.stringify(Array.from(done))); } catch (e) {}
+    }
+    function paint() {
+      let n = 0;
+      rows.forEach(function (row) {
+        const on = done.has(row.getAttribute(attr));
+        row.classList.toggle('done', on);
+        const box = row.querySelector('input[type="checkbox"]');
+        if (box) box.checked = on;
+        if (on) n++;
+      });
+      const label = document.getElementById(progressId);
+      if (label) label.textContent = n + ' of ' + rows.length;
+    }
+    rows.forEach(function (row) {
+      const box = row.querySelector('input[type="checkbox"]');
+      if (!box) return;
+      box.addEventListener('change', function () {
+        const id = row.getAttribute(attr);
+        if (box.checked) { done.add(id); } else { done.delete(id); }
+        save();
+        paint();
+      });
+    });
+    const reset = document.getElementById(resetId);
+    if (reset) {
+      reset.addEventListener('click', function () { done.clear(); save(); paint(); });
+    }
+    paint();
+  }
+
+  initChecklist('data-task-id', 'strategy-tasks-v1', 'task-progress', 'task-reset');
+</script>
+{% endif %}
+{% endblock %}

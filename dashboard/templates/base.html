@@ -120,6 +120,60 @@
   .list-row-value { font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .list-row-meta { font-size: 0.78rem; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+  /* A wide data table must scroll inside its container rather than squeeze until
+     labels collide with their values. Paired with .overflow-x-auto on the parent. */
+  .table-wide { min-width: 760px; }
+
+  /* Checklist row: one action that can be ticked off. The state lives in the
+     browser (localStorage), per device — the app itself stays read-only, exactly
+     like every other value here, which comes from files you edit by hand. */
+  .task { display: flex; gap: 12px; align-items: flex-start; padding: 13px 4px; border-bottom: 1px solid var(--grid); }
+  .task:last-child { border-bottom: none; }
+  .task:hover { background: var(--row-hover); }
+  .task input[type="checkbox"] { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--info); cursor: pointer; }
+  .task-body { flex: 1; min-width: 0; }
+  .task-title { font-size: 0.925rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .task-meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 2px 14px; }
+  .task-why { font-size: 0.79rem; color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
+  .task-amount { flex: none; text-align: right; font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .task-amount small { display: block; font-size: 0.72rem; font-weight: 400; color: var(--text-muted); }
+  .task.done { opacity: 0.45; }
+  .task.done .fund, .task.done .task-funding { display: none; }
+  .task.done .task-title { text-decoration: line-through; }
+  .task-idx { font-family: ui-monospace, monospace; font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+
+  .phase { margin-bottom: 22px; }
+  .phase:last-child { margin-bottom: 0; }
+  .phase-head { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; color: var(--text-primary); padding-bottom: 2px; }
+  .phase-hint { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 4px; }
+
+  /* Which account pays for this order. A two-column ledger rather than a
+     sentence: the amounts have to line up to be checked against a bank app. */
+  .task-funding { margin-top: 8px; font-size: 0.78rem; display: flex; flex-direction: column; gap: 2px;
+                  border-left: 2px solid var(--grid); padding: 4px 0 4px 10px; }
+  .task-funding-label { color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .task-funding-row { display: flex; justify-content: space-between; gap: 12px; color: var(--text-secondary); }
+
+  /* The product to actually buy. An ISIN is the one string here that gets
+     copy-pasted into a broker, so it is set in monospace and given room. */
+  .fund { margin-top: 10px; padding: 10px 12px; border-radius: 9px; background: var(--row-hover); border: 1px solid var(--grid); }
+  .fund-head { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .fund-tag { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--info); font-weight: 600; }
+  .fund-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+  .fund-isin { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem;
+               background: var(--chip-bg); color: var(--text-primary); border-radius: 5px; padding: 1px 6px; user-select: all; }
+  .fund-specs { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 3px 16px; font-size: 0.76rem; color: var(--text-secondary); }
+  .fund-specs b { color: var(--text-primary); font-weight: 600; }
+  .fund-why { margin-top: 7px; font-size: 0.79rem; color: var(--text-secondary); line-height: 1.55; }
+  .fund-alt { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--grid); display: flex; flex-direction: column; gap: 6px; }
+  .fund-alt-row { font-size: 0.75rem; line-height: 1.5; }
+  .fund-alt-name { color: var(--text-secondary); font-weight: 600; }
+  .fund-alt-why { color: var(--text-muted); }
+  .fund-alt-why::before { content: " — "; }
+  .fund-checked { margin-top: 8px; font-size: 0.7rem; color: var(--text-muted); }
+
+  .linkish { background: none; border: none; padding: 0; font: inherit; color: var(--info); cursor: pointer; text-decoration: underline; }
+
   /* Bottom nav bar, mobile only (md:hidden) — replaces the header links
      (desktop-only, hidden md:flex) as the primary entry point. */
   .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; background: var(--surface-1); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
@@ -167,6 +221,7 @@
       <nav class="hidden md:flex gap-1">
         <a href="/" class="nav-link {{ 'active' if active_page == 'bourse' else '' }}">Investments</a>
         <a href="/patrimoine" class="nav-link {{ 'active' if active_page == 'patrimoine' else '' }}">Net Worth</a>
+        <a href="/strategy" class="nav-link {{ 'active' if active_page == 'strategy' else '' }}">Strategy</a>
       </nav>
     </div>
     {% block header_right %}{% endblock %}
@@ -288,6 +343,9 @@
   </a>
   <a href="/patrimoine" class="bottom-nav-item {{ 'active' if active_page == 'patrimoine' else '' }}">
     <span class="bottom-nav-icon">🏦</span><span>Net Worth</span>
+  </a>
+  <a href="/strategy" class="bottom-nav-item {{ 'active' if active_page == 'strategy' else '' }}">
+    <span class="bottom-nav-icon">🎯</span><span>Strategy</span>
   </a>
 </nav>
 </body>

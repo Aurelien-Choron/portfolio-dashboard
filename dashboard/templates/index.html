@@ -73,7 +73,7 @@
   <div class="tabs mt-4">
     <button class="tab-btn active" data-tab-target="tab-performance">Performance</button>
     <button class="tab-btn" data-tab-target="tab-repartition">Allocation</button>
-    <button class="tab-btn" data-tab-target="tab-frais">Fees &amp; Rebalancing</button>
+    <button class="tab-btn" data-tab-target="tab-frais">Fees</button>
     <button class="tab-btn" data-tab-target="tab-diversification">Diversification</button>
     <button class="tab-btn" data-tab-target="tab-journal">Activity</button>
   </div>
@@ -88,14 +88,6 @@
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-performance"></div>
-    </div>
-
-    <div class="mb-4">
-      <div class="section-title">Ranking by average monthly return</div>
-      <div class="section-hint">Normalized by holding period: a fund held for a few months and one held for years remain comparable.</div>
-    </div>
-    <div class="card p-4 mb-8">
-      <div id="chart-ranking"></div>
     </div>
 
     <div class="mb-4">
@@ -274,45 +266,6 @@
       </div>
       <div class="section-hint mt-3">Individual stocks have no management fees — only ETFs/ETCs do.</div>
     </div>
-
-    <div class="mb-4">
-      <div class="section-title">Where to invest your next contribution</div>
-      <div class="section-hint">Decision helper: current weight in the portfolio, performance and fees for each line. Sorted by ascending weight (most under-represented first) — the call is yours.</div>
-    </div>
-    <div class="card p-4 mb-6">
-      <div class="overflow-x-auto hidden md:block">
-        <table>
-          <thead>
-            <tr><th>Asset</th><th>Broker</th><th>Current weight</th><th>Avg. monthly return</th><th>Annual fee (TER)</th></tr>
-          </thead>
-          <tbody>
-            {% for p in invest_next %}
-            <tr>
-              <td class="ink-primary">{{ p.name }}</td>
-              <td class="ink-secondary">{{ broker_labels.get(p.broker, p.broker) }}</td>
-              <td class="tabular">{{ p.allocation_pct|fr(1) }} %</td>
-              <td class="tabular {{ 'delta-good' if p.monthly_avg_pct >= 0 else 'delta-critical' }}">{{ p.monthly_avg_pct|fr(2, signed=True) if p.monthly_avg_pct is not none else "—" }} %</td>
-              <td class="tabular">{{ p.ter_pct|fr(2) if p.ter_pct is not none else "—" }}{{ " %" if p.ter_pct is not none else "" }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="md:hidden">
-        {% for p in invest_next %}
-        <div class="list-row">
-          <div class="list-row-main">
-            <div class="list-row-title">{{ p.name }}</div>
-            <div class="list-row-sub">{{ broker_labels.get(p.broker, p.broker) }} · TER {{ p.ter_pct|fr(2) if p.ter_pct is not none else "—" }}{{ " %" if p.ter_pct is not none else "" }}</div>
-          </div>
-          <div class="list-row-end">
-            <div class="list-row-value">{{ p.allocation_pct|fr(1) }} %</div>
-            <div class="list-row-meta {{ 'delta-good' if p.monthly_avg_pct >= 0 else 'delta-critical' }}">{{ p.monthly_avg_pct|fr(2, signed=True) if p.monthly_avg_pct is not none else "—" }} %/mo</div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
   </div>
 
   <!-- ---------------------------------------------------------- -->
@@ -425,7 +378,6 @@
 
   renderFig('chart-performance', figs.performance);
   renderFig('chart-sparkline', figs.sparkline, { staticPlot: true });
-  renderFig('chart-ranking', figs.ranking);
   renderFig('chart-allocation', figs.allocation);
   renderFig('chart-broker', figs.broker);
 

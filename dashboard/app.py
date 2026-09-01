@@ -12,7 +12,7 @@ from flask import Flask, render_template
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import market_data
-from analytics import exposure as exposure_mod, kpis, patrimoine as patrimoine_mod, performance, performance_by_asset, positions as positions_mod
+from analytics import exposure as exposure_mod, kpis, patrimoine as patrimoine_mod, performance, performance_by_asset, positions as positions_mod, strategy as strategy_mod
 from importers import normalize
 from paths import data_root
 
@@ -51,6 +51,7 @@ CATEGORY_LABELS = {
     "Fonds Euros": "Euro Funds",
     "Livrets": "Savings Accounts",
     "Autres": "Other",
+    patrimoine_mod.INVESTMENT_CATEGORY: "Investments",
 }
 
 # Geo/sector diversification: fixed order of the most likely labels (see dataviz
@@ -373,50 +374,6 @@ def _truncate_label(name: str, max_len: int = 24) -> str:
     return name if len(name) <= max_len else name[: max_len - 1].rstrip() + "…"
 
 
-def _build_ranking_fig(asset_perf: pd.DataFrame) -> dict:
-    """Ranks funds by average monthly return (%) — to spot the best and worst
-    performers at a glance, regardless of how long they've been held."""
-    ranked = asset_perf.dropna(subset=["monthly_avg_pct"]).sort_values("monthly_avg_pct", ascending=True)
-    if ranked.empty:
-        return {}
-
-    colors = [COLOR_GOOD if v >= 0 else COLOR_CRITICAL for v in ranked["monthly_avg_pct"]]
-    labels = [f"{v:+.2f} %/mo" for v in ranked["monthly_avg_pct"]]
-    display_names = [_truncate_label(n) for n in ranked["name"]]
-
-    fig = go.Figure(
-        go.Bar(
-            x=ranked["monthly_avg_pct"],
-            y=display_names,
-            orientation="h",
-            marker=dict(color=colors),
-            text=labels,
-            textposition="outside",
-            textfont=dict(size=12),
-            cliponaxis=False,
-            customdata=ranked["name"],
-            hovertemplate="%{customdata}<br>%{x:+.2f} %/mo<extra></extra>",
-        )
-    )
-    span = max(ranked["monthly_avg_pct"].abs().max(), 0.1)
-    fig.update_layout(
-        margin=dict(l=4, r=56, t=6, b=22),
-        height=max(220, 40 * len(ranked) + 60),
-        font=dict(size=13),
-        xaxis=dict(
-            showgrid=True, gridcolor="var(--grid)", zeroline=True, zerolinecolor="var(--baseline)", zerolinewidth=1,
-            range=[-span * 1.35, span * 1.35], title=None, tickfont=dict(size=12), fixedrange=True,
-        ),
-        yaxis=dict(showgrid=False, automargin=True, tickfont=dict(size=13), fixedrange=True),
-        showlegend=False,
-        bargap=0.3,
-        # Height computed per bar (see above): exempted from the generic mobile
-        # shrink (base.html/themeLayout), which would break the bar thickness.
-        meta=dict(content_height=True),
-    )
-    return fig.to_dict()
-
-
 def _build_pie(slices: list, total_label: str = "Total") -> dict:
     # Color assigned by position in the ORIGINAL list (before filtering out zero
     # values): a category at €0 today keeps its color slot for the day it's no
@@ -451,48 +408,6 @@ def _build_pie(slices: list, total_label: str = "Total") -> dict:
             text=f"{_fmt_eur(total)}<br><span style='font-size:11px'>{total_label}</span>",
             x=0.5, y=0.5, font=dict(size=20), showarrow=False,
         )],
-    )
-    return fig.to_dict()
-
-
-def _build_target_gap_fig(comparison: list) -> dict:
-    """Gap (actual - target) in percentage points, by category."""
-    rows = [c for c in comparison if c["target_pct"] is not None]
-    if not rows:
-        return {}
-    rows = sorted(rows, key=lambda c: c["gap_pct"])
-    cats = [CATEGORY_LABELS.get(c["category"], c["category"]) for c in rows]
-    gaps = [c["gap_pct"] for c in rows]
-    colors = [COLOR_BLUE if g < 0 else COLOR_RED for g in gaps]
-    labels = [f"{g:+.1f} pt" for g in gaps]
-
-    fig = go.Figure(
-        go.Bar(
-            x=gaps,
-            y=cats,
-            orientation="h",
-            marker=dict(color=colors),
-            text=labels,
-            textposition="outside",
-            textfont=dict(size=12),
-            cliponaxis=False,
-            hovertemplate="%{y}<br>Gap: %{x:+.1f} pt vs target<extra></extra>",
-        )
-    )
-    span = max(max(abs(g) for g in gaps), 2)
-    fig.update_layout(
-        margin=dict(l=4, r=48, t=6, b=22),
-        height=max(200, 46 * len(cats) + 60),
-        font=dict(size=13),
-        xaxis=dict(
-            showgrid=True, gridcolor="var(--grid)", zeroline=True, zerolinecolor="var(--baseline)", zerolinewidth=1,
-            range=[-span * 1.3, span * 1.3], title=None, tickfont=dict(size=12), ticksuffix=" pt", fixedrange=True,
-        ),
-        yaxis=dict(showgrid=False, automargin=True, tickfont=dict(size=13), fixedrange=True),
-        showlegend=False,
-        bargap=0.35,
-        # See _build_ranking_fig: per-bar height, exempted from the mobile shrink.
-        meta=dict(content_height=True),
     )
     return fig.to_dict()
 
@@ -560,6 +475,308 @@ def _build_diversification_payload(pos_df: pd.DataFrame) -> dict:
     return {"portfolio": portfolio, "funds": funds}
 
 
+def _build_drift_fig(targets: list) -> dict:
+    """Gap to target, in percentage points of net worth, per strategy line.
+
+    Bars are colored by direction rather than by identity: what matters here is
+    "too much / not enough", the same reading as _build_target_gap_fig.
+    """
+    rows = [t for t in targets if abs(t["drift_pt"]) > 0.01 or t["target_pct"] > 0]
+    if not rows:
+        return {}
+    rows = sorted(rows, key=lambda t: t["drift_pt"])
+    labels = [_truncate_label(t["label"], 28) for t in rows]
+    gaps = [t["drift_pt"] for t in rows]
+    colors = [COLOR_MUTED if t["status"] == "on" else (COLOR_RED if t["drift_pt"] > 0 else COLOR_BLUE)
+              for t in rows]
+
+    fig = go.Figure(
+        go.Bar(
+            x=gaps, y=labels, orientation="h",
+            marker=dict(color=colors),
+            text=[f"{g:+.1f} pt" for g in gaps],
+            textposition="outside", textfont=dict(size=12), cliponaxis=False,
+            customdata=[(t["label"], t["current_eur"], t["target_eur"], t["drift_eur"]) for t in rows],
+            hovertemplate=("%{customdata[0]}<br>Now %{customdata[1]:,.0f} € · "
+                           "target %{customdata[2]:,.0f} €<br>Gap %{customdata[3]:+,.0f} €<extra></extra>"),
+        )
+    )
+    span = max(max(abs(g) for g in gaps), 2)
+    fig.update_layout(
+        margin=dict(l=4, r=56, t=6, b=22),
+        height=max(220, 44 * len(rows) + 60),
+        font=dict(size=13),
+        xaxis=dict(showgrid=True, gridcolor="var(--grid)", zeroline=True,
+                   zerolinecolor="var(--baseline)", zerolinewidth=1,
+                   range=[-span * 1.35, span * 1.35], ticksuffix=" pt",
+                   tickfont=dict(size=12), fixedrange=True),
+        yaxis=dict(showgrid=False, automargin=True, tickfont=dict(size=13), fixedrange=True),
+        showlegend=False, bargap=0.32,
+        meta=dict(content_height=True),
+    )
+    return fig.to_dict()
+
+
+def _build_mix_fig(targets: list, sleeve: dict, total: float) -> dict:
+    """Current vs target composition, as two stacked bars.
+
+    Two bars rather than a pair of donuts: the eye compares lengths along a shared
+    baseline far better than angles across two circles.
+    """
+    ordered = [t for t in targets if t["target_pct"] > 0 or t["current_eur"] > 1]
+    if not ordered or total <= 0:
+        return {}
+    # Colors follow the line's identity — its position in the policy file — never
+    # its current weight, so a line keeps its hue as the allocation moves.
+    palette = dict(zip([t["key"] for t in ordered if not t["is_cash"]], CATEGORICAL_PALETTE))
+
+    traces = []
+    for t in ordered:
+        color = COLOR_MUTED if t["is_cash"] else palette.get(t["key"], COLOR_MUTED)
+        traces.append(
+            go.Bar(
+                y=["Target", "Today"],
+                x=[t["target_pct"], t["current_pct"]],
+                orientation="h", name=_truncate_label(t["label"], 26),
+                marker=dict(color=color, line=dict(color="var(--surface-1)", width=2)),
+                hovertemplate=f"{t['label']}<br>%{{x:.1f}} %<extra></extra>",
+            )
+        )
+    if sleeve["cap_pct"]:
+        traces.append(
+            go.Bar(
+                y=["Target", "Today"],
+                x=[sleeve["cap_pct"], sleeve["used_pct"]],
+                orientation="h", name="Trading sleeve",
+                marker=dict(color=COLOR_VIOLET, line=dict(color="var(--surface-1)", width=2)),
+                hovertemplate="Trading sleeve<br>%{x:.1f} %<extra></extra>",
+            )
+        )
+    fig = go.Figure(data=traces)
+    fig.update_layout(
+        barmode="stack",
+        margin=dict(l=4, r=4, t=6, b=4),
+        height=190,
+        xaxis=dict(showgrid=False, visible=False, fixedrange=True, range=[0, 100]),
+        yaxis=dict(showgrid=False, fixedrange=True, tickfont=dict(size=13)),
+        legend=dict(orientation="h", yanchor="top", y=-0.05, xanchor="left", x=0, font=dict(size=11)),
+        bargap=0.42,
+    )
+    return fig.to_dict()
+
+
+def _build_frontier_fig(analytics: dict, current: dict | None) -> dict:
+    """The efficient frontier, with today's portfolio and the target on it.
+
+    The whole point of the chart is the vertical distance between "Today" and the
+    frontier: it shows how much return is being left on the table at the risk
+    already being taken.
+    """
+    if not analytics or not analytics.get("frontier"):
+        return {}
+    frontier = analytics["frontier"]
+    rf = analytics["risk_free_net_pct"]
+    target = analytics.get("target_portfolio") or {}
+    tangency = analytics.get("tangency") or {}
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=[a["vol_pct"] for a in analytics["assets"]],
+            y=[a["expected_net_pct"] for a in analytics["assets"]],
+            mode="markers", name="Individual lines",
+            marker=dict(size=9, color=COLOR_MUTED, opacity=0.65,
+                        line=dict(width=1.5, color="var(--surface-1)")),
+            customdata=[(a["label"], a["beta"]) for a in analytics["assets"]],
+            hovertemplate="%{customdata[0]}<br>Vol %{x:.1f} % · return %{y:.2f} %<br>Beta %{customdata[1]:.2f}<extra></extra>",
+        )
+    )
+    if tangency:
+        fig.add_trace(
+            go.Scatter(
+                x=[0, tangency["vol_pct"]], y=[rf, tangency["ret_pct"]],
+                mode="lines", name="Savings + tangency",
+                line=dict(color=COLOR_VIOLET, width=2, dash="dash"),
+                hoverinfo="skip",
+            )
+        )
+    fig.add_trace(
+        go.Scatter(
+            x=[f["vol_pct"] for f in frontier], y=[f["ret_pct"] for f in frontier],
+            mode="lines", name="Efficient frontier",
+            line=dict(color=COLOR_BLUE, width=3),
+            hovertemplate="Vol %{x:.1f} % · return %{y:.2f} %<extra></extra>",
+        )
+    )
+    if tangency:
+        fig.add_trace(
+            go.Scatter(
+                x=[tangency["vol_pct"]], y=[tangency["ret_pct"]],
+                mode="markers", name="Tangency",
+                marker=dict(size=15, color=COLOR_BLUE, symbol="circle",
+                            line=dict(width=2.5, color="var(--surface-1)")),
+                hovertemplate=f"Tangency<br>Sharpe {tangency.get('sharpe')}<br>"
+                              "Vol %{x:.1f} % · return %{y:.2f} %<extra></extra>",
+            )
+        )
+    if target:
+        fig.add_trace(
+            go.Scatter(
+                x=[target["vol_pct"]], y=[target["ret_pct"]],
+                mode="markers+text", name="Target",
+                marker=dict(size=15, color=COLOR_AQUA, symbol="diamond",
+                            line=dict(width=2.5, color="var(--surface-1)")),
+                text=["Target"], textposition="top center", textfont=dict(size=12),
+                hovertemplate=f"Target · beta {target.get('beta')}<br>"
+                              "Vol %{x:.1f} % · return %{y:.2f} %<extra></extra>",
+            )
+        )
+    if current:
+        fig.add_trace(
+            go.Scatter(
+                x=[current["vol_pct"]], y=[current["ret_pct"]],
+                mode="markers+text", name="Today",
+                marker=dict(size=15, color=COLOR_ORANGE, symbol="x",
+                            line=dict(width=2, color="var(--surface-1)")),
+                text=["Today"], textposition="bottom center", textfont=dict(size=12),
+                hovertemplate=f"Today · beta {current.get('beta')}<br>"
+                              "Vol %{x:.1f} % · return %{y:.2f} %<extra></extra>",
+            )
+        )
+    fig.add_trace(
+        go.Scatter(
+            x=[0], y=[rf], mode="markers", name="Guaranteed savings",
+            marker=dict(size=11, color=COLOR_VIOLET, symbol="square",
+                        line=dict(width=2, color="var(--surface-1)")),
+            hovertemplate=f"Guaranteed savings<br>{rf:.2f} % net, no volatility<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        margin=dict(l=2, r=8, t=6, b=2),
+        height=420,
+        xaxis=dict(title="Annualised volatility", ticksuffix=" %", showgrid=True,
+                   gridcolor="var(--grid)", fixedrange=True, rangemode="tozero"),
+        yaxis=dict(title="Expected return, after tax", ticksuffix=" %", showgrid=True,
+                   gridcolor="var(--grid)", fixedrange=True),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
+                    font=dict(size=11)),
+        hovermode="closest",
+    )
+    return fig.to_dict()
+
+
+# Correlation ramp. Fixed hexes rather than theme variables: the cells cover the
+# page background, so the same ramp reads correctly in light and dark mode, and
+# knowing the exact fill lets us pick a contrasting ink per cell.
+CORR_NEUTRAL, CORR_HIGH, CORR_NEG = "#eef3f8", "#1e5aa8", "#c96a3f"
+CORR_MIN, CORR_MAX = -40, 100
+
+
+def _correlation_cell_color(z: float) -> str:
+    if z < 0:
+        return _lerp_color(CORR_NEUTRAL, CORR_NEG, min(1.0, -z / 40))
+    return _lerp_color(CORR_NEUTRAL, CORR_HIGH, min(1.0, z / 100))
+
+
+def _build_correlation_fig(analytics: dict) -> dict:
+    """Correlation heatmap, with the number written in each cell.
+
+    Plotly paints every cell's text in a single color, which is unreadable at one
+    end of the ramp or the other. So the numbers are drawn as annotations instead,
+    each picking white or dark ink from its own cell's luminance
+    (_contrast_text_color) — the same trick the allocation treemap uses.
+    """
+    if not analytics or not analytics.get("correlation"):
+        return {}
+    corr = analytics["correlation"]
+    labels = [_truncate_label(l, 22) for l in corr["labels"]]
+    matrix = corr["matrix"]
+    n = len(labels)
+
+    # The diagonal is always 100 and carries no information; leaving it blank stops
+    # it from being the darkest thing on the chart.
+    z = [[None if i == j else matrix[i][j] for j in range(n)] for i in range(n)]
+    span = CORR_MAX - CORR_MIN
+    fig = go.Figure(
+        go.Heatmap(
+            z=z, x=labels, y=labels,
+            colorscale=[[0.0, CORR_NEG], [(0 - CORR_MIN) / span, CORR_NEUTRAL], [1.0, CORR_HIGH]],
+            zmin=CORR_MIN, zmax=CORR_MAX,
+            xgap=3, ygap=3,
+            showscale=False,
+            hoverongaps=False,
+            hovertemplate="%{y}<br>%{x}<br>Correlation %{z} %<extra></extra>",
+        )
+    )
+
+    annotations = []
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                annotations.append(dict(x=labels[j], y=labels[i], text="—", showarrow=False,
+                                        font=dict(size=11, color=COLOR_MUTED)))
+                continue
+            value = matrix[i][j]
+            annotations.append(dict(
+                x=labels[j], y=labels[i], text=str(value), showarrow=False,
+                font=dict(size=11, color=_contrast_text_color(_correlation_cell_color(value))),
+            ))
+
+    fig.update_layout(
+        margin=dict(l=2, r=2, t=6, b=2),
+        height=max(340, 44 * n + 130),
+        annotations=annotations,
+        xaxis=dict(tickangle=-40, tickfont=dict(size=11), fixedrange=True, automargin=True,
+                   side="top", showgrid=False),
+        yaxis=dict(tickfont=dict(size=11), fixedrange=True, automargin=True,
+                   autorange="reversed", showgrid=False),
+        meta=dict(content_height=True),
+    )
+    return fig.to_dict()
+
+
+def _build_stress_fig(stress: list, total: float, tolerance_pct: float | None) -> dict:
+    """Simulated loss per scenario, today vs target, against the stated tolerance."""
+    if not stress:
+        return {}
+    scenarios = [_truncate_label(s["scenario"], 34) for s in stress]
+    fig = go.Figure()
+    for name, key, color in (("Today", "current_pct", COLOR_ORANGE),
+                             ("Target", "target_pct", COLOR_BLUE)):
+        fig.add_trace(
+            go.Bar(
+                x=[s[key] for s in stress], y=scenarios, orientation="h", name=name,
+                marker=dict(color=color),
+                text=[f"{s[key]:+.1f} %" for s in stress],
+                textposition="outside", textfont=dict(size=11), cliponaxis=False,
+                customdata=[s[key] / 100 * total for s in stress],
+                hovertemplate=f"{name}<br>%{{x:+.1f}} %<br>%{{customdata:,.0f}} €<extra></extra>",
+            )
+        )
+    worst = min(min(s["current_pct"], s["target_pct"]) for s in stress)
+    span = min(worst, tolerance_pct or worst)
+    if tolerance_pct is not None:
+        fig.add_vline(
+            x=tolerance_pct, line=dict(color=COLOR_CRITICAL, width=2, dash="dot"),
+            annotation_text=f"tolerance {tolerance_pct:.0f} %",
+            annotation_position="bottom left",
+            annotation_font=dict(size=11, color=COLOR_CRITICAL),
+        )
+    fig.update_layout(
+        barmode="group",
+        margin=dict(l=4, r=48, t=6, b=22),
+        height=max(230, 78 * len(stress) + 70),
+        xaxis=dict(showgrid=True, gridcolor="var(--grid)", zeroline=True,
+                   zerolinecolor="var(--baseline)", ticksuffix=" %",
+                   range=[span * 1.22, 2], fixedrange=True, tickfont=dict(size=12)),
+        yaxis=dict(showgrid=False, automargin=True, tickfont=dict(size=12), fixedrange=True),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        bargap=0.3,
+        meta=dict(content_height=True),
+    )
+    return fig.to_dict()
+
+
 @app.route("/")
 def index():
     transactions = normalize.load_all(DATA_ROOT)
@@ -591,7 +808,6 @@ def index():
     figs = {
         "performance": _build_performance_fig(hist, trade_events),
         "sparkline": _build_sparkline_fig(hist),
-        "ranking": _build_ranking_fig(asset_perf),
         "allocation": _build_allocation_treemap_fig(pos_df),
         "broker": _build_broker_gauge_fig(broker_df) or _build_broker_fig(broker_df),
     }
@@ -605,13 +821,6 @@ def index():
     )
 
     asset_perf_rows = asset_perf.sort_values("monthly_avg_pct", ascending=False).to_dict("records")
-
-    open_perf = asset_perf[asset_perf["quantity"] > 1e-9].copy()
-    total_open_value = open_perf["current_value"].sum()
-    open_perf["allocation_pct"] = (
-        open_perf["current_value"] / total_open_value * 100 if total_open_value else 0.0
-    )
-    invest_next_rows = open_perf.sort_values("allocation_pct").to_dict("records")
 
     fees_rows = (
         pos_df[(pos_df["quantity"] > 1e-9) & (pos_df["asset_key"].isin(fees_map))]
@@ -646,7 +855,6 @@ def index():
         broker_df=broker_df.to_dict("records"),
         positions=open_positions,
         asset_perf=asset_perf_rows,
-        invest_next=invest_next_rows,
         fees_rows=fees_rows,
         total_annual_fees=total_annual_fees,
         allocation_pnl_bound=allocation_pnl_bound,
@@ -666,6 +874,7 @@ def patrimoine():
 
     bourse_value = 0.0
     bourse_by_broker = {}
+    by_broker_raw = {}
     bourse_positions = []
     if not transactions.empty:
         pos_dict = positions_mod.build_positions(transactions)
@@ -678,12 +887,16 @@ def patrimoine():
             for row in open_pos.to_dict("records")
         ]
         broker_df = kpis.by_broker(pos_df)
+        by_broker_raw = {row["broker"]: row["current_value"] for row in broker_df.to_dict("records")}
         bourse_by_broker = {
-            BROKER_LABELS.get(row["broker"], row["broker"]): row["current_value"]
-            for row in broker_df.to_dict("records")
+            BROKER_LABELS.get(broker, broker): value for broker, value in by_broker_raw.items()
         }
 
     data = patrimoine_mod.build_patrimoine(bourse_value, bourse_by_broker, bourse_positions)
+    # Savings and investment envelopes in one table: the page is called Net Worth,
+    # so its account list should add up to the net worth shown above it.
+    all_accounts = data["accounts"] + patrimoine_mod.build_investment_accounts(
+        by_broker_raw, BROKER_LABELS)
 
     category_slices = [
         {"label": CATEGORY_LABELS.get(c["category"], c["category"]), "value": c["value"]}
@@ -693,7 +906,6 @@ def patrimoine():
     figs = {
         "repartition": _build_pie(category_slices),
         "bank_repartition": _build_pie(data["bank_slices"], total_label="Total"),
-        "target_gap": _build_target_gap_fig(data["comparison"]),
     }
 
     return render_template(
@@ -702,10 +914,63 @@ def patrimoine():
         total=data["total"],
         bourse_value=data["bourse_value"],
         epargne_total=data["epargne_total"],
-        accounts=data["accounts"],
-        comparison=data["comparison"],
+        accounts=all_accounts,
         by_category=data["by_category"],
         category_labels=CATEGORY_LABELS,
+        figs_json=json.dumps(figs, cls=plotly.utils.PlotlyJSONEncoder),
+        last_update=pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"),
+    )
+
+
+@app.route("/strategy")
+def strategy():
+    policy = strategy_mod.load_policy()
+    if policy is None:
+        return render_template("strategy.html", active_page="strategy", no_policy=True,
+                               last_update=pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"))
+
+    transactions = normalize.load_all(DATA_ROOT)
+    positions = []
+    if not transactions.empty:
+        pos_dict = positions_mod.build_positions(transactions)
+        pos_df = kpis.enrich_with_prices(positions_mod.positions_frame(pos_dict))
+        positions = [
+            {"asset_key": r["asset_key"], "name": r["name"],
+             "value": r["current_value"], "broker": r["broker"]}
+            for r in pos_df[pos_df["quantity"] > 1e-9].to_dict("records")
+        ]
+
+    accounts = [a for a in patrimoine_mod.load_accounts() if a.get("visible", True)]
+    cash_total = sum(a["balance"] for a in accounts)
+    total = sum(p["value"] for p in positions) + cash_total
+
+    analytics = strategy_mod.load_analytics()
+    data = strategy_mod.build(policy, positions, accounts, cash_total, total, analytics)
+
+    current_risk, stress = None, []
+    if analytics:
+        weights = strategy_mod.current_weights(policy, positions, total)
+        current_risk = strategy_mod.portfolio_risk(analytics, weights)
+        stress = strategy_mod.stress_losses(analytics, policy, weights)
+
+    tolerance = (data["risk"] or {}).get("max_drawdown_tolerance_pct")
+    figs = {
+        "drift": _build_drift_fig(data["targets"]),
+        "mix": _build_mix_fig(data["targets"], data["sleeve"], total),
+        "frontier": _build_frontier_fig(analytics, current_risk),
+        "correlation": _build_correlation_fig(analytics),
+        "stress": _build_stress_fig(stress, total, tolerance),
+    }
+
+    return render_template(
+        "strategy.html",
+        active_page="strategy",
+        no_policy=False,
+        data=data,
+        analytics=analytics,
+        current_risk=current_risk,
+        stress=stress,
+        tolerance_pct=tolerance,
         figs_json=json.dumps(figs, cls=plotly.utils.PlotlyJSONEncoder),
         last_update=pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"),
     )

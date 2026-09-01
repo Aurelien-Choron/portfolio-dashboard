@@ -6,7 +6,7 @@ Trade Republic). Rebuilds positions and PnL from the raw transaction journal
 diversification, and compares total net worth (investments + savings) against
 a target allocation.
 
-**[➡ Live demo](https://à-compléter-après-déploiement.onrender.com)**
+**[➡ Live demo](https://portfolio-dashboard-demo.onrender.com)**
 *(100% fictional data — see [Privacy](#privacy) below. The free-tier service
 sleeps after 15 min of inactivity: the first load can take ~30s.)*
 
@@ -23,6 +23,14 @@ sleeps after 15 min of inactivity: the first load can take ~30s.)*
 - **Net Worth view**: investments + savings accounts (regulated savings,
   retirement plans, life insurance...), comparison against a target allocation
   with gaps highlighted.
+- **Strategy view**: a strategic allocation you define once, and everything that
+  follows from it — drift against target, envelope capacity (including the PEA
+  contribution ceiling), a trading sleeve capped at a share of net worth, and an
+  **ordered action plan**: what to buy, in which envelope, which fund (with its
+  ISIN, ongoing charge and size), funded from which account, each order priced at
+  the broker's real fee and checked against what the switch actually earns back.
+  Backed by measured risk figures: volatility, beta, correlations, efficient
+  frontier, stress scenarios.
 - **Installable PWA** on a phone (home-screen icon, full screen), built
   mobile-first (tap-friendly lists, compact charts, tab navigation).
 
@@ -39,19 +47,23 @@ portfolio-dashboard/
 │   ├── tickers.json          # asset_key -> Yahoo Finance ticker
 │   ├── fees.json              # asset_key -> annual TER (%)
 │   ├── asset_classes.json     # asset_key -> asset class
-│   ├── target_allocation.json # target net worth allocation (%)
-│   └── exposure.json          # asset_key -> country/sector breakdown
+│   ├── target_allocation.json # target net worth allocation (%) — fallback only
+│   ├── exposure.json          # asset_key -> country/sector breakdown
+│   ├── strategy.json          # strategic allocation POLICY (hand-edited)
+│   └── strategy_analytics.json # risk figures (generated, never hand-edited)
 ├── demo/                    # 100% FICTIONAL equivalent of data/ + config/,
 │   │                          committed for the public demo
 │   └── ...                   # same layout as data/ and config/
 ├── scripts/
-│   └── generate_demo_data.py # (Re)generates demo/ from scratch
+│   ├── generate_demo_data.py # (Re)generates demo/ from scratch
+│   └── build_strategy.py     # Computes strategy_analytics.json (needs scipy)
 ├── importers/
 │   ├── fortuneo.py            # Fortuneo parser (CSV ';', cp1252)
 │   ├── trade_republic.py      # Trade Republic parser (CSV ',', UTF-8)
 │   ├── corrections.py         # Manual corrective buys (incomplete history)
 │   └── normalize.py           # Merges every source into one common journal
 ├── analytics/
+│   ├── strategy.py            # Target vs actual, envelopes, action plan, funding
 │   ├── positions.py           # Weighted average cost + realized PnL
 │   ├── kpis.py                 # Global KPI aggregation
 │   ├── performance.py          # Portfolio value over time
@@ -62,7 +74,7 @@ portfolio-dashboard/
 ├── paths.py                  # data/config resolution, override via PORTFOLIO_ROOT
 ├── dashboard/
 │   ├── app.py                  # Flask server + Plotly chart generation
-│   └── templates/               # base.html, index.html (Investments), patrimoine.html
+│   └── templates/               # base.html, index.html (Investments), patrimoine.html, strategy.html
 ├── wsgi.py                    # gunicorn entry point (deployment)
 ├── main.py                    # CSV import + command-line summary
 ├── Procfile / render.yaml     # Render deployment
@@ -90,7 +102,17 @@ pip install -r requirements.txt
    ```bash
    python main.py
    ```
-6. Start the dashboard:
+6. (Optional) Define a strategic allocation in `config/strategy.json` — target
+   weights per line, tolerance bands, envelopes and their ceilings, the ordered
+   list of accounts to fund purchases from, and the trading sleeve's cap. Then
+   compute the risk figures behind it:
+   ```bash
+   pip install -r requirements-strategy.txt   # adds scipy, for this script only
+   python scripts/build_strategy.py
+   ```
+   The Strategy page works without this step; only its "Risk & frontier" tab
+   needs it.
+7. Start the dashboard:
    ```bash
    python dashboard/app.py
    ```
@@ -155,6 +177,16 @@ type,asset_class,name,symbol,shares,price,amount,fee,tax,currency,...`. The
 - **Net invested capital** (performance chart) = net cash flow into
   investments (purchases − sale proceeds), not the strict accounting cost
   basis of open positions.
+- **Strategy — what is measured vs decided**: volatility, beta, correlations and
+  covariances are *measured* from weekly returns in euros over the window set in
+  `config/strategy.json`. Expected returns are *judgements*: the CAPM
+  (`risk-free + beta x equity risk premium`) plus an explicit valuation tilt per
+  line, then net of each envelope's tax rate. The two are deliberately shown side
+  by side with past returns, which they are not meant to match. A line too recent
+  to carry a statistic borrows a long-history proxy, declared and justified in the
+  config; the app labels every proxied line. `build_strategy.py` never rewrites
+  the targets — a strategic allocation that silently drifts with the market is not
+  a strategy.
 - **Historical prices**: for assets without a mapped ticker, the price history
   is approximated by the current average purchase price (a flat line) — the
   performance curve is therefore only reliable for assets mapped in
@@ -166,9 +198,9 @@ No personal data is ever sent anywhere or committed to Git:
 
 - `data/fortuneo/*.csv`, `data/trade_republic/*.csv`, `data/processed/*.csv`,
   `data/accounts/`, `data/corrections/*.csv`, and every file under
-  `config/*.json` (tickers, fees, asset classes, target allocation, exposure —
-  they reveal the exact composition of the real portfolio) are excluded via
-  `.gitignore`.
+  `config/*.json` (tickers, fees, asset classes, target allocation, exposure,
+  strategy and its analytics — they reveal the exact composition of the real
+  portfolio) are excluded via `.gitignore`.
 - The public demo runs exclusively on `demo/`, a fictional dataset committed
   on purpose (see [Demo mode](#demo-mode-no-personal-data)).
 - All computation runs locally (or on the deployment instance you control);

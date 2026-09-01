@@ -1,0 +1,156 @@
+{
+  "_readme": "Fictional strategic allocation (demo). Target percentages are shares of TOTAL net worth and sum to 100 including the trading sleeve.",
+  "profile": "Balanced",
+  "as_of": "2026-08-29",
+  "reserve_eur": 5000,
+  "risk": {
+    "max_drawdown_tolerance_pct": -25.0,
+    "target_volatility_pct": 9.0
+  },
+  "envelopes": {
+    "PEA": {
+      "label": "PEA (Demo Broker)",
+      "ceiling_eur": 150000,
+      "contributed_eur": 8000,
+      "tax_pct": 17.2,
+      "priority": 1,
+      "note": "The ceiling applies to contributions, not to value."
+    },
+    "CTO": {
+      "label": "Brokerage account",
+      "ceiling_eur": null,
+      "tax_pct": 30.0,
+      "priority": 2,
+      "note": "Holds what the PEA is not eligible for."
+    },
+    "SAVINGS": {
+      "label": "Regulated savings",
+      "ceiling_eur": null,
+      "tax_pct": null,
+      "priority": 3,
+      "note": "Reserve plus the defensive sleeve."
+    }
+  },
+  "broker_envelopes": {
+    "fortuneo": "PEA",
+    "trade_republic": "CTO",
+    "correction_manuelle": "CTO"
+  },
+  "trading_sleeve": {
+    "_readme": "A budget with a ceiling, never a target to reach. Never refill it from the core after a loss.",
+    "cap_pct": 10.0,
+    "preferred_envelope": "CTO",
+    "asset_class": "Actions",
+    "members": [
+      "US0378331005",
+      "FR0000121014",
+      "US1912161007",
+      "Sanofi"
+    ]
+  },
+  "targets": [
+    {
+      "key": "Amundi MSCI World UCITS ETF - EUR (C)",
+      "label": "MSCI World",
+      "ticker": "CW8.PA",
+      "target_pct": 42.0,
+      "band_pt": 3.0,
+      "envelope": "PEA",
+      "asset_class": "Actions",
+      "role": "core"
+    },
+    {
+      "key": "IE00BK5BQT80",
+      "label": "FTSE All-World",
+      "ticker": "VWCE.DE",
+      "target_pct": 18.0,
+      "band_pt": 2.0,
+      "envelope": "CTO",
+      "asset_class": "Actions",
+      "role": "core",
+      "instrument": {
+        "name": "Demo FTSE All-World UCITS ETF Acc",
+        "isin": "IE00DEMO0001",
+        "ticker": "VWCE",
+        "issuer": "Demo Asset Management",
+        "domicile": "Ireland",
+        "ter_pct": 0.22,
+        "aum": "12,4 Md€",
+        "distribution": "Accumulating",
+        "replication": "Physical, sampled",
+        "why": "Fictional example. In a real strategy this is where the chosen product sits, with the reasoning behind it: fee, size, issuer, replication method and the envelope it is allowed in.",
+        "alternatives": [
+          {
+            "name": "Demo MSCI ACWI UCITS ETF",
+            "isin": "IE00DEMO0002",
+            "why_not": "Fictional example of a runner-up and why it lost."
+          }
+        ]
+      }
+    },
+    {
+      "key": "__CASH__",
+      "label": "Guaranteed savings",
+      "target_pct": 30.0,
+      "band_pt": 3.0,
+      "envelope": "SAVINGS",
+      "asset_class": "Livrets",
+      "role": "defensive",
+      "note": "Emergency reserve plus the defensive sleeve."
+    }
+  ],
+  "funding_sources": [
+    {
+      "account_id": "checking",
+      "keep_eur": 500,
+      "order": 1,
+      "note": "Unremunerated: the first euro to put to work."
+    },
+    {
+      "account_id": "ldds",
+      "keep_eur": 0,
+      "order": 2,
+      "note": "Liquid and capped."
+    },
+    {
+      "account_id": "livret_a",
+      "keep_eur": 5000,
+      "order": 3,
+      "note": "Keeps the emergency reserve untouched."
+    }
+  ],
+  "assumptions": {
+    "_readme": "Judgements, not measurements. Expected returns use the CAPM; volatility, beta and correlations are measured.",
+    "risk_free_gross_pct": 2.25,
+    "risk_free_net_pct": 2.1,
+    "equity_risk_premium_pct": 4.5,
+    "inflation_pct": 2.2,
+    "window_start": "2016-07-01",
+    "shrinkage": 0.15,
+    "benchmark_ticker": "CW8.PA",
+    "benchmark_label": "MSCI World TR (EUR)",
+    "valuation_tilt_pct": {
+      "Amundi MSCI World UCITS ETF - EUR (C)": 0.0,
+      "IE00BK5BQT80": 0.0
+    },
+    "absolute_return_pct": {},
+    "proxies": {
+      "_readme": "Long-history stand-ins for lines too recent to carry a statistic."
+    }
+  },
+  "stress_scenarios": {
+    "_readme": "Explicit shocks in %, applied per line. The recent window contains no systemic bear market.",
+    "2008-style systemic crash": {
+      "Amundi MSCI World UCITS ETF - EUR (C)": -45,
+      "IE00BK5BQT80": -46,
+      "__TRADING__": -50,
+      "__CASH__": 0
+    },
+    "2022-style inflation & rates shock": {
+      "Amundi MSCI World UCITS ETF - EUR (C)": -18,
+      "IE00BK5BQT80": -19,
+      "__TRADING__": -22,
+      "__CASH__": 0
+    }
+  }
+}

@@ -1,0 +1,275 @@
+{
+ "generated_at": "2026-08-29T12:47:42",
+ "window": {
+  "start": "2019-08-09",
+  "end": "2026-08-28",
+  "observations": 369,
+  "frequency": "weekly",
+  "currency": "EUR"
+ },
+ "benchmark": {
+  "ticker": "CW8.PA",
+  "label": "MSCI World TR (EUR)"
+ },
+ "risk_free_net_pct": 2.1,
+ "risk_free_gross_pct": 2.25,
+ "equity_risk_premium_pct": 4.5,
+ "inflation_pct": 2.2,
+ "assets": [
+  {
+   "key": "Amundi MSCI World UCITS ETF - EUR (C)",
+   "label": "MSCI World",
+   "ticker": "CW8.PA",
+   "proxy": null,
+   "proxy_reason": null,
+   "role": "core",
+   "envelope": "PEA",
+   "vol_pct": 15.59,
+   "beta": 1.0,
+   "corr_market": 1.0,
+   "cagr_hist_pct": 13.33,
+   "max_dd_pct": -29.2,
+   "expected_gross_pct": 6.75,
+   "expected_net_pct": 5.59,
+   "sharpe_net": 0.224
+  },
+  {
+   "key": "IE00BK5BQT80",
+   "label": "FTSE All-World",
+   "ticker": "VWCE.DE",
+   "proxy": null,
+   "proxy_reason": null,
+   "role": "core",
+   "envelope": "CTO",
+   "vol_pct": 15.12,
+   "beta": 0.964,
+   "corr_market": 0.994,
+   "cagr_hist_pct": 13.07,
+   "max_dd_pct": -28.7,
+   "expected_gross_pct": 6.59,
+   "expected_net_pct": 4.61,
+   "sharpe_net": 0.166
+  },
+  {
+   "key": "__TRADING__",
+   "label": "Trading sleeve",
+   "ticker": "basket",
+   "proxy": "AAPL, MC.PA, KO, SAN.PA",
+   "proxy_reason": "Equal-weight basket of the 4 positions currently held",
+   "role": "trading",
+   "envelope": "CTO",
+   "vol_pct": 16.39,
+   "beta": 0.763,
+   "corr_market": 0.726,
+   "cagr_hist_pct": 15.84,
+   "max_dd_pct": -26.1,
+   "expected_gross_pct": 5.68,
+   "expected_net_pct": 3.98,
+   "sharpe_net": 0.115
+  }
+ ],
+ "correlation": {
+  "labels": [
+   "MSCI World",
+   "FTSE All-World",
+   "Trading sleeve"
+  ],
+  "keys": [
+   "Amundi MSCI World UCITS ETF - EUR (C)",
+   "IE00BK5BQT80",
+   "__TRADING__"
+  ],
+  "matrix": [
+   [
+    100,
+    99,
+    73
+   ],
+   [
+    99,
+    100,
+    72
+   ],
+   [
+    73,
+    72,
+    100
+   ]
+  ]
+ },
+ "covariance": {
+  "keys": [
+   "Amundi MSCI World UCITS ETF - EUR (C)",
+   "IE00BK5BQT80",
+   "__TRADING__"
+  ],
+  "matrix": [
+   [
+    0.024305010345557036,
+    0.022792852270416806,
+    0.018883222241549664
+   ],
+   [
+    0.022792852270416806,
+    0.0228622250615577,
+    0.018268729525927042
+   ],
+   [
+    0.018883222241549664,
+    0.018268729525927042,
+    0.026847677899730076
+   ]
+  ]
+ },
+ "frontier": [
+  {
+   "vol_pct": 15.119,
+   "ret_pct": 4.654
+  },
+  {
+   "vol_pct": 15.131,
+   "ret_pct": 4.8
+  },
+  {
+   "vol_pct": 15.143,
+   "ret_pct": 4.861
+  },
+  {
+   "vol_pct": 15.154,
+   "ret_pct": 4.907
+  },
+  {
+   "vol_pct": 15.166,
+   "ret_pct": 4.946
+  },
+  {
+   "vol_pct": 15.178,
+   "ret_pct": 4.981
+  },
+  {
+   "vol_pct": 15.189,
+   "ret_pct": 5.012
+  },
+  {
+   "vol_pct": 15.201,
+   "ret_pct": 5.041
+  },
+  {
+   "vol_pct": 15.213,
+   "ret_pct": 5.068
+  },
+  {
+   "vol_pct": 15.224,
+   "ret_pct": 5.093
+  },
+  {
+   "vol_pct": 15.236,
+   "ret_pct": 5.117
+  },
+  {
+   "vol_pct": 15.248,
+   "ret_pct": 5.139
+  },
+  {
+   "vol_pct": 15.259,
+   "ret_pct": 5.161
+  },
+  {
+   "vol_pct": 15.271,
+   "ret_pct": 5.182
+  },
+  {
+   "vol_pct": 15.283,
+   "ret_pct": 5.202
+  },
+  {
+   "vol_pct": 15.294,
+   "ret_pct": 5.221
+  },
+  {
+   "vol_pct": 15.306,
+   "ret_pct": 5.24
+  },
+  {
+   "vol_pct": 15.318,
+   "ret_pct": 5.258
+  },
+  {
+   "vol_pct": 15.329,
+   "ret_pct": 5.276
+  },
+  {
+   "vol_pct": 15.341,
+   "ret_pct": 5.293
+  },
+  {
+   "vol_pct": 15.353,
+   "ret_pct": 5.31
+  },
+  {
+   "vol_pct": 15.364,
+   "ret_pct": 5.326
+  },
+  {
+   "vol_pct": 15.376,
+   "ret_pct": 5.342
+  },
+  {
+   "vol_pct": 15.388,
+   "ret_pct": 5.357
+  },
+  {
+   "vol_pct": 15.399,
+   "ret_pct": 5.373
+  },
+  {
+   "vol_pct": 15.411,
+   "ret_pct": 5.388
+  },
+  {
+   "vol_pct": 15.423,
+   "ret_pct": 5.402
+  },
+  {
+   "vol_pct": 15.434,
+   "ret_pct": 5.417
+  }
+ ],
+ "tangency": {
+  "vol_pct": 15.59,
+  "ret_pct": 5.589,
+  "sharpe": 0.224,
+  "beta": 1.0,
+  "weights": {
+   "MSCI World": 100.0
+  }
+ },
+ "target_portfolio": {
+  "vol_pct": 10.482,
+  "ret_pct": 4.205,
+  "beta": 0.67,
+  "sharpe": 0.201,
+  "invested_pct": 70.0,
+  "cash_pct": 30.0
+ },
+ "stress": [
+  {
+   "scenario": "2008-style systemic crash",
+   "target_pct": -32.18,
+   "shocks": {
+    "MSCI World": -45,
+    "FTSE All-World": -46,
+    "Trading sleeve": -50
+   }
+  },
+  {
+   "scenario": "2022-style inflation & rates shock",
+   "target_pct": -13.18,
+   "shocks": {
+    "MSCI World": -18,
+    "FTSE All-World": -19,
+    "Trading sleeve": -22
+   }
+  }
+ ]
+}

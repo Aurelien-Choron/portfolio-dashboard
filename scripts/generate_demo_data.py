@@ -130,11 +130,13 @@ def write_accounts_json():
     # direct English equivalent. Generic ones (checking account) are translated.
     data = {
         "_readme": "Fictional demo accounts — no real data.",
+        # "id" is what config/strategy.json's funding_sources reference to decide
+        # which account each euro of a purchase comes from.
         "accounts": [
-            {"label": "Livret A", "bank": "Demo Bank", "category": "Livrets", "balance": 8500, "rate_pct": 3.0, "ceiling": 22950},
-            {"label": "LDDS", "bank": "Demo Bank", "category": "Livrets", "balance": 4200, "rate_pct": 3.0, "ceiling": 12000},
-            {"label": "Life Insurance — Euro Fund", "bank": "Demo Insurer", "category": "Fonds Euros", "balance": 12000, "rate_pct": 2.6},
-            {"label": "Checking Account", "bank": "Demo Bank", "category": "Autres", "balance": 1500},
+            {"id": "livret_a", "label": "Livret A", "bank": "Demo Bank", "category": "Livrets", "balance": 8500, "rate_pct": 3.0, "ceiling": 22950},
+            {"id": "ldds", "label": "LDDS", "bank": "Demo Bank", "category": "Livrets", "balance": 4200, "rate_pct": 3.0, "ceiling": 12000},
+            {"id": "av_euro", "label": "Life Insurance — Euro Fund", "bank": "Demo Insurer", "category": "Fonds Euros", "balance": 12000, "rate_pct": 2.6},
+            {"id": "checking", "label": "Checking Account", "bank": "Demo Bank", "category": "Autres", "balance": 1500},
         ],
     }
     with open(path, "w", encoding="utf-8") as f:
@@ -217,9 +219,85 @@ def write_config():
         },
     }
 
+    # Fictional strategic allocation, so the public demo shows a complete Strategy
+    # page. Only the policy is generated here: the risk figures that sit next to it
+    # come from the same builder the real data uses —
+    #   PORTFOLIO_ROOT=demo python scripts/build_strategy.py
+    # which writes demo/config/strategy_analytics.json.
+    strategy = {
+        "_readme": "Fictional strategic allocation (demo). Target percentages are shares of TOTAL net worth and sum to 100 including the trading sleeve.",
+        "profile": "Balanced",
+        "as_of": "2026-08-29",
+        "reserve_eur": 5000,
+        "risk": {"max_drawdown_tolerance_pct": -25.0, "target_volatility_pct": 9.0},
+        "envelopes": {
+            "PEA": {"label": "PEA (Demo Broker)", "ceiling_eur": 150000, "contributed_eur": 8000,
+                    "tax_pct": 17.2, "priority": 1,
+                    "note": "The ceiling applies to contributions, not to value."},
+            "CTO": {"label": "Brokerage account", "ceiling_eur": None, "tax_pct": 30.0, "priority": 2,
+                    "note": "Holds what the PEA is not eligible for."},
+            "SAVINGS": {"label": "Regulated savings", "ceiling_eur": None, "tax_pct": None,
+                        "priority": 3, "note": "Reserve plus the defensive sleeve."},
+        },
+        "broker_envelopes": {"fortuneo": "PEA", "trade_republic": "CTO", "correction_manuelle": "CTO"},
+        "trading_sleeve": {
+            "_readme": "A budget with a ceiling, never a target to reach. Never refill it from the core after a loss.",
+            "cap_pct": 10.0, "preferred_envelope": "CTO", "asset_class": "Actions",
+            "members": [TR_APPLE[0], TR_LVMH[0], TR_KO[0], FORTUNEO_STOCK],
+        },
+        "targets": [
+            {"key": FORTUNEO_ETF, "label": "MSCI World", "ticker": "CW8.PA", "target_pct": 42.0,
+             "band_pt": 3.0, "envelope": "PEA", "asset_class": "Actions", "role": "core"},
+            {"key": TR_VWCE[0], "label": "FTSE All-World", "ticker": "VWCE.DE", "target_pct": 18.0,
+             "band_pt": 2.0, "envelope": "CTO", "asset_class": "Actions", "role": "core",
+             # Fictional product sheet: the shape of a real recommendation, with
+             # a made-up issuer, so the demo shows the feature without pretending
+             # to give anyone advice.
+             "instrument": {
+                 "name": "Demo FTSE All-World UCITS ETF Acc", "isin": "IE00DEMO0001",
+                 "ticker": "VWCE", "issuer": "Demo Asset Management", "domicile": "Ireland",
+                 "ter_pct": 0.22, "aum": "12,4 Md€", "distribution": "Accumulating",
+                 "replication": "Physical, sampled",
+                 "why": "Fictional example. In a real strategy this is where the chosen "
+                        "product sits, with the reasoning behind it: fee, size, issuer, "
+                        "replication method and the envelope it is allowed in.",
+                 "alternatives": [
+                     {"name": "Demo MSCI ACWI UCITS ETF", "isin": "IE00DEMO0002",
+                      "why_not": "Fictional example of a runner-up and why it lost."},
+                 ],
+             }},
+            {"key": "__CASH__", "label": "Guaranteed savings", "target_pct": 30.0, "band_pt": 3.0,
+             "envelope": "SAVINGS", "asset_class": "Livrets", "role": "defensive",
+             "note": "Emergency reserve plus the defensive sleeve."},
+        ],
+        "funding_sources": [
+            {"account_id": "checking", "keep_eur": 500, "order": 1,
+             "note": "Unremunerated: the first euro to put to work."},
+            {"account_id": "ldds", "keep_eur": 0, "order": 2, "note": "Liquid and capped."},
+            {"account_id": "livret_a", "keep_eur": 5000, "order": 3,
+             "note": "Keeps the emergency reserve untouched."},
+        ],
+        "assumptions": {
+            "_readme": "Judgements, not measurements. Expected returns use the CAPM; volatility, beta and correlations are measured.",
+            "risk_free_gross_pct": 2.25, "risk_free_net_pct": 2.10,
+            "equity_risk_premium_pct": 4.5, "inflation_pct": 2.2,
+            "window_start": "2016-07-01", "shrinkage": 0.15,
+            "benchmark_ticker": "CW8.PA", "benchmark_label": "MSCI World TR (EUR)",
+            "valuation_tilt_pct": {FORTUNEO_ETF: 0.0, TR_VWCE[0]: 0.0},
+            "absolute_return_pct": {},
+            "proxies": {"_readme": "Long-history stand-ins for lines too recent to carry a statistic."},
+        },
+        "stress_scenarios": {
+            "_readme": "Explicit shocks in %, applied per line. The recent window contains no systemic bear market.",
+            "2008-style systemic crash": {FORTUNEO_ETF: -45, TR_VWCE[0]: -46, "__TRADING__": -50, "__CASH__": 0},
+            "2022-style inflation & rates shock": {FORTUNEO_ETF: -18, TR_VWCE[0]: -19, "__TRADING__": -22, "__CASH__": 0},
+        },
+    }
+
     for name, data in [
         ("tickers.json", tickers), ("fees.json", fees), ("asset_classes.json", asset_classes),
         ("target_allocation.json", target_allocation), ("exposure.json", exposure),
+        ("strategy.json", strategy),
     ]:
         path = os.path.join(DEMO_CONFIG, name)
         with open(path, "w", encoding="utf-8") as f:
@@ -233,5 +311,7 @@ if __name__ == "__main__":
     write_trade_republic_csv()
     write_accounts_json()
     write_config()
-    print("\nDemo dataset generated in demo/. To try it: "
-          "$env:PORTFOLIO_ROOT = (Resolve-Path demo); python dashboard/app.py")
+    print("\nDemo dataset generated in demo/.")
+    print("Next, build the risk figures behind the Strategy page:")
+    print("  $env:PORTFOLIO_ROOT = (Resolve-Path demo); python scripts/build_strategy.py")
+    print("Then run it: $env:PORTFOLIO_ROOT = (Resolve-Path demo); python dashboard/app.py")

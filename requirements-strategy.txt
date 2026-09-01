@@ -1,0 +1,7 @@
+# Extra dependency for scripts/build_strategy.py only (the mean-variance optimiser).
+# Deliberately NOT in requirements.txt: the Flask app never imports scipy, and the
+# deployment has no reason to pay for its install time or size.
+#
+#   pip install -r requirements-strategy.txt
+-r requirements.txt
+scipy>=1.11

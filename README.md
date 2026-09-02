@@ -10,6 +10,26 @@ a target allocation.
 *(100% fictional data — see [Privacy](#privacy) below. The free-tier service
 sleeps after 15 min of inactivity: the first load can take ~30s.)*
 
+## Screenshots
+
+**Strategy** — the target allocation turned into an ordered, priced, funded action plan.
+
+![Strategy view](docs/screenshots/strategy.png)
+
+| Investments | Net worth |
+| --- | --- |
+| ![Investments view](docs/screenshots/investments.png) | ![Net worth view](docs/screenshots/net-worth.png) |
+
+Built mobile-first, and installable as a PWA:
+
+<p>
+  <img src="docs/screenshots/mobile-strategy.png" alt="Strategy view on a phone" width="250">
+  <img src="docs/screenshots/mobile-investments.png" alt="Investments view on a phone" width="250">
+</p>
+
+*Every figure shown above comes from the fictional demo dataset, not from a real
+portfolio.*
+
 ## Features
 
 - **Position reconstruction** at weighted average cost from the raw journal
@@ -54,6 +74,7 @@ portfolio-dashboard/
 ├── demo/                    # 100% FICTIONAL equivalent of data/ + config/,
 │   │                          committed for the public demo
 │   └── ...                   # same layout as data/ and config/
+├── docs/screenshots/        # Images used by this README
 ├── scripts/
 │   ├── generate_demo_data.py # (Re)generates demo/ from scratch
 │   └── build_strategy.py     # Computes strategy_analytics.json (needs scipy)

@@ -31,3 +31,8 @@ demo/data/processed/
 
 # Local working notes for Claude Code (personal runbooks, not project docs)
 .claude/
+
+# UI-work screenshot sweeps (scripts/review_shots.py): working images used to
+# diff a change against a baseline, not deliverables. The published ones live
+# in docs/screenshots/.
+.review-shots/

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros.html" import info %}
 {% block title %}Strategy — Portfolio Dashboard{% endblock %}
 
 {% block header_right %}
@@ -25,7 +26,7 @@
   <!-- Headline: the one number that matters                        -->
   <!-- ============================================================ -->
   <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4 md:gap-6 mb-6">
-    <div class="card p-5 md:p-8">
+    <div class="card card-brand p-5 md:p-8">
       <div class="stat-label">New money to move out of savings</div>
       <div class="hero-value {{ 'delta-critical' if data.to_deploy_eur > 0 else 'delta-good' }}">
         {{ data.to_deploy_eur|fr }} €
@@ -53,7 +54,11 @@
     </div>
 
     <div class="card p-5 md:p-8">
-      <div class="section-title mb-3">Risk, now vs target</div>
+      <div class="section-title mb-3">Risk, now vs target{% if current_risk and analytics %}{% call info() %}
+        Measured over {{ analytics.window.observations }} weekly returns in euros
+        ({{ analytics.window.start }} → {{ analytics.window.end }}), against
+        {{ analytics.benchmark.label }}.
+      {% endcall %}{% endif %}</div>
       {% if current_risk and analytics %}
       <table>
         <thead><tr><th>&nbsp;</th><th>Today</th><th>Target</th></tr></thead>
@@ -80,11 +85,6 @@
           </tr>
         </tbody>
       </table>
-      <div class="section-hint mt-3">
-        Measured over {{ analytics.window.observations }} weekly returns in euros
-        ({{ analytics.window.start }} → {{ analytics.window.end }}), against
-        {{ analytics.benchmark.label }}.
-      </div>
       {% else %}
       <div class="ink-secondary text-sm">
         Risk figures not computed yet. Run <code>python scripts/build_strategy.py</code>.
@@ -107,8 +107,7 @@
     <div class="card p-4 md:p-5 mb-8">
       <div class="flex items-baseline justify-between gap-3 flex-wrap mb-4">
         <div>
-          <div class="section-title">What to do, in order</div>
-          <div class="section-hint">Grouped by what each step actually costs you. Tick them off as you go — progress is saved in this browser.</div>
+          <div class="section-title">What to do, in order{% call info() %}Grouped by what each step actually costs you. Tick them off as you go — progress is saved in this browser.{% endcall %}</div>
         </div>
         <div class="ink-muted text-xs shrink-0">
           <span id="task-progress" class="ink-secondary font-medium">0</span> done ·
@@ -216,8 +215,12 @@
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Where the money comes from</div>
-      <div class="section-hint">Each purchase above already names its account. This is the same money seen from the other side — the worst-paid euro is spent first, and each account keeps whatever the plan told it to keep.</div>
+      <div class="section-title">Where the money comes from{% call info() %}
+        <span class="info-para">Each purchase above already names its account. This is the same money seen from the other side — the worst-paid euro is spent first, and each account keeps whatever the plan told it to keep.</span>
+        {% if data.funding.locked_pool_eur > 1 %}
+        <span class="info-para">The purchases marked <span class="ink-primary">not before</span> a date are the ones waiting on a locked account. Nothing forces you to wait: ask what breaking it early actually costs, and compare that number against the interest given up — the plan prices the order, not the penalty.</span>
+        {% endif %}
+      {% endcall %}</div>
     </div>
     <div class="card p-4 mb-6">
       <div class="overflow-x-auto hidden md:block">
@@ -275,14 +278,6 @@
           <div class="stat-value tabular {{ 'delta-critical' if data.funding.unfunded_eur > 1 else 'delta-good' }}">{{ data.funding.unfunded_eur|fr }} €</div>
         </div>
       </div>
-
-      {% if data.funding.locked_pool_eur > 1 %}
-      <div class="section-hint mt-3">
-        The purchases marked <span class="ink-primary">not before</span> a date are the ones waiting on a
-        locked account. Nothing forces you to wait: ask what breaking it early actually costs, and
-        compare that number against the interest given up — the plan prices the order, not the penalty.
-      </div>
-      {% endif %}
     </div>
   </div>
 
@@ -292,11 +287,14 @@
   <div id="tab-target" class="tab-panel">
 
     <div class="mb-4">
-      <div class="section-title">Today against the target</div>
-      <div class="section-hint">Every line as a share of total net worth. A line is left alone while it stays inside its tolerance band.</div>
+      <div class="section-title">Today against the target{% call info() %}Every line as a share of total net worth. A line is left alone while it stays inside its tolerance band.{% endcall %}</div>
     </div>
     <div class="card p-4 mb-6">
       <div id="chart-mix"></div>
+      <!-- Legend built in HTML from the figure's own traces (see below): it has to
+           wrap across as many rows as the policy has lines, which a Plotly legend
+           laid out inside the figure box cannot do without covering the bars. -->
+      <div id="chart-mix-legend" class="chart-legend"></div>
     </div>
 
     <div class="card p-4 mb-8">
@@ -384,16 +382,14 @@
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Gap to target, in points of net worth</div>
-      <div class="section-hint">Blue = below target, red = above. Grey lines are inside their band and need nothing.</div>
+      <div class="section-title">Gap to target, in points of net worth{% call info() %}Blue = below target, red = above. Grey lines are inside their band and need nothing.{% endcall %}</div>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-drift"></div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Envelope capacity</div>
-      <div class="section-hint">The PEA ceiling applies to contributions, not to value: gains never consume it. What the PEA cannot take has to be routed on, not silently parked on a taxable account.</div>
+      <div class="section-title">Envelope capacity{% call info() %}The PEA ceiling applies to contributions, not to value: gains never consume it. What the PEA cannot take has to be routed on, not silently parked on a taxable account.{% endcall %}</div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       {% for e in data.envelopes %}
@@ -470,23 +466,21 @@
     {% else %}
 
     <div class="mb-4">
-      <div class="section-title">The efficient frontier</div>
-      <div class="section-hint">Expected return after tax against volatility. What matters is the vertical distance between “Today” and the curve: that gap is return given up at the risk already being taken.</div>
-    </div>
-    <div class="card p-4 mb-8">
-      <div id="chart-frontier"></div>
-      <div class="section-hint mt-3">
-        Expected returns are judgements, not measurements: CAPM with a
+      <div class="section-title">The efficient frontier{% call info() %}
+        <span class="info-para">Expected return after tax against volatility. What matters is the vertical distance between “Today” and the curve: that gap is return given up at the risk already being taken.</span>
+        <span class="info-para">Expected returns are judgements, not measurements: CAPM with a
         {{ analytics.equity_risk_premium_pct|fr(1) }} % equity risk premium over a
         {{ analytics.risk_free_gross_pct|fr(2) }} % risk-free rate, then net of each envelope's tax.
         Volatility, beta and correlations are measured over
-        {{ analytics.window.observations }} weekly returns.
-      </div>
+        {{ analytics.window.observations }} weekly returns.</span>
+      {% endcall %}</div>
+    </div>
+    <div class="card p-4 mb-8">
+      <div id="chart-frontier"></div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Line by line</div>
-      <div class="section-hint">Past return is not expected return — the two columns deliberately disagree. A line held through a proxy is marked: it is too recent to carry its own statistic.</div>
+      <div class="section-title">Line by line{% call info() %}Past return is not expected return — the two columns deliberately disagree. A line held through a proxy is marked: it is too recent to carry its own statistic.{% endcall %}</div>
     </div>
     <div class="card p-4 mb-8">
       <div class="overflow-x-auto hidden md:block">
@@ -530,8 +524,7 @@
     </div>
 
     <div class="mb-4">
-      <div class="section-title">What actually diversifies what</div>
-      <div class="section-hint">Pairs near 100 are duplicates, not diversification. Gold's near-zero row is the only genuine decorrelation in this portfolio.</div>
+      <div class="section-title">What actually diversifies what{% call info() %}Pairs near 100 are duplicates, not diversification. Gold's near-zero row is the only genuine decorrelation in this portfolio.{% endcall %}</div>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-correlation"></div>
@@ -539,8 +532,14 @@
 
     {% if stress %}
     <div class="mb-4">
-      <div class="section-title">Loss in a crisis</div>
-      <div class="section-hint">The 2016-2026 window contains no systemic bear market, so its worst drawdown is misleadingly mild. These are explicit shocks applied to the whole net worth, savings included.</div>
+      <div class="section-title">Loss in a crisis{% call info() %}
+        <span class="info-para">The 2016-2026 window contains no systemic bear market, so its worst drawdown is misleadingly mild. These are explicit shocks applied to the whole net worth, savings included.</span>
+        {% if tolerance_pct %}
+        <span class="info-para">Your stated tolerance is {{ tolerance_pct|fr(0) }} %, or
+        {{ (tolerance_pct / 100 * data.total)|fr }} €. The target allocation is sized to sit at
+        that limit in a 2008-style crash, not below it.</span>
+        {% endif %}
+      {% endcall %}</div>
     </div>
     <div class="card p-4 mb-6">
       <div id="chart-stress"></div>
@@ -560,13 +559,6 @@
           </tbody>
         </table>
       </div>
-      {% if tolerance_pct %}
-      <div class="section-hint mt-3">
-        Your stated tolerance is {{ tolerance_pct|fr(0) }} %, or
-        {{ (tolerance_pct / 100 * data.total)|fr }} €. The target allocation is sized to sit at
-        that limit in a 2008-style crash, not below it.
-      </div>
-      {% endif %}
     </div>
     {% endif %}
 
@@ -584,6 +576,23 @@
   ['drift', 'mix', 'frontier', 'correlation', 'stress'].forEach(function (name) {
     renderFig('chart-' + name, figs[name]);
   });
+
+  // Swatches for the "Today against the target" bars. Read straight off the
+  // traces rather than re-listing the lines here, so a change to the policy or
+  // to the palette on the Python side never leaves the two out of step.
+  (function () {
+    const box = document.getElementById('chart-mix-legend');
+    if (!box || !figs.mix || !figs.mix.data) return;
+    box.innerHTML = figs.mix.data.map(function (trace) {
+      const color = (trace.marker && trace.marker.color) || 'var(--text-muted)';
+      const label = document.createElement('span');
+      label.textContent = trace.name;
+      return '<span class="chart-legend-item">'
+        + '<span class="chart-legend-dot" style="background:' + color + ';"></span>'
+        + label.innerHTML
+        + '</span>';
+    }).join('');
+  })();
 
   // Ticking an action off. State lives in this browser only — the app never
   // writes to disk, so the checkmarks are a personal memo, not shared data.

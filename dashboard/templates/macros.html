@@ -1,0 +1,12 @@
+{# Reusable bits of markup shared by the three pages. #}
+
+{# A small "i" next to a section title. The explanation it holds used to sit
+   permanently under the title as grey body text — useful once, then noise on
+   every later visit. Hover (or tap/focus on a phone, hence tabindex) reveals it.
+   Called with a block so the text can keep its markup and Jinja expressions:
+
+       {% call info() %}Every line as a share of net worth.{% endcall %}
+#}
+{% macro info() -%}
+<span class="info" tabindex="0" role="note"><span class="info-icon" aria-hidden="true">i</span><span class="info-bubble">{{ caller() }}</span></span>
+{%- endmacro %}

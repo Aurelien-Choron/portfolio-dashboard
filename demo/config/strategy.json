@@ -11,7 +11,6 @@
     "PEA": {
       "label": "PEA (Demo Broker)",
       "ceiling_eur": 150000,
-      "contributed_eur": 8000,
       "tax_pct": 17.2,
       "priority": 1,
       "note": "The ceiling applies to contributions, not to value."

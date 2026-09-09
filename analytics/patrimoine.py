@@ -91,10 +91,15 @@ def load_asset_classes() -> dict:
     return {k: v for k, v in data.items() if not k.startswith("_")}
 
 
-def build_investment_accounts(bourse_by_broker: dict, broker_labels: dict | None = None) -> list:
+def build_investment_accounts(bourse_by_broker: dict, broker_labels: dict | None = None,
+                              transactions=None) -> list:
     """The investment envelopes, seen as accounts — because a PEA is an account.
 
     bourse_by_broker: {raw broker code: market value} for open positions.
+    transactions: the normalized journal. What has been paid into the PEA is
+    measured from it rather than read from config (see
+    strategy.envelope_contributions) — a hand-maintained figure went stale on
+    every broker import and understated how full the envelope was.
 
     The account table used to stop at savings, which meant the reader had to add
     two pages together to get their own total. The individual *positions* still
@@ -110,6 +115,7 @@ def build_investment_accounts(bourse_by_broker: dict, broker_labels: dict | None
     broker_env = {k: v for k, v in (policy.get("broker_envelopes") or {}).items()
                   if not k.startswith("_")}
     envelopes = policy.get("envelopes") or {}
+    contributions = strategy_mod.envelope_contributions(policy, transactions)
 
     grouped = {}
     for broker, value in bourse_by_broker.items():
@@ -124,7 +130,7 @@ def build_investment_accounts(bourse_by_broker: dict, broker_labels: dict | None
     for key, row in grouped.items():
         env = envelopes.get(key) or {}
         ceiling = env.get("ceiling_eur")
-        contributed = env.get("contributed_eur")
+        contributed = contributions.get(key, env.get("contributed_eur"))
         # A PEA's ceiling caps what you PAY IN, not what the account is worth —
         # showing value/ceiling would quietly overstate the room left, so the
         # ratio is built from contributions and says so.

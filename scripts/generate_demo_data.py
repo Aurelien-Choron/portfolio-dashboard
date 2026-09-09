@@ -231,7 +231,10 @@ def write_config():
         "reserve_eur": 5000,
         "risk": {"max_drawdown_tolerance_pct": -25.0, "target_volatility_pct": 9.0},
         "envelopes": {
-            "PEA": {"label": "PEA (Demo Broker)", "ceiling_eur": 150000, "contributed_eur": 8000,
+            # No "contributed_eur": what has been paid into the PEA is measured
+            # from the journal (analytics/strategy.envelope_contributions), so the
+            # demo cannot drift out of step with its own transactions.
+            "PEA": {"label": "PEA (Demo Broker)", "ceiling_eur": 150000,
                     "tax_pct": 17.2, "priority": 1,
                     "note": "The ceiling applies to contributions, not to value."},
             "CTO": {"label": "Brokerage account", "ceiling_eur": None, "tax_pct": 30.0, "priority": 2,

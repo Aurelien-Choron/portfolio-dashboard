@@ -186,13 +186,96 @@ def build_sleeve(policy: dict, positions: list, total: float) -> dict:
     }
 
 
-def build_envelopes(policy: dict, positions: list, targets: list, cash_total: float = 0.0) -> list:
+# Journal row types that move cash in or out of an envelope. OTHER is left out
+# on purpose: Fortuneo's "OST de création de coupons" / "ANNUL." pairs are
+# technical bookkeeping entries the importer already excludes from cash-flow
+# totals, and their accounting treatment is not certain enough to move a ceiling.
+_CASH_IN_TYPES = ("DEPOSIT", "WITHDRAWAL")
+_TRADE_CASH_TYPES = ("BUY", "SELL", "DIVIDEND")
+
+
+def envelope_contributions(policy: dict, transactions=None) -> dict:
+    """Money paid into each capped envelope, MEASURED from the journal.
+
+    This used to be `contributed_eur`, typed by hand into config/strategy.json.
+    That made it wrong the moment a broker export was imported: the Net Worth
+    page kept reading "68 229 € paid in of 150 000 €" after a 19 517 € purchase
+    had already gone through. The journal knows the answer, so it is measured
+    here and the config key is only an override for what the journal cannot see.
+
+    Two ways to measure, in order of preference:
+
+    1. Explicit cash movements. If the export carries DEPOSIT/WITHDRAWAL rows
+       for the envelope ("Versement"/"Retrait" at Fortuneo), their signed sum
+       IS the contribution — that is the figure the ceiling is actually set on.
+    2. Otherwise, the high-water mark of the cash the trades required: the
+       running maximum of cumulative -(amount) over the envelope's BUY/SELL/
+       DIVIDEND rows. `amount` is the cash booked to the account, fees included.
+       Buys consume cash, sells and dividends hand it back, so a purchase funded
+       by a reinvested dividend does not inflate the total. The running *maximum*
+       is what makes this a contribution rather than a balance: money that came
+       back from a sale can be re-invested without paying anything new in, but
+       it never gives back ceiling room either (the PEA ceiling counts gross
+       payments in, and a withdrawal before 5 years closes the plan outright).
+
+    Route 2 is a floor, not the exact figure — cash paid in and left uninvested
+    is invisible to a trade-only export. It is the same convention the hand-typed
+    value followed, and it errs on the side of showing more room than there is,
+    so the note on the Strategy page says where the number comes from.
+
+    Returns {envelope name: contributed EUR}, only for envelopes with a ceiling.
+    """
+    broker_env = _strip_readme(policy.get("broker_envelopes") or {})
+    envelopes = policy.get("envelopes") or {}
+    capped = [name for name, env in envelopes.items()
+              if not name.startswith("_") and env.get("ceiling_eur") is not None]
+
+    out = {}
+    # An explicit config value still wins: an envelope can be fed by a payment
+    # the broker export does not show at all.
+    for name in capped:
+        override = envelopes[name].get("contributed_eur")
+        if override is not None:
+            out[name] = float(override)
+
+    if transactions is None or len(transactions) == 0:
+        return out
+
+    df = transactions[transactions["broker"].map(broker_env).notna()].copy()
+    df["_envelope"] = df["broker"].map(broker_env)
+
+    for name in capped:
+        if name in out:
+            continue
+        rows = df[df["_envelope"] == name].sort_values("date")
+        if rows.empty:
+            continue
+        cash = rows[rows["type"].isin(_CASH_IN_TYPES)]
+        if not cash.empty:
+            out[name] = float(cash["amount"].fillna(0.0).sum())
+            continue
+        trades = rows[rows["type"].isin(_TRADE_CASH_TYPES)]
+        if trades.empty:
+            continue
+        required = (-trades["amount"].fillna(0.0)).cumsum()
+        out[name] = float(max(required.max(), 0.0))
+
+    return out
+
+
+def build_envelopes(policy: dict, positions: list, targets: list, cash_total: float = 0.0,
+                    contributions: dict | None = None) -> list:
     """Capacity and routing per envelope, PEA ceiling included.
 
     The binding constraint here: equities targeted at the PEA can exceed what the
     150 000 € contribution ceiling still allows, and the excess has to be routed
     to life insurance rather than silently landing on a 30 %-taxed account.
+
+    contributions: {envelope: EUR paid in} from envelope_contributions(). Passing
+    it is what keeps the ceiling honest after an import; omitting it falls back to
+    whatever config/strategy.json states, which is nothing unless it overrides.
     """
+    contributions = contributions or {}
     broker_env = _strip_readme(policy.get("broker_envelopes") or {})
     envelopes = policy.get("envelopes") or {}
 
@@ -217,7 +300,7 @@ def build_envelopes(policy: dict, positions: list, targets: list, cash_total: fl
     rows = []
     for name, env in sorted(envelopes.items(), key=lambda kv: kv[1].get("priority") or 99):
         ceiling = env.get("ceiling_eur")
-        contributed = env.get("contributed_eur")
+        contributed = contributions.get(name, env.get("contributed_eur"))
         room = (ceiling - contributed) if (ceiling is not None and contributed is not None) else None
         current = held_by_env.get(name, 0.0)
         # Capacity = what the envelope already holds (gains do not eat the
@@ -649,12 +732,17 @@ def stress_losses(analytics: dict, policy: dict, weights: dict) -> list:
 
 
 def build(policy: dict, positions: list, accounts: list, cash_total: float, total: float,
-          analytics: dict | None = None) -> dict:
-    """Assembles everything the Strategy page needs, in one pass."""
+          analytics: dict | None = None, transactions=None) -> dict:
+    """Assembles everything the Strategy page needs, in one pass.
+
+    transactions: the normalized journal, used to measure what has actually been
+    paid into each capped envelope (see envelope_contributions).
+    """
     expected = {a["label"]: a["expected_net_pct"] for a in (analytics or {}).get("assets", [])}
+    contributions = envelope_contributions(policy, transactions)
     targets = build_targets(policy, positions, cash_total, total)
     sleeve = build_sleeve(policy, positions, total)
-    envelopes = build_envelopes(policy, positions, targets, cash_total)
+    envelopes = build_envelopes(policy, positions, targets, cash_total, contributions)
     backlog = build_backlog(policy, targets, envelopes, sleeve, expected)
     funding = build_funding(policy, accounts, backlog)
 

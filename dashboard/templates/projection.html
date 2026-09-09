@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+{% from "macros.html" import info %}
+{% block title %}Forecast — Portfolio Dashboard{% endblock %}
+
+{% block header_right %}
+<div class="text-right">
+  <div class="ink-muted text-xs">Updated {{ last_update }}</div>
+  {% if analytics %}<div class="ink-secondary text-xs">Risk measured {{ analytics.window.start }} → {{ analytics.window.end }}</div>{% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% set refs = scenarios | selectattr('kind', 'equalto', 'reference') | list %}
+{% set singles = scenarios | selectattr('kind', 'equalto', 'asset') | list %}
+
+{% if not scenarios %}
+<div class="card p-4 md:p-5 mb-6" style="border-left: 3px solid var(--brand);">
+  <div class="section-title mb-1">No measured risk figures yet</div>
+  <div class="ink-secondary text-sm">
+    This page normally reads the expected return and the volatility of your own mix from
+    <code>config/strategy_analytics.json</code>. Run <code>python scripts/build_strategy.py</code>
+    to generate it. Until then, only a rate you type in yourself can be projected.
+  </div>
+</div>
+{% endif %}
+
+<!-- ============================================================ -->
+<!-- Headline, and the controls that move it                      -->
+<!-- ============================================================ -->
+<div class="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4 md:gap-6 mb-6">
+  <div class="card card-brand p-5 md:p-8">
+    <div class="stat-label">Median net worth <span id="pj-hero-when">in 20 years</span></div>
+    <div class="hero-value tabular" id="pj-hero">—</div>
+    <div class="ink-secondary text-sm mt-2" id="pj-hero-real">—</div>
+    <div class="mt-4 pt-4" style="border-top: 1px solid var(--grid);">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div>
+          <div class="stat-label">Starting from</div>
+          <div class="stat-value tabular">{{ capital.total_eur|fr }} €</div>
+        </div>
+        <div>
+          <div class="stat-label">Paid in over the period</div>
+          <div class="stat-value tabular" id="pj-paid">—</div>
+        </div>
+        <div>
+          <div class="stat-label">Earned by the market</div>
+          <div class="stat-value tabular" id="pj-growth">—</div>
+        </div>
+        <div>
+          <div class="stat-label">Bad case → good case</div>
+          <div class="stat-value tabular" id="pj-range"
+               style="font-size: 0.85rem; white-space: nowrap;">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-5 md:p-6">
+    <div class="section-title mb-4">Your assumptions{% call info() %}
+      Nothing here is saved and nothing leaves the page: every figure on it is recomputed in
+      your own browser as you type.
+    {% endcall %}</div>
+
+    <label class="stat-label" for="pj-scenario">Invested like</label>
+    <select id="pj-scenario" class="select" style="width: 100%;">
+      {% if refs %}
+      <optgroup label="Your mixes">
+        {% for s in refs %}<option value="{{ s.key }}">{{ s.label }}</option>{% endfor %}
+      </optgroup>
+      {% endif %}
+      {% if singles %}
+      <optgroup label="One asset, and nothing else">
+        {% for s in singles %}<option value="{{ s.key }}">{{ s.label }}</option>{% endfor %}
+      </optgroup>
+      {% endif %}
+      <optgroup label="Something else"><option value="custom">A rate I set myself</option></optgroup>
+    </select>
+    <div class="ink-muted text-xs mt-2 mb-4" id="pj-scenario-note">&nbsp;</div>
+
+    <div id="pj-custom-row" class="grid grid-cols-2 gap-3 mb-4" style="display: none;">
+      <div>
+        <label class="stat-label" for="pj-custom-ret">Return, net / year</label>
+        <input id="pj-custom-ret" class="field" type="number" step="0.1" value="5">
+      </div>
+      <div>
+        <label class="stat-label" for="pj-custom-vol">Volatility</label>
+        <input id="pj-custom-vol" class="field" type="number" step="0.5" min="0" value="12">
+      </div>
+    </div>
+
+    <label class="stat-label" for="pj-horizon">
+      Over <span id="pj-horizon-out" class="ink-primary font-semibold">20 years</span>
+    </label>
+    <input id="pj-horizon" class="range mb-4" type="range" min="1" max="40" step="1" value="20">
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="stat-label" for="pj-lump">Add now, one-off</label>
+        <input id="pj-lump" class="field" type="number" step="500" min="0" value="0">
+      </div>
+      <div>
+        <label class="stat-label" for="pj-monthly">Then every month</label>
+        <input id="pj-monthly" class="field" type="number" step="50" min="0" value="500">
+      </div>
+    </div>
+    {% if analytics and analytics.inflation_pct %}
+    <label class="flex items-center gap-2 mt-3 ink-secondary text-xs" style="cursor: pointer;">
+      <input id="pj-indexed" type="checkbox" checked
+             style="width: 16px; height: 16px; flex: none; accent-color: var(--brand);">
+      Raise the monthly amount with inflation ({{ analytics.inflation_pct|fr(1) }} % a year)
+    </label>
+    {% else %}
+    <input id="pj-indexed" type="checkbox" hidden>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- The curve                                                    -->
+<!-- ============================================================ -->
+<div class="card p-4 md:p-5 mb-6">
+  <div class="flex items-baseline justify-between gap-3 flex-wrap mb-3">
+    <div class="section-title">Where this lands{% call info() %}
+      Each line is the <em>median</em> of 1 000 simulated histories — half of them ended above
+      it, half below. All the lines run through the same simulated markets, so the gap between
+      two of them is the difference between the mixes and not simulation noise. The shaded band
+      is the 10th to 90th percentile of the mix you selected.
+    {% endcall %}</div>
+    <div class="ink-muted text-xs">Shaded: the 10th–90th percentile of the selected mix.</div>
+  </div>
+  <div id="chart-projection"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- The goal, and what all of it rests on                        -->
+<!-- ============================================================ -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+  <div class="card p-5 md:p-6">
+    <div class="section-title mb-3">Reaching a number{% call info() %}
+      Read in three directions out of the same simulation, so they cannot contradict each
+      other: what you end up with, when the median path crosses your target, and what it
+      would take to get there inside the horizon you set.
+    {% endcall %}</div>
+
+    <label class="stat-label" for="pj-target">Target</label>
+    <input id="pj-target" class="field mb-5" type="number" step="10000" min="0" value="1000000">
+
+    <div class="mb-4">
+      <div class="stat-label">At the end of the horizon</div>
+      <div class="text-sm ink-secondary" id="pj-goal-end">—</div>
+    </div>
+    <div class="mb-4">
+      <div class="stat-label">When the median path gets there</div>
+      <div class="text-sm ink-secondary" id="pj-goal-when">—</div>
+    </div>
+    <div>
+      <div class="stat-label">What it would take instead</div>
+      <div class="text-sm ink-secondary" id="pj-goal-effort">—</div>
+    </div>
+  </div>
+
+  <div class="card p-5 md:p-6">
+    <div class="section-title mb-3">What this rests on</div>
+    {% if refs %}
+    <table class="mb-4">
+      <thead><tr><th>Mix</th><th class="text-right">Return, net</th><th class="text-right">Volatility</th></tr></thead>
+      <tbody>
+        {% for s in refs %}
+        <tr>
+          <td class="ink-secondary">{{ s.label }}</td>
+          <td class="tabular text-right">{{ s.ret_pct|fr(2) }} %</td>
+          <td class="tabular text-right">{{ s.vol_pct|fr(1) }} %</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    <ul class="ink-secondary text-sm" style="list-style: disc; padding-left: 1.1rem;">
+      <li class="mb-2">
+        Expected returns are <span class="ink-primary font-medium">judgements</span> — the CAPM
+        plus a valuation tilt per line, net of each envelope's tax rate. Volatility is
+        <span class="ink-primary font-medium">measured</span>{% if analytics %}, over
+        {{ analytics.window.observations }} weekly returns in euros against
+        {{ analytics.benchmark.label }}{% endif %}. They are not the same kind of number, and
+        the chart is only as good as the first one.
+      </li>
+      <li class="mb-2">
+        Those returns are before the funds' own ongoing charges — the Investments page prices
+        what those cost you each year.
+      </li>
+      <li class="mb-2">
+        The <span class="ink-primary font-medium">ideal</span> line is the tangency portfolio
+        blended with guaranteed savings until it runs exactly the volatility your portfolio
+        already runs, so the gap between the two is what the construction earns and not what
+        extra risk earns. It is the best mix <em>as measured over one window</em>,
+        found by looking at that window: a benchmark, not a promise.
+      </li>
+      <li class="mb-2">
+        Contributions are assumed invested at the same mix, every month, whatever the market
+        just did. Envelope ceilings are not modelled here — the PEA contribution cap in
+        particular; the Strategy page is the one that tracks it.
+      </li>
+      <li>
+        A band is not a floor. A tenth of the simulations ended below it, and nothing rules
+        out a decade that resembles none of them.
+      </li>
+    </ul>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const MODEL = {{ model | tojson }};
+  const CHART = 'chart-projection';
+
+  const BY_KEY = {};
+  MODEL.scenarios.forEach(function (s) { BY_KEY[s.key] = s; });
+
+  function el(id) { return document.getElementById(id); }
+  const ui = {
+    scenario: el('pj-scenario'), horizon: el('pj-horizon'), lump: el('pj-lump'),
+    monthly: el('pj-monthly'), indexed: el('pj-indexed'), target: el('pj-target'),
+    customRet: el('pj-custom-ret'), customVol: el('pj-custom-vol'),
+  };
+
+  // ---------------------------------------------------------------------
+  // The simulator
+  // ---------------------------------------------------------------------
+  // Each mix is a lognormal matched to its (expected return μ, volatility σ):
+  //
+  //     s² = ln(1 + σ²/(1+μ)²)        m = ln(1+μ) − s²/2
+  //
+  // The −s²/2 is the whole point. expected_net_pct is an *arithmetic* mean, and
+  // compounding it directly would trace the mean path while calling it typical.
+  // At σ = 15.6 % that is 1.2 points a year of drift — roughly a quarter of the
+  // final amount over twenty years, every euro of it imaginary.
+  const PATHS = 1000;
+  const MAX_MONTHS = 480;
+
+  // Sampled monthly for the first five years, then quarterly: fine enough to read
+  // a short horizon, cheap enough to carry forty years. The grid does not depend
+  // on the horizon, so dragging that slider filters an existing set of paths
+  // instead of starting a new simulation.
+  const SAMPLE_MONTHS = (function () {
+    const out = [];
+    for (let t = 1; t <= MAX_MONTHS; t++) if (t <= 60 || t % 3 === 0) out.push(t);
+    return out;
+  })();
+
+  function mulberry32(seed) {
+    return function () {
+      seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // One fixed matrix of standard normal shocks, drawn once and shared by every
+  // mix. Two consequences, both wanted: the band does not shimmer when an
+  // unrelated input moves, and the curves are compared under the *same*
+  // simulated history — so the distance between two of them is the difference
+  // between the mixes, never Monte Carlo noise.
+  const SHOCKS = (function () {
+    const rnd = mulberry32(20260909);
+    const z = new Float32Array(PATHS * MAX_MONTHS);
+    for (let i = 0; i < z.length; i += 2) {
+      const u = Math.max(rnd(), 1e-12), v = rnd(), r = Math.sqrt(-2 * Math.log(u));
+      z[i] = r * Math.cos(2 * Math.PI * v);
+      if (i + 1 < z.length) z[i + 1] = r * Math.sin(2 * Math.PI * v);
+    }
+    return z;
+  })();
+
+  // Quickselect. The page needs three quantiles out of 1 000 values at ~200 dates,
+  // several times over; sorting all of them each time was the one thing slow
+  // enough to be felt while dragging a slider.
+  function nth(a, k) {
+    let lo = 0, hi = a.length - 1;
+    while (hi > lo) {
+      const pivot = a[(lo + hi) >> 1];
+      let i = lo, j = hi;
+      while (i <= j) {
+        while (a[i] < pivot) i++;
+        while (a[j] > pivot) j--;
+        if (i <= j) { const t = a[i]; a[i] = a[j]; a[j] = t; i++; j--; }
+      }
+      if (k <= j) hi = j; else if (k >= i) lo = i; else return a[k];
+    }
+    return a[lo];
+  }
+
+  // A[p] is what one euro held from today becomes on path p; B[p] is what a
+  // 1 €/month stream becomes. Since a balance is W₀·A + C·B — linear in the
+  // contribution — moving the monthly slider, or bisecting for the contribution
+  // that reaches a target, only re-scores these arrays. A fresh simulation is
+  // needed only when the mix or the inflation indexing changes.
+  function simulate(sc, indexed) {
+    const mu = sc.ret_pct / 100, sd = Math.max(0, sc.vol_pct) / 100;
+    const s2 = Math.log(1 + (sd * sd) / ((1 + mu) * (1 + mu)));
+    const monthlyDrift = (Math.log(1 + mu) - s2 / 2) / 12;
+    const monthlyVol = Math.sqrt(s2) / Math.sqrt(12);
+    const inflation = MODEL.inflation_pct / 100;
+
+    const A = new Float64Array(PATHS).fill(1);
+    const B = new Float64Array(PATHS);
+    const sampleA = [], sampleB = [], paidUnits = [];
+    let paid = 0, next = 0;
+    for (let t = 1; t <= MAX_MONTHS; t++) {
+      const unit = indexed ? Math.pow(1 + inflation, (t - 1) / 12) : 1;
+      paid += unit;
+      for (let p = 0; p < PATHS; p++) {
+        const growth = Math.exp(monthlyDrift + monthlyVol * SHOCKS[p * MAX_MONTHS + (t - 1)]);
+        A[p] *= growth;
+        B[p] = B[p] * growth + unit;
+      }
+      if (t === SAMPLE_MONTHS[next]) {
+        // Float32 keeps the cache small; seven significant digits is far more
+        // than a euro figure on a chart can carry anyway.
+        sampleA.push(Float32Array.from(A));
+        sampleB.push(Float32Array.from(B));
+        paidUnits.push(paid);
+        next++;
+      }
+    }
+    return { A: sampleA, B: sampleB, paidUnits: paidUnits };
+  }
+
+  const simCache = new Map();
+  function simFor(sc, indexed) {
+    const key = sc.key + '|' + sc.ret_pct + '|' + sc.vol_pct + '|' + indexed;
+    let sim = simCache.get(key);
+    if (!sim) {
+      if (simCache.size > 8) simCache.clear();
+      sim = simulate(sc, indexed);
+      simCache.set(key, sim);
+    }
+    return sim;
+  }
+
+  const scratch = new Float64Array(PATHS);
+  function score(sim, i, w0, contribution) {
+    const A = sim.A[i], B = sim.B[i];
+    for (let p = 0; p < PATHS; p++) scratch[p] = w0 * A[p] + contribution * B[p];
+    return scratch;
+  }
+  // nth() permutes the buffer, which is harmless here: it stays the same multiset.
+  function quantileAt(sim, i, w0, contribution, q) {
+    return nth(score(sim, i, w0, contribution), Math.min(PATHS - 1, Math.floor(q * PATHS)));
+  }
+  function bandAt(sim, i, w0, contribution) {
+    const buf = score(sim, i, w0, contribution);
+    return [nth(buf, PATHS * 0.1 | 0), nth(buf, PATHS * 0.5 | 0), nth(buf, PATHS * 0.9 | 0)];
+  }
+  function probability(sim, i, w0, contribution, target) {
+    const buf = score(sim, i, w0, contribution);
+    let hits = 0;
+    for (let p = 0; p < PATHS; p++) if (buf[p] >= target) hits++;
+    return hits / PATHS;
+  }
+
+  function lastIndex(months) {
+    let i = 0;
+    while (i + 1 < SAMPLE_MONTHS.length && SAMPLE_MONTHS[i + 1] <= months) i++;
+    return i;
+  }
+
+  function series(sim, months, w0, contribution, withBand) {
+    const last = lastIndex(months);
+    const x = [0], median = [w0], lo = [w0], hi = [w0];
+    for (let i = 0; i <= last; i++) {
+      x.push(SAMPLE_MONTHS[i]);
+      if (withBand) {
+        const band = bandAt(sim, i, w0, contribution);
+        lo.push(band[0]); median.push(band[1]); hi.push(band[2]);
+      } else {
+        median.push(quantileAt(sim, i, w0, contribution, 0.5));
+      }
+    }
+    return { x: x, median: median, lo: lo, hi: hi, last: last };
+  }
+
+  // Solved over the full forty years, not just the horizon on screen: "not within
+  // 20 years" is not an answer to "how long would it take".
+  function monthsToTarget(sim, w0, contribution, target) {
+    let prevMonth = 0, prevValue = w0;
+    for (let i = 0; i < SAMPLE_MONTHS.length; i++) {
+      const value = quantileAt(sim, i, w0, contribution, 0.5);
+      if (value >= target) {
+        if (value <= prevValue) return SAMPLE_MONTHS[i];
+        return prevMonth + (SAMPLE_MONTHS[i] - prevMonth) * (target - prevValue) / (value - prevValue);
+      }
+      prevMonth = SAMPLE_MONTHS[i];
+      prevValue = value;
+    }
+    return null;
+  }
+
+  // The median at the horizon rises with the contribution, so a plain bisection
+  // converges — and each step is 1 000 multiply-adds, not a new simulation.
+  function monthlyForTarget(sim, months, w0, target) {
+    const i = lastIndex(months);
+    const median = function (c) { return quantileAt(sim, i, w0, c, 0.5); };
+    if (median(0) >= target) return 0;
+    let hi = 100;
+    while (median(hi) < target) { hi *= 4; if (hi > 1e9) return null; }
+    let lo = hi / 4;
+    for (let k = 0; k < 40; k++) {
+      const mid = (lo + hi) / 2;
+      if (median(mid) < target) lo = mid; else hi = mid;
+    }
+    return hi;
+  }
+
+  // ---------------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------------
+  const TODAY = new Date();
+  function dateAt(months) {
+    const d = new Date(TODAY.getFullYear(), TODAY.getMonth() + months, 1);
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-01';
+  }
+  function monthLabel(months) {
+    return new Date(TODAY.getFullYear(), TODAY.getMonth() + Math.round(months), 1)
+      .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
+  function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+  function durationLabel(months) {
+    const years = Math.floor(months / 12);
+    const rest = Math.round(months - years * 12);
+    if (rest === 12) return plural(years + 1, 'year');
+    if (!years) return plural(Math.max(1, rest), 'month');
+    return rest ? plural(years, 'year') + ' and ' + plural(rest, 'month') : plural(years, 'year');
+  }
+
+  function currentScenario() {
+    if (ui.scenario.value === 'custom') {
+      return {
+        key: 'custom', label: 'A rate I set myself', note: '',
+        ret_pct: parseFloat(ui.customRet.value) || 0,
+        vol_pct: Math.max(0, parseFloat(ui.customVol.value) || 0),
+        color: MODEL.custom_color,
+      };
+    }
+    return BY_KEY[ui.scenario.value];
+  }
+
+  function amount(input, fallback) {
+    const value = parseFloat(input.value);
+    return isFinite(value) && value >= 0 ? value : fallback;
+  }
+
+  // Plotly ignores a trace's `opacity` when it fills the area between two lines:
+  // the alpha has to be baked into `fillcolor`. So the band's colour is mixed
+  // here, against the theme in force at the time, instead of being left to
+  // base.html's resolveCssVars at draw time.
+  function translucent(value, alpha) {
+    const token = /^var\((--[\w-]+)\)$/.exec(value);
+    const hex = token
+      ? getComputedStyle(document.documentElement).getPropertyValue(token[1]).trim()
+      : value;
+    const rgb = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+    if (!rgb) return hex || value;
+    return 'rgba(' + parseInt(rgb[1], 16) + ',' + parseInt(rgb[2], 16) + ','
+                   + parseInt(rgb[3], 16) + ',' + alpha + ')';
+  }
+
+  // Plotly.newPlot tears the chart down and rebuilds it — a visible flicker while
+  // a slider is moving — so only the first paint uses it and the rest are react
+  // diffs over the same nodes. This figure is deliberately not registered with
+  // base.html's renderedFigures: a theme change has to *rebuild* it, not redraw
+  // the stored copy, because the band colour above was mixed for the old theme.
+  let painted = false;
+  function paint(fig) {
+    const data = resolveCssVars(fig.data);
+    const layout = themeLayout(fig.layout);
+    if (!painted) { Plotly.newPlot(CHART, data, layout, config); painted = true; }
+    else Plotly.react(CHART, data, layout, config);
+  }
+
+  function render() {
+    const years = parseInt(ui.horizon.value, 10);
+    const months = years * 12;
+    const indexed = ui.indexed.checked;
+    const lump = amount(ui.lump, 0);
+    const monthly = amount(ui.monthly, 0);
+    const target = amount(ui.target, 0);
+    const w0 = MODEL.capital.total_eur + lump;
+    const selected = currentScenario();
+
+    el('pj-horizon-out').textContent = plural(years, 'year');
+    el('pj-custom-row').style.display = ui.scenario.value === 'custom' ? 'grid' : 'none';
+    el('pj-scenario-note').textContent =
+      selected.ret_pct.toFixed(2) + ' % net a year, volatility ' + selected.vol_pct.toFixed(1) + ' %'
+      + (selected.note ? ' · ' + selected.note : '');
+
+    const sim = simFor(selected, indexed);
+    const main = series(sim, months, w0, monthly, true);
+    const x = main.x.map(dateAt);
+
+    // Band first, so the median lines paint over it. Kept faint on purpose: it
+    // covers most of the plot, and the selected mix's own median line runs
+    // through it in the same colour.
+    const traces = [
+      { x: x, y: main.lo, type: 'scatter', mode: 'lines', line: { width: 0 },
+        hoverinfo: 'skip', showlegend: false },
+      { x: x, y: main.hi, type: 'scatter', mode: 'lines', line: { width: 0 },
+        fill: 'tonexty', fillcolor: translucent(selected.color, 0.16),
+        hoverinfo: 'skip', showlegend: false },
+    ];
+    MODEL.scenarios.forEach(function (s) {
+      if (s.kind !== 'reference' || s.key === selected.key) return;
+      const curve = series(simFor(s, indexed), months, w0, monthly, false);
+      traces.push({
+        x: curve.x.map(dateAt), y: curve.median, type: 'scatter', mode: 'lines', name: s.label,
+        line: { color: s.color, width: 2, dash: s.dash ? 'dash' : 'solid' },
+        hovertemplate: '%{y:,.0f} €<extra>' + s.label + '</extra>',
+      });
+    });
+    traces.push({
+      x: x, y: main.median, type: 'scatter', mode: 'lines', name: selected.label,
+      line: { color: selected.color, width: 3.5, dash: selected.dash ? 'dash' : 'solid' },
+      hovertemplate: '%{y:,.0f} €<extra>' + selected.label + '</extra>',
+    });
+
+    // A shape at the target would drag the y range up with it, and a target far
+    // out of reach flattens every curve into the bottom of the plot — the one
+    // thing the chart exists to show. So the line is drawn only while it is
+    // close enough to be a useful reference; past that the goal panel says it
+    // in words instead.
+    let top = 0;
+    traces.forEach(function (t) { t.y.forEach(function (v) { if (v > top) top = v; }); });
+    const showTarget = target > 0 && target < top * 1.5;
+    if (showTarget) top = Math.max(top, target);
+
+    paint({
+      data: traces,
+      layout: {
+        margin: { l: 2, r: 8, t: 6, b: 2 },
+        height: 420,
+        // automargin, unlike everywhere else in the app: the y range here is set
+        // explicitly and changes on every input, and Plotly's own margin
+        // auto-expansion does not re-run on a react() diff — without this the
+        // tick labels get drawn outside the SVG and silently clipped away.
+        xaxis: { type: 'date', showgrid: false, fixedrange: true, automargin: true },
+        yaxis: { ticksuffix: ' €', tickformat: '~s', showgrid: true, gridcolor: 'var(--grid)',
+                 // The floor of 1 keeps Plotly off a degenerate [0, 0] range on a
+                 // brand-new setup with nothing saved and nothing contributed yet.
+                 fixedrange: true, range: [0, Math.max(top * 1.06, 1)], automargin: true },
+        legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'left', x: 0,
+                  font: { size: 11 } },
+        hovermode: 'x unified',
+        shapes: showTarget ? [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y',
+                                y0: target, y1: target,
+                                line: { color: 'var(--text-muted)', width: 1, dash: 'dot' } }] : [],
+        annotations: showTarget ? [{ xref: 'paper', x: 1, xanchor: 'right', y: target,
+                                     yanchor: 'bottom', text: fmtEur(target), showarrow: false,
+                                     font: { size: 11, color: 'var(--text-muted)' } }] : [],
+      },
+    });
+
+    // ---- headline ----
+    const end = main.median.length - 1;
+    const median = main.median[end];
+    const paidIn = lump + monthly * sim.paidUnits[main.last];
+    const deflator = Math.pow(1 + MODEL.inflation_pct / 100, years);
+    el('pj-hero').textContent = fmtEur(median);
+    el('pj-hero-when').textContent = 'in ' + plural(years, 'year');
+    el('pj-hero-real').innerHTML = MODEL.inflation_pct
+      ? 'Worth <span class="ink-primary font-medium">' + fmtEur(median / deflator)
+        + '</span> in today’s money, once ' + MODEL.inflation_pct
+        + ' % a year of inflation is taken back out.'
+      : 'In nominal euros.';
+    el('pj-paid').textContent = fmtEur(paidIn);
+    el('pj-growth').textContent = fmtEur(median - MODEL.capital.total_eur - paidIn);
+    el('pj-range').textContent = fmtEur(main.lo[end]) + ' → ' + fmtEur(main.hi[end]);
+
+    // ---- the goal, read three ways ----
+    if (!target) {
+      ['pj-goal-end', 'pj-goal-when', 'pj-goal-effort'].forEach(function (id) {
+        el(id).textContent = 'Set a target above.';
+      });
+      return;
+    }
+
+    const odds = Math.round(probability(sim, main.last, w0, monthly, target) * 100);
+    el('pj-goal-end').innerHTML = 'Median <span class="ink-primary font-medium">' + fmtEur(median)
+      + '</span> after ' + plural(years, 'year') + '. <span class="ink-primary font-medium">'
+      + odds + ' %</span> of the simulations reach ' + fmtEur(target) + '.';
+
+    const reached = monthsToTarget(sim, w0, monthly, target);
+    el('pj-goal-when').innerHTML = reached === null
+      ? 'Not within forty years at this rate — the median path stays below ' + fmtEur(target) + '.'
+      : (reached <= 0
+        ? 'Already there, before adding a euro.'
+        : 'In <span class="ink-primary font-medium">' + durationLabel(reached)
+          + '</span> — around ' + monthLabel(reached) + '.');
+
+    const needed = monthlyForTarget(sim, months, w0, target);
+    if (needed === null) {
+      el('pj-goal-effort').textContent =
+        'No monthly amount gets there in ' + plural(years, 'year') + ' at this rate.';
+    } else if (needed === 0) {
+      el('pj-goal-effort').textContent =
+        'Nothing more: the target is already met inside ' + plural(years, 'year') + '.';
+    } else {
+      el('pj-goal-effort').innerHTML = 'To get there in ' + plural(years, 'year')
+        + ': <span class="ink-primary font-medium">' + fmtEur(needed)
+        + '</span> a month, against ' + fmtEur(monthly) + ' today.';
+    }
+  }
+
+  // One render per animation frame at most: a dragged slider fires far faster
+  // than a simulation can usefully be redone.
+  let queued = false;
+  function schedule() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () { queued = false; render(); });
+  }
+
+  Object.keys(ui).forEach(function (name) {
+    if (!ui[name]) return;
+    ui[name].addEventListener('input', schedule);
+    ui[name].addEventListener('change', schedule);
+  });
+
+  // See paint(): this chart is rebuilt on a theme change rather than redrawn.
+  document.querySelectorAll('[data-theme-choice]').forEach(function (button) {
+    button.addEventListener('click', schedule);
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', schedule);
+
+  ui.scenario.value = BY_KEY[MODEL.selected] ? MODEL.selected : 'custom';
+  render();
+</script>
+{% endblock %}

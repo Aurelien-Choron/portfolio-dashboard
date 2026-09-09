@@ -16,6 +16,13 @@ sleeps after 15 min of inactivity: the first load can take ~30s.)*
 
 ![Strategy view](docs/screenshots/strategy.png)
 
+**Forecast** — the median path with its 10th–90th percentile band, a dashed
+benchmark showing the best mix available *at the risk already being run*, and a
+goal calculator that answers in probabilities rather than with one confident
+number.
+
+![Forecast view](docs/screenshots/forecast.png)
+
 | Investments | Net worth |
 | --- | --- |
 | ![Investments view](docs/screenshots/investments.png) | ![Net worth view](docs/screenshots/net-worth.png) |
@@ -24,11 +31,14 @@ Built mobile-first, and installable as a PWA:
 
 <p>
   <img src="docs/screenshots/mobile-strategy.png" alt="Strategy view on a phone" width="250">
+  <img src="docs/screenshots/mobile-forecast.png" alt="Forecast view on a phone" width="250">
   <img src="docs/screenshots/mobile-investments.png" alt="Investments view on a phone" width="250">
 </p>
 
-*Every figure shown above comes from the fictional demo dataset, not from a real
-portfolio.*
+*Shown in dark mode; the app follows the system theme and keeps a manual toggle.
+Every figure above comes from the fictional demo dataset, not from a real
+portfolio — `scripts/generate_screenshots.py` regenerates these images and
+refuses to run against anything but `demo/`.*
 
 ## Features
 
@@ -51,6 +61,16 @@ portfolio.*
   the broker's real fee and checked against what the switch actually earns back.
   Backed by measured risk figures: volatility, beta, correlations, efficient
   frontier, stress scenarios.
+- **Forecast view**: today's net worth carried forward, as the *median* of
+  1 000 simulated histories with a 10th–90th percentile band around it — never a
+  single confident-looking curve. Reference lines for the mix you hold today, the
+  mix your strategy targets, and a dashed **ideal**: the tangency portfolio
+  blended with guaranteed savings down to the volatility you *already* run, so
+  the gap between the two is what the construction earns rather than what extra
+  risk earns. Plus a goal calculator read in three directions from that same
+  simulation — what you end up with, when the median path crosses your target,
+  and the monthly effort that would get you there inside a given horizon —
+  together with the odds of actually making it.
 - **Installable PWA** on a phone (home-screen icon, full screen), built
   mobile-first (tap-friendly lists, compact charts, tab navigation).
 
@@ -77,6 +97,8 @@ portfolio-dashboard/
 ├── docs/screenshots/        # Images used by this README
 ├── scripts/
 │   ├── generate_demo_data.py # (Re)generates demo/ from scratch
+│   ├── generate_icons.py     # (Re)generates the PWA icon set from the monogram
+│   ├── generate_screenshots.py # (Re)generates docs/screenshots/ (demo only, dark)
 │   └── build_strategy.py     # Computes strategy_analytics.json (needs scipy)
 ├── importers/
 │   ├── fortuneo.py            # Fortuneo parser (CSV ';', cp1252)
@@ -90,12 +112,15 @@ portfolio-dashboard/
 │   ├── performance.py          # Portfolio value over time
 │   ├── performance_by_asset.py # Per-asset performance
 │   ├── patrimoine.py           # Net worth view (investments + savings)
+│   ├── projection.py           # Forecast scenarios (mix -> expected return + volatility)
 │   └── exposure.py             # Geographic/sector diversification
 ├── market_data.py            # Live prices via yfinance (+ disk cache)
 ├── paths.py                  # data/config resolution, override via PORTFOLIO_ROOT
 ├── dashboard/
 │   ├── app.py                  # Flask server + Plotly chart generation
-│   └── templates/               # base.html, index.html (Investments), patrimoine.html, strategy.html
+│   ├── palette.py              # The one colour source, shared by the CSS and the figures
+│   └── templates/               # base.html, index.html (Investments), patrimoine.html,
+│                                #   strategy.html, projection.html (Forecast)
 ├── wsgi.py                    # gunicorn entry point (deployment)
 ├── main.py                    # CSV import + command-line summary
 ├── Procfile / render.yaml     # Render deployment
@@ -208,6 +233,26 @@ type,asset_class,name,symbol,shares,price,amount,fee,tax,currency,...`. The
   config; the app labels every proxied line. `build_strategy.py` never rewrites
   the targets — a strategic allocation that silently drifts with the market is not
   a strategy.
+- **Forecast — why the median, not the average**: `expected_net_pct` is an
+  *arithmetic* expected return. Compounding it directly would draw the **mean**
+  path and pass it off as the typical one: at 15.6 % volatility that is 1.2
+  points a year of phantom drift, roughly a quarter of the final amount over
+  twenty years. Each mix is therefore simulated as a lognormal matched to its
+  (µ, σ) — `s² = ln(1 + σ²/(1+µ)²)`, `m = ln(1+µ) − s²/2` — so the central line
+  is the median and the mean still comes out at `(1+µ)^t`. All the mixes are run
+  through the *same* 1 000 simulated markets, so the distance between two curves
+  is the difference between the mixes and not Monte Carlo noise. The whole
+  simulation runs in the browser: it has to answer while a slider is moving, and
+  a server round-trip would refetch prices on every drag.
+- **Forecast — the "ideal" line**: the tangency portfolio blended with the
+  risk-free rate down to the volatility the portfolio already runs (the capital
+  market line, the same dashed line the efficient-frontier chart draws). Pinning
+  it to today's risk is deliberate: benchmarking against the raw tangency
+  portfolio would mostly measure the extra risk it takes. It is an in-sample
+  optimum over one window, so it is a benchmark, not a promise — and the page
+  says so. Contributions are assumed invested at the chosen mix, and envelope
+  ceilings (the PEA cap in particular) are *not* modelled there; the Strategy
+  page is the one that tracks them.
 - **Historical prices**: for assets without a mapped ticker, the price history
   is approximated by the current average purchase price (a flat line) — the
   performance curve is therefore only reliable for assets mapped in

@@ -12,7 +12,8 @@ from flask import Flask, render_template
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import market_data
-from analytics import exposure as exposure_mod, kpis, patrimoine as patrimoine_mod, performance, performance_by_asset, positions as positions_mod, strategy as strategy_mod
+from analytics import exposure as exposure_mod, kpis, patrimoine as patrimoine_mod, performance, performance_by_asset, positions as positions_mod, projection as projection_mod, strategy as strategy_mod
+from dashboard import palette
 from importers import normalize
 from paths import data_root
 
@@ -20,19 +21,55 @@ DATA_ROOT = data_root()
 
 app = Flask(__name__)
 
-COLOR_BLUE = "#2a78d6"
-COLOR_ORANGE = "#eb6834"
-COLOR_AQUA = "#1baf7a"
-COLOR_YELLOW = "#eda100"
-COLOR_MAGENTA = "#e87ba4"
-COLOR_GREEN = "#008300"
-COLOR_VIOLET = "#4a3aa7"
-COLOR_RED = "#e34948"
-COLOR_MUTED = "#898781"
-COLOR_GOOD = "#0ca30c"
-COLOR_CRITICAL = "#d03b3b"
-# Fixed-order categorical palette (see dataviz skill): color follows the entity, never its rank.
-CATEGORICAL_PALETTE = [COLOR_BLUE, COLOR_ORANGE, COLOR_AQUA, COLOR_YELLOW, COLOR_MAGENTA, COLOR_GREEN, COLOR_VIOLET, COLOR_RED]
+
+@app.context_processor
+def inject_palette():
+    """Feeds base.html its :root blocks. The chrome and the figures then read the
+    same declarations, instead of each keeping its own drifting copy.
+
+    `icon_version` stamps the icon URLs: browsers cache a favicon far harder than
+    any other asset — often straight through a hard reload — so a regenerated mark
+    needs a new URL to be picked up at all.
+    """
+    return {
+        "css_light": palette.css_block(palette.LIGHT, indent="    "),
+        "css_dark": palette.css_block(palette.DARK, indent="      "),
+        "icon_version": _icon_version(),
+    }
+
+
+def _icon_version() -> int:
+    """Newest mtime across the icon files, so regenerating them busts the cache."""
+    static = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+    stamps = [0]
+    for root, _dirs, files in os.walk(static):
+        for name in files:
+            if name.endswith((".ico", ".png", ".webmanifest")):
+                try:
+                    stamps.append(int(os.path.getmtime(os.path.join(root, name))))
+                except OSError:
+                    pass
+    return max(stamps)
+
+
+# Colour now lives in dashboard/palette.py; these are re-exported so the figure
+# builders below read the same way they always did.
+COLOR_BLUE = palette.COLOR_BLUE
+COLOR_ORANGE = palette.COLOR_ORANGE
+COLOR_AQUA = palette.COLOR_AQUA
+COLOR_YELLOW = palette.COLOR_YELLOW
+COLOR_MAGENTA = palette.COLOR_MAGENTA
+COLOR_GREEN = palette.COLOR_GREEN
+COLOR_PURPLE = palette.COLOR_PURPLE
+COLOR_RED = palette.COLOR_RED
+COLOR_MUTED = palette.COLOR_MUTED
+COLOR_BRAND = palette.COLOR_BRAND
+# Theme-aware where the browser can resolve it (see resolveCssVars in base.html):
+# a single fixed green cannot serve both a paper and a near-black ground.
+COLOR_GOOD = "var(--good)"
+COLOR_CRITICAL = "var(--critical)"
+CATEGORICAL_PALETTE = palette.CATEGORICAL_PALETTE
+
 BROKER_LABELS = {"fortuneo": "Fortuneo", "trade_republic": "Trade Republic", "correction_manuelle": "Manual correction"}
 # Color fixed per broker (identity), never by rank/sort order — a broker keeps its
 # color even if its weight in the portfolio moves ahead of or behind the other.
@@ -69,6 +106,12 @@ COUNTRY_ICONS = {
     "Indonesia": "🇮🇩", "Thailand": "🇹🇭", "Malaysia": "🇲🇾", "United Arab Emirates": "🇦🇪",
     "Other": "🌍", "Not specified": "❔",
 }
+# Forecast curves: the same colour per role as the efficient-frontier chart above,
+# so a reader moving between the two pages never has to relearn which line is which.
+# "Ideal at the same risk" is literally a point on that chart's dashed purple
+# capital market line. Anything else the user picks is the neutral blue.
+PROJECTION_COLORS = {"today": COLOR_ORANGE, "target": COLOR_AQUA, "ideal": COLOR_PURPLE}
+
 SECTOR_ORDER = [
     "Technology", "Financials", "Industrials", "Consumer Discretionary",
     "Healthcare", "Communication", "Consumer Staples", "Energy",
@@ -120,8 +163,8 @@ def _diverging_color(value: float, bound: float) -> str:
         return COLOR_MUTED
     t = max(-1.0, min(1.0, value / bound))
     if t < 0:
-        return _lerp_color(COLOR_MUTED, COLOR_CRITICAL, -t)
-    return _lerp_color(COLOR_MUTED, COLOR_GOOD, t)
+        return _lerp_color(palette.DIVERGING_MUTED, palette.DIVERGING_CRITICAL, -t)
+    return _lerp_color(palette.DIVERGING_MUTED, palette.DIVERGING_GOOD, t)
 
 
 def _contrast_text_color(hex_color: str) -> str:
@@ -321,7 +364,11 @@ def _build_performance_fig(hist: pd.DataFrame, events: pd.DataFrame) -> dict:
             x=hist["date"], y=hist["portfolio_value"],
             name="Portfolio value",
             mode="lines",
-            line=dict(color=COLOR_BLUE, width=2),
+            # The headline curve wears the brand. This is the one place the brand
+            # colour enters the data, and deliberately: the "you can click this"
+            # signal is carried by the corner mark, which is a *shape*, so the
+            # affordance never rested on hue alone.
+            line=dict(color=COLOR_BRAND, width=2.5),
             hovertemplate="%{x|%d %b %Y}<br>%{y:,.0f} €<extra></extra>",
         )
     )
@@ -346,7 +393,12 @@ def _build_performance_fig(hist: pd.DataFrame, events: pd.DataFrame) -> dict:
                     x=sells["date"], y=sells["y"],
                     name="Sell",
                     mode="markers",
-                    marker=dict(symbol="triangle-down", size=10, color=COLOR_VIOLET, line=dict(width=1.5, color="var(--surface-1)")),
+                    # Red against the green Buy: the universal convention, and the
+                    # one the eye expects on a trade marker. (It was violet before
+                    # the identity work — reverting to that exact violet is what
+                    # collides with the brand indigo, hence red rather than a
+                    # literal revert.)
+                    marker=dict(symbol="triangle-down", size=10, color=COLOR_RED, line=dict(width=1.5, color="var(--surface-1)")),
                     customdata=list(zip(sells["name"], sells["amount"])),
                     hovertemplate="Sell — %{customdata[0]}<br>%{customdata[1]:,.0f} €<extra></extra>",
                 )
@@ -374,17 +426,40 @@ def _truncate_label(name: str, max_len: int = 24) -> str:
     return name if len(name) <= max_len else name[: max_len - 1].rstrip() + "…"
 
 
+def _institution_colors(labels) -> dict:
+    """A stable colour per bank or broker.
+
+    Fortuneo and Trade Republic keep the identity they already carry on the
+    Investments page (BROKER_COLORS, used by the broker gauge), so the two pages
+    agree. Every other institution takes a free palette slot in alphabetical
+    order — deliberately not in balance order, which is how the slices are sorted
+    and would repaint a bank the moment its balance moved.
+    """
+    known = {BROKER_LABELS[key]: color for key, color in BROKER_COLORS.items()
+             if key in BROKER_LABELS}
+    spare = [c for c in CATEGORICAL_PALETTE if c not in known.values()]
+    out = {name: color for name, color in known.items() if name in labels}
+    for i, name in enumerate(sorted(n for n in labels if n not in known)):
+        out[name] = spare[i % len(spare)] if spare else COLOR_MUTED
+    return out
+
+
 def _build_pie(slices: list, total_label: str = "Total") -> dict:
-    # Color assigned by position in the ORIGINAL list (before filtering out zero
-    # values): a category at €0 today keeps its color slot for the day it's no
-    # longer empty, instead of shifting the color of every category after it.
-    colored = [(s, c) for s, c in zip(slices, CATEGORICAL_PALETTE) if s["value"] > 1e-9]
+    """Each slice brings its own "color" — it is a property of the entity, not of
+    where the entity happens to sit in the list.
+
+    This used to zip the list against CATEGORICAL_PALETTE, which meant colour
+    followed rank. Both callers sort by descending value, so a bank changed colour
+    the day its balance overtook another one's, and the same blue stood for
+    "Actions" in one chart and for a bank in the chart beside it.
+    """
+    colored = [s for s in slices if s["value"] > 1e-9]
     if not colored:
         return {}
-    total = sum(s["value"] for s, _ in colored)
-    labels = [s["label"] for s, _ in colored]
-    values = [s["value"] for s, _ in colored]
-    colors = [c for _, c in colored]
+    total = sum(s["value"] for s in colored)
+    labels = [s["label"] for s in colored]
+    values = [s["value"] for s in colored]
+    colors = [s.get("color", COLOR_MUTED) for s in colored]
 
     fig = go.Figure(
         go.Pie(
@@ -537,7 +612,7 @@ def _build_mix_fig(targets: list, sleeve: dict, total: float) -> dict:
             go.Bar(
                 y=["Target", "Today"],
                 x=[t["target_pct"], t["current_pct"]],
-                orientation="h", name=_truncate_label(t["label"], 26),
+                orientation="h", name=t["label"],
                 marker=dict(color=color, line=dict(color="var(--surface-1)", width=2)),
                 hovertemplate=f"{t['label']}<br>%{{x:.1f}} %<extra></extra>",
             )
@@ -548,18 +623,22 @@ def _build_mix_fig(targets: list, sleeve: dict, total: float) -> dict:
                 y=["Target", "Today"],
                 x=[sleeve["cap_pct"], sleeve["used_pct"]],
                 orientation="h", name="Trading sleeve",
-                marker=dict(color=COLOR_VIOLET, line=dict(color="var(--surface-1)", width=2)),
+                marker=dict(color=COLOR_PURPLE, line=dict(color="var(--surface-1)", width=2)),
                 hovertemplate="Trading sleeve<br>%{x:.1f} %<extra></extra>",
             )
         )
     fig = go.Figure(data=traces)
+    # No Plotly legend: a horizontal one is laid out inside the figure box, so past
+    # a handful of lines it wraps straight over the bars (fine on the 3-line demo,
+    # unreadable on a real policy). The page renders the swatches itself, in HTML
+    # below the chart, where they wrap like any other text — see strategy.html.
     fig.update_layout(
         barmode="stack",
         margin=dict(l=4, r=4, t=6, b=4),
-        height=190,
+        height=150,
         xaxis=dict(showgrid=False, visible=False, fixedrange=True, range=[0, 100]),
         yaxis=dict(showgrid=False, fixedrange=True, tickfont=dict(size=13)),
-        legend=dict(orientation="h", yanchor="top", y=-0.05, xanchor="left", x=0, font=dict(size=11)),
+        showlegend=False,
         bargap=0.42,
     )
     return fig.to_dict()
@@ -596,7 +675,7 @@ def _build_frontier_fig(analytics: dict, current: dict | None) -> dict:
             go.Scatter(
                 x=[0, tangency["vol_pct"]], y=[rf, tangency["ret_pct"]],
                 mode="lines", name="Savings + tangency",
-                line=dict(color=COLOR_VIOLET, width=2, dash="dash"),
+                line=dict(color=COLOR_PURPLE, width=2, dash="dash"),
                 hoverinfo="skip",
             )
         )
@@ -646,7 +725,7 @@ def _build_frontier_fig(analytics: dict, current: dict | None) -> dict:
     fig.add_trace(
         go.Scatter(
             x=[0], y=[rf], mode="markers", name="Guaranteed savings",
-            marker=dict(size=11, color=COLOR_VIOLET, symbol="square",
+            marker=dict(size=11, color=COLOR_PURPLE, symbol="square",
                         line=dict(width=2, color="var(--surface-1)")),
             hovertemplate=f"Guaranteed savings<br>{rf:.2f} % net, no volatility<extra></extra>",
         )
@@ -668,7 +747,11 @@ def _build_frontier_fig(analytics: dict, current: dict | None) -> dict:
 # Correlation ramp. Fixed hexes rather than theme variables: the cells cover the
 # page background, so the same ramp reads correctly in light and dark mode, and
 # knowing the exact fill lets us pick a contrasting ink per cell.
-CORR_NEUTRAL, CORR_HIGH, CORR_NEG = "#eef3f8", "#1e5aa8", "#c96a3f"
+# Interpolated arithmetically, so these are literals rather than var() —
+# but taken from the palette, not invented here as they used to be.
+CORR_NEUTRAL = palette.LIGHT["--grid"]
+CORR_HIGH = palette.BRAND_LIGHT
+CORR_NEG = palette.DATA_LIGHT["orange"]
 CORR_MIN, CORR_MAX = -40, 100
 
 
@@ -896,16 +979,22 @@ def patrimoine():
     # Savings and investment envelopes in one table: the page is called Net Worth,
     # so its account list should add up to the net worth shown above it.
     all_accounts = data["accounts"] + patrimoine_mod.build_investment_accounts(
-        by_broker_raw, BROKER_LABELS)
+        by_broker_raw, BROKER_LABELS, transactions)
 
+    # Asset classes carry their own colour, resolved per theme in the browser.
     category_slices = [
-        {"label": CATEGORY_LABELS.get(c["category"], c["category"]), "value": c["value"]}
+        {"label": CATEGORY_LABELS.get(c["category"], c["category"]),
+         "value": c["value"],
+         "color": palette.asset_var(c["category"])}
         for c in data["comparison"]
     ]
+    bank_colors = _institution_colors([s["label"] for s in data["bank_slices"]])
+    bank_slices = [dict(s, color=bank_colors.get(s["label"], COLOR_MUTED))
+                   for s in data["bank_slices"]]
 
     figs = {
         "repartition": _build_pie(category_slices),
-        "bank_repartition": _build_pie(data["bank_slices"], total_label="Total"),
+        "bank_repartition": _build_pie(bank_slices, total_label="Total"),
     }
 
     return render_template(
@@ -945,7 +1034,8 @@ def strategy():
     total = sum(p["value"] for p in positions) + cash_total
 
     analytics = strategy_mod.load_analytics()
-    data = strategy_mod.build(policy, positions, accounts, cash_total, total, analytics)
+    data = strategy_mod.build(policy, positions, accounts, cash_total, total, analytics,
+                              transactions)
 
     current_risk, stress = None, []
     if analytics:
@@ -972,6 +1062,61 @@ def strategy():
         stress=stress,
         tolerance_pct=tolerance,
         figs_json=json.dumps(figs, cls=plotly.utils.PlotlyJSONEncoder),
+        last_update=pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"),
+    )
+
+
+@app.route("/projection")
+def projection():
+    """Forecast: where today's net worth lands, and where an ideal mix would land.
+
+    Ships parameters rather than a finished figure. Every control on the page
+    moves the curve, and rebuilding it server-side would cost a page reload — and
+    a fresh Yahoo Finance round-trip — on each drag of a slider. So the
+    compounding happens once, in the browser, feeding both the chart and the goal
+    calculator from the same simulator (see projection.html).
+    """
+    transactions = normalize.load_all(DATA_ROOT)
+    positions = []
+    if not transactions.empty:
+        pos_dict = positions_mod.build_positions(transactions)
+        pos_df = kpis.enrich_with_prices(positions_mod.positions_frame(pos_dict))
+        positions = [
+            {"asset_key": r["asset_key"], "value": r["current_value"]}
+            for r in pos_df[pos_df["quantity"] > 1e-9].to_dict("records")
+        ]
+
+    accounts = [a for a in patrimoine_mod.load_accounts() if a.get("visible", True)]
+    capital = projection_mod.starting_capital(positions, accounts)
+
+    policy = strategy_mod.load_policy()
+    analytics = strategy_mod.load_analytics()
+    current_risk = None
+    if policy and analytics and capital["total_eur"]:
+        weights = strategy_mod.current_weights(policy, positions, capital["total_eur"])
+        current_risk = strategy_mod.portfolio_risk(analytics, weights)
+
+    scenarios = [
+        dict(s, color=PROJECTION_COLORS.get(s["key"], COLOR_BLUE))
+        for s in projection_mod.build_scenarios(analytics, current_risk)
+    ]
+    model = {
+        "capital": capital,
+        "scenarios": scenarios,
+        "selected": projection_mod.default_scenario(scenarios),
+        # Judgements, both of them — shown so the page can print what it assumed.
+        "inflation_pct": (analytics or {}).get("inflation_pct") or 0.0,
+        "risk_free_pct": (analytics or {}).get("risk_free_net_pct") or 0.0,
+        "custom_color": COLOR_BLUE,
+    }
+
+    return render_template(
+        "projection.html",
+        active_page="projection",
+        capital=capital,
+        scenarios=scenarios,
+        analytics=analytics,
+        model=model,
         last_update=pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"),
     )
 

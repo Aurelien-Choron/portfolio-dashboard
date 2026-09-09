@@ -6,10 +6,10 @@
 <title>{% block title %}Portfolio Dashboard{% endblock %}</title>
 
 <!-- Home screen app install (PWA): manifest + iOS/Android icons. -->
-<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
-<meta name="theme-color" content="#2a78d6">
-<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-<link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}?v={{ icon_version }}">
+<meta name="theme-color" content="#1a2ba6">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}?v={{ icon_version }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}?v={{ icon_version }}">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,41 +18,42 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
+  /* Both palettes are rendered from dashboard/palette.py — the single source of
+     truth shared with the Plotly figures. Editing colour here would only put the
+     two back out of sync; edit the module. */
   :root {
     color-scheme: light;
-    --surface-1: #fcfcfb;
-    --page: #f9f9f7;
-    --text-primary: #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted: #898781;
-    --grid: #e1e0d9;
-    --baseline: #c3c2b7;
-    --border: rgba(11,11,11,0.10);
-    --row-hover: rgba(11,11,11,0.03);
-    --good: #006300;
-    --critical: #d03b3b;
-    --info: #2a78d6;
-    --chip-bg: rgba(11,11,11,0.05);
+{{ css_light }}
   }
+  /* Follow the system, unless the reader has explicitly asked for light. */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       color-scheme: dark;
-      --surface-1: #1a1a19;
-      --page: #0d0d0d;
-      --text-primary: #ffffff;
-      --text-secondary: #c3c2b7;
-      --text-muted: #898781;
-      --grid: #2c2c2a;
-      --baseline: #383835;
-      --border: rgba(255,255,255,0.10);
-      --row-hover: rgba(255,255,255,0.03);
-      --good: #0ca30c;
-      --critical: #e66767;
-      --info: #3987e5;
-      --chip-bg: rgba(255,255,255,0.06);
+{{ css_dark }}
     }
   }
+  /* An explicit choice wins in both directions, whatever the system says. */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+{{ css_dark }}
+  }
+
+  /* Brand presence beyond the corner mark.
+     Saturated brand = "you can click this". A brand *wash* — the same hue at 8%
+     over the surface — = "this is the app's own furniture". Different saturation,
+     different role, so the affordance contract still holds: nothing washed is
+     ever mistaken for a control. Derived here rather than in palette.py because
+     these follow whatever --brand computes to for the active theme. */
+  :root {
+    --brand-wash: color-mix(in srgb, var(--brand) 8%, var(--surface-1));
+    --brand-wash-strong: color-mix(in srgb, var(--brand) 14%, var(--surface-1));
+    --brand-rule: color-mix(in srgb, var(--brand) 38%, transparent);
+  }
+  ::selection { background: color-mix(in srgb, var(--brand) 26%, transparent); }
   * { box-sizing: border-box; }
+  @media (prefers-reduced-motion: reduce) {
+    .nav-link::before, .tab-btn::before, .pill-btn::before, .info-bubble { transition: none; }
+  }
   body { background: var(--page); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
   .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; }
   .ink-primary { color: var(--text-primary); }
@@ -62,9 +63,43 @@
   .delta-good { color: var(--good); }
   .delta-critical { color: var(--critical); }
   .delta-info { color: var(--info); }
+  .mark { flex: none; display: block; width: 24px; height: 24px; }
+  @media (min-width: 768px) { .mark { width: 28px; height: 28px; } }
+
   .hero-value { font-size: 2.5rem; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
   .section-title { font-size: 1rem; font-weight: 600; }
-  .section-hint { color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; }
+  /* Explanation on demand. A section title carries a small "i"; the text only
+     appears on hover, or on tap/focus where there is no pointer. The bubble is a
+     child of the icon, so moving onto it keeps :hover alive and its links stay
+     clickable. Opens rightwards from the icon (never centered) so a title near
+     the left edge cannot push the bubble off-screen. */
+  .info { position: relative; display: inline-flex; align-items: center; justify-content: center;
+          width: 15px; height: 15px; margin-left: 6px; flex: none; vertical-align: middle;
+          border: 1px solid var(--border); border-radius: 999px; background: transparent;
+          color: var(--text-muted); cursor: help; }
+  .info:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  .info:focus-visible { color: var(--text-primary); outline: 2px solid var(--brand); outline-offset: 2px; }
+  /* Invisible padding around the dot: a 15px target is fine to hover, too small to tap. */
+  .info::before { content: ""; position: absolute; inset: -9px; border-radius: 999px; }
+  .info-icon { font-size: 0.63rem; font-weight: 700; font-style: normal; line-height: 1; letter-spacing: 0; }
+
+  /* display:none rather than hidden-but-laid-out: a closed bubble is wider than a
+     phone screen, and one still in the layout widens the page it hangs off. */
+  .info-bubble { display: none; position: absolute; z-index: 60; top: calc(100% + 9px); left: -7px;
+                 width: max-content; max-width: min(340px, calc(100vw - 40px));
+                 background: var(--surface-1); color: var(--text-secondary);
+                 border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px;
+                 box-shadow: 0 6px 22px rgba(0,0,0,0.16);
+                 font-size: 0.78rem; font-weight: 400; line-height: 1.5; letter-spacing: 0;
+                 text-align: left; text-transform: none; white-space: normal;
+                 /* Set by placeInfoBubble() when it opens — see the script below. */
+                 transform: translateX(var(--info-shift, 0px)); }
+  .info:hover .info-bubble, .info:focus-within .info-bubble { display: block; }
+  /* <p> cannot live inside the <span> the macro emits — blocks are made, not nested. */
+  .info-para { display: block; }
+  .info-para + .info-para { margin-top: 7px; }
+  .info-bubble code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.95em;
+                      background: var(--chip-bg); border-radius: 4px; padding: 0 4px; }
   .chip { display: inline-block; background: var(--chip-bg); color: var(--text-secondary); border-radius: 999px; padding: 1px 8px; font-size: 0.75rem; }
   table { border-collapse: collapse; width: 100%; }
   th, td { padding: 9px 12px; text-align: right; white-space: nowrap; }
@@ -76,14 +111,124 @@
   tbody tr:hover td { background: var(--row-hover); }
   .stat-label { color: var(--text-muted); font-size: 0.75rem; margin-bottom: 4px; }
   .stat-value { font-size: 1.125rem; font-weight: 600; }
-  .nav-link { padding: 6px 12px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-decoration: none; }
-  .nav-link:hover { background: var(--row-hover); }
+  .nav-link { padding: 6px 12px; border-radius: 3px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-decoration: none; }
+  .nav-link:hover { background: var(--row-hover); color: var(--text-primary); }
   .nav-link.active { background: var(--chip-bg); color: var(--text-primary); }
+
+  /* ---- The corner mark ---------------------------------------------------
+     The one interactive signature of the app: a bracket in the top-left corner,
+     in brand indigo, at three strengths — visible at rest (so a control reads as
+     clickable before you hover it), stronger on hover, full and larger when
+     active.
+
+     It is reserved to things you can click. Cards, headings and section titles
+     never get one. That reserve is what makes it a signal rather than a
+     decoration: a corner mark means "this responds". */
+  .nav-link, .tab-btn, .pill-btn { position: relative; }
+  .nav-link::before, .tab-btn::before, .pill-btn::before {
+    content: ""; position: absolute; left: 0; top: 0; width: 9px; height: 9px;
+    border-left: 2px solid var(--brand); border-top: 2px solid var(--brand);
+    border-top-left-radius: 5px;
+    /* 0.55, not lower: at 0.32 the composited mark sits at 1.9:1 against the
+       page and the "you can see it is clickable" promise does not hold. This
+       clears 3:1 in both themes while leaving room for hover and active above. */
+    opacity: 0.55; pointer-events: none;
+    transition: opacity 0.14s ease, width 0.14s ease, height 0.14s ease;
+  }
+  .nav-link:hover::before, .tab-btn:hover::before, .pill-btn:hover::before { opacity: 0.78; }
+  .nav-link.active::before, .tab-btn.active::before, .pill-btn.active::before {
+    opacity: 1; width: 13px; height: 13px; border-top-left-radius: 6px;
+  }
+  /* The pill group draws a divider between siblings; nudge the mark off it. */
+  .pill-btn + .pill-btn::before { left: 1px; }
+
+  /* One focus ring for the whole app. There was none before this — keyboard
+     users got whatever the browser happened to do, which on a bare <button> with
+     no border is nothing at all. */
+  .nav-link:focus-visible, .tab-btn:focus-visible, .pill-btn:focus-visible,
+  .linkish:focus-visible, .link:focus-visible, .bottom-nav-item:focus-visible,
+  .select:focus-visible, .task input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 3px;
+  }
+
+  /* A link in running text. Distinct from .delta-info, which is a *data* colour
+     (an allocation sitting under its target) and must not double as "clickable". */
+  .link { color: var(--brand); text-decoration: underline; text-underline-offset: 2px;
+          text-decoration-thickness: 1px; }
+  .link:hover { text-decoration-thickness: 2px; }
+
+  /* <select> is a replaced element: no ::before renders on it, so it states its
+     affordance with a brand edge instead of a corner mark. */
+  .select { min-height: 40px; padding: 6px 12px; font-size: 0.75rem; border-radius: 3px;
+            border: 1px solid var(--border); border-left: 2px solid var(--brand);
+            background: var(--surface-1); color: var(--text-primary); cursor: pointer; }
+  .select:hover { border-color: var(--brand); }
+
+  /* Typed inputs (Forecast). Same brand edge as .select so the two read as one
+     family, and the same 40px floor so a thumb can hit them on a phone. */
+  .field { width: 100%; min-height: 40px; padding: 6px 10px; font-size: 0.95rem; font-weight: 600;
+           font-variant-numeric: tabular-nums; border-radius: 3px;
+           border: 1px solid var(--border); border-left: 2px solid var(--brand);
+           background: var(--surface-1); color: var(--text-primary); }
+  .field:hover { border-color: var(--brand); }
+  .field:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  /* Firefox/WebKit spinners crowd a 4-digit amount; the slider or the keyboard
+     is the input method here, not a 1-unit stepper. */
+  .field::-webkit-outer-spin-button, .field::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .field[type="number"] { -moz-appearance: textfield; }
+
+  .range { -webkit-appearance: none; appearance: none; width: 100%; height: 24px;
+           background: transparent; cursor: pointer; }
+  .range::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: var(--chip-bg); }
+  .range::-moz-range-track { height: 4px; border-radius: 999px; background: var(--chip-bg); }
+  .range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+           margin-top: -8px; border-radius: 999px; background: var(--brand); border: 2px solid var(--surface-1); }
+  .range::-moz-range-thumb { width: 20px; height: 20px; border: 2px solid var(--surface-1);
+           border-radius: 999px; background: var(--brand); }
+  .range:focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; }
 
   /* Hero delta chip: colored pill with a direction triangle, Finary-style. */
   .chip-delta { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; font-weight: 600; }
   .chip-delta.is-good { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
   .chip-delta.is-critical { background: color-mix(in srgb, var(--critical) 14%, transparent); color: var(--critical); }
+
+  /* The one card per page carrying the headline number wears the brand. It is
+     the app's own voice, not data — hence the wash rather than a saturated fill. */
+  .card-brand { background: var(--brand-wash); border-left: 3px solid var(--brand); }
+  /* The wash costs the muted label half a point of contrast (3.5:1 -> 3.0:1 in
+     light); promote it a step so the branded card is not the least legible one. */
+  .card-brand .stat-label { color: var(--text-secondary); }
+  .app-header { border-bottom: 1px solid var(--brand-rule); padding-bottom: 14px; }
+  .theme-toggle { display: flex; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .theme-btn { padding: 5px 9px; min-height: 32px; display: inline-flex; align-items: center;
+               font-size: 0.78rem; font-weight: 500; color: var(--text-muted);
+               background: transparent; border: none; cursor: pointer; }
+  .theme-btn + .theme-btn { border-left: 1px solid var(--border); }
+  .theme-btn:hover { color: var(--text-primary); background: var(--row-hover); }
+  .theme-btn.active { background: var(--brand-wash-strong); color: var(--brand); }
+  .theme-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+  /* ---- Asset-class colour ------------------------------------------------
+     Applied wherever an asset class is itself the subject: the Overview cards,
+     the account rows, the net-worth pie. Two families rather than five unrelated
+     hues — teal for money exposed to the market, warm greige for capital-
+     guaranteed money, amber for gold (see dashboard/palette.py).
+
+     Never a substitute for the label beside it: colour is the faster channel,
+     the word is the reliable one. A category with no colour of its own (an
+     investment envelope holds a mix, not one class) falls back to muted. */
+  [data-asset="Actions"] { --asset: var(--asset-actions); }
+  [data-asset="Obligations"] { --asset: var(--asset-obligations); }
+  [data-asset="Fonds Euros"] { --asset: var(--asset-fonds-euros); }
+  [data-asset="Livrets"] { --asset: var(--asset-livrets); }
+  [data-asset="Autres"] { --asset: var(--asset-autres); }
+  .asset-accent { border-left: 3px solid var(--asset, var(--border)); }
+  /* The border matters: the palest class sits at 2.2:1 on the card, so the ring
+     is what delimits the dot rather than the fill. */
+  .asset-dot { display: inline-block; width: 9px; height: 9px; margin-right: 7px;
+               border-radius: 2px; vertical-align: baseline; flex: none;
+               background: var(--asset, var(--text-muted));
+               border: 1px solid var(--border); }
 
   /* Side accent on a card, to visually tie a value to its sign. */
   .card-accent-good { border-left: 3px solid var(--good); }
@@ -93,7 +238,7 @@
   .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
   .tab-btn { flex: none; padding: 10px 16px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
   .tab-btn:hover { color: var(--text-primary); }
-  .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--info); }
+  .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--brand); background: var(--brand-wash); }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
@@ -130,7 +275,7 @@
   .task { display: flex; gap: 12px; align-items: flex-start; padding: 13px 4px; border-bottom: 1px solid var(--grid); }
   .task:last-child { border-bottom: none; }
   .task:hover { background: var(--row-hover); }
-  .task input[type="checkbox"] { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--info); cursor: pointer; }
+  .task input[type="checkbox"] { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--brand); cursor: pointer; }
   .task-body { flex: 1; min-width: 0; }
   .task-title { font-size: 0.925rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
   .task-meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 2px 14px; }
@@ -172,13 +317,23 @@
   .fund-alt-why::before { content: " — "; }
   .fund-checked { margin-top: 8px; font-size: 0.7rem; color: var(--text-muted); }
 
-  .linkish { background: none; border: none; padding: 0; font: inherit; color: var(--info); cursor: pointer; text-decoration: underline; }
+  /* Legend rendered outside the plot, as ordinary wrapping text. Plotly lays its
+     own legend out inside the figure box, so with enough series it either
+     overlaps the marks or squeezes them — this one just takes another row. */
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; padding: 0 4px; }
+  .chart-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-secondary); }
+  .chart-legend-dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+
+  .linkish { background: none; border: none; padding: 0; font: inherit; color: var(--brand); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 
   /* Bottom nav bar, mobile only (md:hidden) — replaces the header links
      (desktop-only, hidden md:flex) as the primary entry point. */
-  .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; background: var(--surface-1); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
+  .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; background: var(--brand-wash); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
   .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; padding: 5px 4px; font-size: 0.68rem; font-weight: 500; color: var(--text-muted); text-decoration: none; }
-  .bottom-nav-item.active { color: var(--info); }
+  .bottom-nav-item { position: relative; }
+  .bottom-nav-item.active { color: var(--brand); }
+  .bottom-nav-item.active::before { content: ""; position: absolute; top: 0; left: 24%; right: 24%;
+                                    height: 2px; background: var(--brand); }
   .bottom-nav-icon { font-size: 1.15rem; line-height: 1; }
 
   /* Compact mobile mode: the desktop templates (cards, text, line height,
@@ -190,13 +345,13 @@
     .card.p-5 { padding: 1rem; }
     .card.p-4 { padding: 0.75rem; }
     .card.p-3 { padding: 0.6rem; }
-    .hero-value { font-size: 1.75rem; line-height: 1.15; }
+    .mark { flex: none; display: block; width: 24px; height: 24px; }
+  @media (min-width: 768px) { .mark { width: 28px; height: 28px; } }
+
+  .hero-value { font-size: 1.75rem; line-height: 1.15; }
     .stat-value { font-size: 1rem; }
     .stat-label { font-size: 0.7rem; margin-bottom: 2px; }
     .section-title { font-size: 0.875rem; }
-    /* The explanatory text under a chart/table name is desktop-only — on
-       mobile the title alone is enough, the detail is superfluous. */
-    .section-hint { display: none; }
     .chip-delta { padding: 2px 8px; font-size: 0.72rem; }
     .tabs { margin-bottom: 14px; }
     .tab-btn { padding: 8px 12px; font-size: 0.8rem; }
@@ -210,21 +365,42 @@
     [id^="chart-"] { margin-left: -0.75rem; margin-right: -0.75rem; }
   }
 </style>
+<script>
+  // Runs before the body is painted: reading the stored choice after render
+  // would flash the system theme first.
+  try {
+    var stored = localStorage.getItem('theme');
+    if (stored === 'light' || stored === 'dark') {
+      document.documentElement.setAttribute('data-theme', stored);
+    }
+  } catch (e) {}
+</script>
 </head>
 <body class="min-h-screen">
 <div class="max-w-7xl mx-auto px-4 pt-6 pb-20 md:pt-8 md:pb-8">
 
-  <div class="flex items-center justify-between mb-5 md:mb-8 flex-wrap gap-3">
+  <div class="app-header flex items-center justify-between mb-5 md:mb-8 flex-wrap gap-3">
     <div class="flex items-center gap-4">
-      <h1 class="text-xl md:text-2xl font-semibold">Portfolio Dashboard</h1>
+      <h1 class="text-xl md:text-2xl font-semibold flex items-center gap-2.5">
+        {% include "_monogram.svg" %}
+        <span>Portfolio Dashboard</span>
+      </h1>
       <!-- Desktop nav: on mobile, the bottom nav bar takes over. -->
       <nav class="hidden md:flex gap-1">
         <a href="/" class="nav-link {{ 'active' if active_page == 'bourse' else '' }}">Investments</a>
         <a href="/patrimoine" class="nav-link {{ 'active' if active_page == 'patrimoine' else '' }}">Net Worth</a>
         <a href="/strategy" class="nav-link {{ 'active' if active_page == 'strategy' else '' }}">Strategy</a>
+        <a href="/projection" class="nav-link {{ 'active' if active_page == 'projection' else '' }}">Forecast</a>
       </nav>
     </div>
-    {% block header_right %}{% endblock %}
+    <div class="flex items-center gap-3">
+      {% block header_right %}{% endblock %}
+      <div class="theme-toggle" role="group" aria-label="Colour theme">
+        <button type="button" class="theme-btn" data-theme-choice="light" aria-label="Light theme" title="Light">☀</button>
+        <button type="button" class="theme-btn" data-theme-choice="dark" aria-label="Dark theme" title="Dark">☾</button>
+        <button type="button" class="theme-btn" data-theme-choice="system" aria-label="Follow the system" title="System">Auto</button>
+      </div>
+    </div>
   </div>
 
   {% block content %}{% endblock %}
@@ -252,13 +428,72 @@
       return node;
     }
 
+    const CHART_FONT = 'system-ui, -apple-system, Segoe UI, sans-serif';
+
+    // House style for every figure, applied here rather than in each of the twelve
+    // builders. Plotly's stock look is recognisable mostly by two things: the white
+    // Arial hover box, and axes fenced in by lines and outward ticks. Both go.
+    //
+    // These are DEFAULTS: they are merged *under* the figure's own layout, so a
+    // chart that deliberately sets an axis keeps its setting. Only the genuine
+    // overrides below (transparent grounds) are merged over the top.
+    function houseDefaults(css) {
+      return {
+        hoverlabel: {
+          bgcolor: css('--surface-1'),
+          bordercolor: css('--border'),
+          font: { family: CHART_FONT, size: 12, color: css('--text-primary') },
+          align: 'left',
+        },
+        // A safety net only — every trace here sets its colour explicitly, from
+        // dashboard/palette.py. This keeps any future trace on the same palette.
+        colorway: [css('--info'), '#eb6834', '#1baf7a', '#eda100',
+                   '#e87ba4', '#008300', '#b31897', '#e34948'],
+      };
+    }
+
+    // Applied OVER each figure's own axis settings, not under them.
+    //
+    // First attempt merged these as defaults, which achieved almost nothing: the
+    // builders set gridcolor, tickfont and showgrid explicitly, so the house style
+    // lost every property that actually defines the look. What belongs to the
+    // house is the *appearance* — no axis line, no tick marks, a dotted hairline
+    // grid, muted labels. What stays with each figure is everything carrying
+    // meaning: range, tickformat, ticksuffix, showgrid on/off, fixedrange, title,
+    // tickangle. Those are deliberately absent here.
+    function axisLook(css, existing) {
+      return {
+        showline: false,
+        ticks: '',
+        gridcolor: css('--grid'),
+        gridwidth: 1,
+        griddash: 'dot',
+        zerolinecolor: css('--baseline'),
+        zerolinewidth: 1,
+        // Keep the size the figure chose — several vary it on purpose — but take
+        // the colour, so every tick label across the app is the same grey.
+        tickfont: Object.assign({ size: 11 }, existing && existing.tickfont,
+                                { color: css('--text-muted') }),
+      };
+    }
+
     function themeLayout(layout) {
       const rootStyles = getComputedStyle(document.documentElement);
-      const resolved = Object.assign({}, resolveCssVars(layout), {
+      const css = function (name) { return rootStyles.getPropertyValue(name).trim(); };
+      const resolved = Object.assign({}, houseDefaults(css), resolveCssVars(layout), {
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: rootStyles.getPropertyValue('--text-secondary').trim(), family: 'system-ui, -apple-system, Segoe UI, sans-serif', size: 12 },
+        font: { color: css('--text-secondary'), family: CHART_FONT, size: 12 },
       });
+      ['xaxis', 'yaxis'].forEach(function (key) {
+        resolved[key] = Object.assign({}, resolved[key], axisLook(css, resolved[key]));
+      });
+      // Legend: the figure keeps its placement, the house sets its typography.
+      resolved.legend = Object.assign(
+        { bgcolor: 'rgba(0,0,0,0)', borderwidth: 0 },
+        resolved.legend,
+        { font: Object.assign({ size: 11 }, resolved.legend && resolved.legend.font,
+                              { color: css('--text-secondary') }) });
       // Fixed heights (designed for desktop) are reduced on mobile to limit
       // scrolling. Excluded: charts whose height is already computed dynamically
       // per row (ranking, target gap — meta.content_height), where per-bar
@@ -282,9 +517,42 @@
 
     // Same thing on the data side (e.g. the "var(--surface-1)" border of markers/pie
     // slices): Plotly wouldn't resolve it either without going through here.
+    // Every figure is kept so a theme change can redraw it: the colours are read
+    // from the CSS tokens at render time, so a figure drawn under one theme keeps
+    // that theme's greys until it is drawn again. Keyed by div, so a chart that
+    // re-renders on its own (the diversification donut) replaces its entry rather
+    // than stacking up.
+    // The app's money format: a space as the thousands separator, matching the
+    // `fr` Jinja filter on the Python side.
+    function fmtEur(v) {
+      return Math.round(v).toLocaleString('en-US').replace(/,/g, ' ') + ' €';
+    }
+
+    const renderedFigures = new Map();
+
     function renderFig(divId, fig, extraConfig) {
       if (!fig || !fig.data) return;
-      Plotly.newPlot(divId, resolveCssVars(fig.data), themeLayout(fig.layout), Object.assign({}, config, extraConfig || {}));
+      renderedFigures.set(divId, { fig: fig, extraConfig: extraConfig });
+      drawFig(divId, fig, extraConfig);
+    }
+
+    function redrawFigures() {
+      renderedFigures.forEach(function (entry, divId) {
+        const el = document.getElementById(divId);
+        if (el && el.offsetParent !== null) drawFig(divId, entry.fig, entry.extraConfig);
+      });
+    }
+
+    function drawFig(divId, fig, extraConfig) {
+      const data = resolveCssVars(fig.data);
+      const stacked = fig.layout && fig.layout.barmode === 'stack';
+      if (!stacked) {
+        data.forEach(function (trace) {
+          if (trace.type !== 'bar' || !trace.marker || trace.marker.cornerradius !== undefined) return;
+          trace.marker.cornerradius = 5;
+        });
+      }
+      Plotly.newPlot(divId, data, themeLayout(fig.layout), Object.assign({}, config, extraConfig || {}));
     }
 
     const config = {
@@ -307,6 +575,42 @@
         },
       },
     };
+
+    // An info bubble opens rightwards from its "i", so one on a title near the
+    // right edge — or any of them on a phone, where the bubble is nearly as wide
+    // as the screen — would hang off it. CSS cannot measure that, so the
+    // horizontal correction is computed here and handed back as --info-shift.
+    // Called as the bubble opens: it is display:none until then, and CSS applies
+    // :hover / :focus-within before dispatching the event that gets us here, so
+    // it already has a geometry to measure — and is placed before the next paint.
+    function placeInfoBubble(bubble) {
+      const rect = bubble.getBoundingClientRect();
+      if (!rect.width) return;  // still closed: a touchstart lands before focus does
+      // The rect already carries the shift from the previous open; subtract it
+      // rather than zeroing the property and re-reading, which measures the old
+      // position and lets the bubble creep back out.
+      const applied = parseFloat(bubble.dataset.infoShift || '0');
+      const left = rect.left - applied;
+      const right = rect.right - applied;
+      const viewport = document.documentElement.clientWidth;
+      const margin = 12;
+      let shift = 0;
+      if (right > viewport - margin) shift = viewport - margin - right;
+      // Never push it off the near side to fix the far one.
+      if (left + shift < margin) shift = margin - left;
+      bubble.dataset.infoShift = shift;
+      bubble.style.setProperty('--info-shift', shift + 'px');
+    }
+
+    function initInfoBubbles(root) {
+      root.querySelectorAll('.info').forEach(function (info) {
+        const bubble = info.querySelector('.info-bubble');
+        if (!bubble) return;
+        ['mouseenter', 'focus', 'touchstart'].forEach(function (event) {
+          info.addEventListener(event, function () { placeInfoBubble(bubble); }, { passive: true });
+        });
+      });
+    }
 
     // Section tabs: only one .tab-panel visible at a time per .tabs group.
     // Plotly charts in inactive panels get initialized at zero size
@@ -331,6 +635,47 @@
         });
       });
     }
+
+    initInfoBubbles(document);
+
+    // Theme choice. Stored per browser, like the action-plan checkboxes — the app
+    // never writes to disk, so this is a local preference, not shared state.
+    (function () {
+      const buttons = Array.prototype.slice.call(document.querySelectorAll('[data-theme-choice]'));
+      if (!buttons.length) return;
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+
+      function current() {
+        try { return localStorage.getItem('theme') || 'system'; } catch (e) { return 'system'; }
+      }
+      function apply(choice, redraw) {
+        if (choice === 'system') {
+          document.documentElement.removeAttribute('data-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', choice);
+        }
+        buttons.forEach(function (b) {
+          b.classList.toggle('active', b.dataset.themeChoice === choice);
+        });
+        // The tokens have changed; the figures are still drawn in the old ones.
+        if (redraw && window.Plotly) redrawFigures();
+      }
+      buttons.forEach(function (b) {
+        b.addEventListener('click', function () {
+          const choice = b.dataset.themeChoice;
+          try {
+            if (choice === 'system') { localStorage.removeItem('theme'); }
+            else { localStorage.setItem('theme', choice); }
+          } catch (e) {}
+          apply(choice, true);
+        });
+      });
+      // Following the system means following it as it changes, too.
+      media.addEventListener('change', function () {
+        if (current() === 'system') apply('system', true);
+      });
+      apply(current(), false);
+    })();
   </script>
   {% block scripts %}{% endblock %}
 </div>
@@ -346,6 +691,9 @@
   </a>
   <a href="/strategy" class="bottom-nav-item {{ 'active' if active_page == 'strategy' else '' }}">
     <span class="bottom-nav-icon">🎯</span><span>Strategy</span>
+  </a>
+  <a href="/projection" class="bottom-nav-item {{ 'active' if active_page == 'projection' else '' }}">
+    <span class="bottom-nav-icon">🔭</span><span>Forecast</span>
   </a>
 </nav>
 </body>

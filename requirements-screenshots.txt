@@ -1,0 +1,9 @@
+# Extra dependency for scripts/generate_screenshots.py only (the headless browser
+# that renders docs/screenshots/). Deliberately NOT in requirements.txt: the Flask
+# app never imports Playwright, and the deployment has no reason to install a
+# browser.
+#
+#   pip install -r requirements-screenshots.txt
+#   playwright install chromium
+-r requirements.txt
+playwright>=1.40

@@ -7,7 +7,7 @@ import sys
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.utils
-from flask import Flask, render_template
+from flask import Flask, redirect, render_template, url_for
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -864,7 +864,7 @@ def index():
     transactions = normalize.load_all(DATA_ROOT)
 
     if transactions.empty:
-        return render_template("index.html", active_page="bourse", empty=True)
+        return render_template("index.html", active_page="investments", empty=True)
 
     normalize.save_processed(transactions, DATA_ROOT)
 
@@ -931,7 +931,7 @@ def index():
 
     return render_template(
         "index.html",
-        active_page="bourse",
+        active_page="investments",
         empty=False,
         summary=summary,
         broker_df=broker_df.to_dict("records"),
@@ -950,8 +950,8 @@ def index():
     )
 
 
-@app.route("/patrimoine")
-def patrimoine():
+@app.route("/net-worth")
+def net_worth():
     transactions = normalize.load_all(DATA_ROOT)
 
     bourse_value = 0.0
@@ -997,8 +997,8 @@ def patrimoine():
     }
 
     return render_template(
-        "patrimoine.html",
-        active_page="patrimoine",
+        "net_worth.html",
+        active_page="net_worth",
         total=data["total"],
         bourse_value=data["bourse_value"],
         epargne_total=data["epargne_total"],
@@ -1068,8 +1068,8 @@ def strategy():
     )
 
 
-@app.route("/projection")
-def projection():
+@app.route("/forecast")
+def forecast():
     """Forecast: where today's net worth lands, and where an ideal mix would land.
 
     Ships parameters rather than a finished figure. Every control on the page
@@ -1113,8 +1113,8 @@ def projection():
     }
 
     return render_template(
-        "projection.html",
-        active_page="projection",
+        "forecast.html",
+        active_page="forecast",
         capital=capital,
         scenarios=scenarios,
         analytics=analytics,
@@ -1141,3 +1141,17 @@ def _lan_ip() -> str:
 if __name__ == "__main__":
     print(f"On the same Wi-Fi, from your phone: http://{_lan_ip()}:5050")
     app.run(debug=True, host="0.0.0.0", port=5050)
+
+
+# The French URLs predate the English labels the pages have carried for a while;
+# /patrimoine sat next to /strategy and /forecast. Kept as redirects because the
+# README links them and so does anyone's history. Deliberately 302: a 301 is
+# cached hard, sometimes past a reload, so it is the wrong thing to guess with.
+@app.route("/patrimoine")
+def patrimoine_redirect():
+    return redirect(url_for("net_worth"), code=302)
+
+
+@app.route("/projection")
+def projection_redirect():
+    return redirect(url_for("forecast"), code=302)

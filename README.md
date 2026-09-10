@@ -127,8 +127,8 @@ portfolio-dashboard/
 ├── dashboard/
 │   ├── app.py                  # Flask server + Plotly chart generation
 │   ├── palette.py              # The one colour source, shared by the CSS and the figures
-│   └── templates/               # base.html, index.html (Investments), patrimoine.html,
-│                                #   strategy.html, projection.html (Forecast)
+│   └── templates/               # base.html, index.html (Investments), net_worth.html,
+│                                #   strategy.html, forecast.html
 ├── wsgi.py                    # gunicorn entry point (deployment)
 ├── main.py                    # CSV import + command-line summary
 ├── Procfile / render.yaml     # Render deployment

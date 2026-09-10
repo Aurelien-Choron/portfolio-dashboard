@@ -65,6 +65,18 @@
     --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
+    /* Seven steps, against the twenty-one sizes that had accumulated — four
+       of which sat within 0.04rem of each other, a difference nobody can see
+       and everybody has to maintain. Named by role, not by pixel, so a
+       component asks for "the small one" and gets whatever that currently is. */
+    --text-2xs: 0.7rem;
+    --text-xs: 0.78rem;
+    --text-sm: 0.875rem;
+    --text-md: 0.95rem;
+    --text-lg: 1.05rem;
+    --text-xl: 1.15rem;
+    --text-hero: 2.5rem;
+
     /* Four radii, against the eleven that had accumulated. --r-xs exists
        because a 9px data dot at 4px reads as a circle, and those dots have
        to stay square to be told apart from the pie legend. */
@@ -91,7 +103,7 @@
     .nav-link::before, .tab-btn::before, .pill-btn::before, .info-bubble { transition: none; }
   }
   body { background: var(--page); color: var(--text-primary); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
-  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-md); }
   .ink-primary { color: var(--text-primary); }
   .ink-secondary { color: var(--text-secondary); }
   .ink-muted { color: var(--text-muted); }
@@ -106,10 +118,10 @@
      a number in a column: Fraunces figures are proportional, so a table of
      euros in it stops lining up. WONK stays at 0 — the wonky forms are the
      reason to pick this face and the reason not to point it at money. */
-  .hero-value { font-family: var(--font-serif); font-size: 2.5rem; line-height: 1.05;
+  .hero-value { font-family: var(--font-serif); font-size: var(--text-hero); line-height: 1.05;
                 font-weight: 600; letter-spacing: -0.02em;
                 font-variation-settings: 'SOFT' 30, 'WONK' 0; }
-  .section-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 600;
+  .section-title { font-family: var(--font-serif); font-size: var(--text-lg); font-weight: 600;
                    letter-spacing: -0.01em; font-variation-settings: 'SOFT' 30, 'WONK' 0; }
   .app-header h1 { font-family: var(--font-serif); letter-spacing: -0.02em;
                    font-variation-settings: 'SOFT' 30, 'WONK' 0; }
@@ -120,22 +132,22 @@
      the left edge cannot push the bubble off-screen. */
   .info { position: relative; display: inline-flex; align-items: center; justify-content: center;
           width: 15px; height: 15px; margin-left: 6px; flex: none; vertical-align: middle;
-          border: 1px solid var(--border); border-radius: 999px; background: transparent;
+          border: 1px solid var(--border); border-radius: var(--r-pill); background: transparent;
           color: var(--text-muted); cursor: help; }
   .info:hover { color: var(--text-primary); border-color: var(--text-muted); }
   .info:focus-visible { color: var(--text-primary); outline: 2px solid var(--brand); outline-offset: 2px; }
   /* Invisible padding around the dot: a 15px target is fine to hover, too small to tap. */
-  .info::before { content: ""; position: absolute; inset: -9px; border-radius: 999px; }
-  .info-icon { font-size: 0.63rem; font-weight: 700; font-style: normal; line-height: 1; letter-spacing: 0; }
+  .info::before { content: ""; position: absolute; inset: -9px; border-radius: var(--r-pill); }
+  .info-icon { font-size: var(--text-2xs); font-weight: 700; font-style: normal; line-height: 1; letter-spacing: 0; }
 
   /* display:none rather than hidden-but-laid-out: a closed bubble is wider than a
      phone screen, and one still in the layout widens the page it hangs off. */
   .info-bubble { display: none; position: absolute; z-index: 60; top: calc(100% + 9px); left: -7px;
                  width: max-content; max-width: min(340px, calc(100vw - 40px));
                  background: var(--surface-1); color: var(--text-secondary);
-                 border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px;
+                 border: 1px solid var(--border); border-radius: var(--r-md); padding: 9px 11px;
                  box-shadow: 0 6px 22px rgba(0,0,0,0.16);
-                 font-size: 0.78rem; font-weight: 400; line-height: 1.5; letter-spacing: 0;
+                 font-size: var(--text-xs); font-weight: 400; line-height: 1.5; letter-spacing: 0;
                  text-align: left; text-transform: none; white-space: normal;
                  /* Set by placeInfoBubble() when it opens — see the script below. */
                  transform: translateX(var(--info-shift, 0px)); }
@@ -144,19 +156,19 @@
   .info-para { display: block; }
   .info-para + .info-para { margin-top: 7px; }
   .info-bubble code { font-family: var(--font-mono); font-size: 0.95em;
-                      background: var(--chip-bg); border-radius: 4px; padding: 0 4px; }
-  .chip { display: inline-block; background: var(--chip-bg); color: var(--text-secondary); border-radius: 999px; padding: 1px 8px; font-size: 0.75rem; }
+                      background: var(--chip-bg); border-radius: var(--r-sm); padding: 0 4px; }
+  .chip { display: inline-block; background: var(--chip-bg); color: var(--text-secondary); border-radius: var(--r-pill); padding: 1px 8px; font-size: var(--text-xs); }
   table { border-collapse: collapse; width: 100%; }
   th, td { padding: 9px 12px; text-align: right; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
-  th { color: var(--text-muted); font-weight: 500; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--grid); }
-  td { border-bottom: 1px solid var(--grid); font-size: 0.875rem; }
+  th { color: var(--text-muted); font-weight: 500; font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--grid); }
+  td { border-bottom: 1px solid var(--grid); font-size: var(--text-sm); }
   td.wrap { white-space: normal; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: var(--row-hover); }
-  .stat-label { color: var(--text-muted); font-size: 0.75rem; margin-bottom: 4px; }
-  .stat-value { font-size: 1.125rem; font-weight: 600; }
-  .nav-link { padding: 6px 12px; border-radius: 3px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); text-decoration: none; }
+  .stat-label { color: var(--text-muted); font-size: var(--text-xs); margin-bottom: 4px; }
+  .stat-value { font-size: var(--text-xl); font-weight: 600; }
+  .nav-link { padding: 6px 12px; border-radius: var(--r-sm); font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); text-decoration: none; }
   .nav-link:hover { background: var(--row-hover); color: var(--text-primary); }
   .nav-link.active { background: var(--chip-bg); color: var(--text-primary); }
 
@@ -193,7 +205,7 @@
   .nav-link:focus-visible, .tab-btn:focus-visible, .pill-btn:focus-visible,
   .linkish:focus-visible, .link:focus-visible, .bottom-nav-item:focus-visible,
   .select:focus-visible, .task input[type="checkbox"]:focus-visible {
-    outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 3px;
+    outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--r-sm);
   }
 
   /* A link in running text. Distinct from .delta-info, which is a *data* colour
@@ -204,15 +216,15 @@
 
   /* <select> is a replaced element: no ::before renders on it, so it states its
      affordance with a brand edge instead of a corner mark. */
-  .select { min-height: 40px; padding: 6px 12px; font-size: 0.75rem; border-radius: 3px;
+  .select { min-height: 40px; padding: 6px 12px; font-size: var(--text-xs); border-radius: var(--r-sm);
             border: 1px solid var(--border); border-left: 2px solid var(--brand);
             background: var(--surface-1); color: var(--text-primary); cursor: pointer; }
   .select:hover { border-color: var(--brand); }
 
   /* Typed inputs (Forecast). Same brand edge as .select so the two read as one
      family, and the same 40px floor so a thumb can hit them on a phone. */
-  .field { width: 100%; min-height: 40px; padding: 6px 10px; font-size: 0.95rem; font-weight: 600;
-           font-variant-numeric: tabular-nums; border-radius: 3px;
+  .field { width: 100%; min-height: 40px; padding: 6px 10px; font-size: var(--text-md); font-weight: 600;
+           font-variant-numeric: tabular-nums; border-radius: var(--r-sm);
            border: 1px solid var(--border); border-left: 2px solid var(--brand);
            background: var(--surface-1); color: var(--text-primary); }
   .field:hover { border-color: var(--brand); }
@@ -224,16 +236,16 @@
 
   .range { -webkit-appearance: none; appearance: none; width: 100%; height: 24px;
            background: transparent; cursor: pointer; }
-  .range::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: var(--chip-bg); }
-  .range::-moz-range-track { height: 4px; border-radius: 999px; background: var(--chip-bg); }
+  .range::-webkit-slider-runnable-track { height: 4px; border-radius: var(--r-pill); background: var(--chip-bg); }
+  .range::-moz-range-track { height: 4px; border-radius: var(--r-pill); background: var(--chip-bg); }
   .range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
-           margin-top: -8px; border-radius: 999px; background: var(--brand); border: 2px solid var(--surface-1); }
+           margin-top: -8px; border-radius: var(--r-pill); background: var(--brand); border: 2px solid var(--surface-1); }
   .range::-moz-range-thumb { width: 20px; height: 20px; border: 2px solid var(--surface-1);
-           border-radius: 999px; background: var(--brand); }
+           border-radius: var(--r-pill); background: var(--brand); }
   .range:focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; }
 
   /* Hero delta chip: colored pill with a direction triangle, Finary-style. */
-  .chip-delta { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; font-weight: 600; }
+  .chip-delta { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--r-pill); padding: 3px 10px; font-size: var(--text-xs); font-weight: 600; }
   .chip-delta.is-good { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
   .chip-delta.is-critical { background: color-mix(in srgb, var(--critical) 14%, transparent); color: var(--critical); }
 
@@ -244,9 +256,9 @@
      light); promote it a step so the branded card is not the least legible one. */
   .card-brand .stat-label { color: var(--text-secondary); }
   .app-header { border-bottom: 1px solid var(--brand-rule); padding-bottom: 14px; }
-  .theme-toggle { display: flex; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .theme-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; }
   .theme-btn { padding: 5px 9px; min-height: 32px; display: inline-flex; align-items: center;
-               font-size: 0.78rem; font-weight: 500; color: var(--text-muted);
+               font-size: var(--text-xs); font-weight: 500; color: var(--text-muted);
                background: transparent; border: none; cursor: pointer; }
   .theme-btn + .theme-btn { border-left: 1px solid var(--border); }
   .theme-btn:hover { color: var(--text-primary); background: var(--row-hover); }
@@ -271,7 +283,7 @@
   /* The border matters: the palest class sits at 2.2:1 on the card, so the ring
      is what delimits the dot rather than the fill. */
   .asset-dot { display: inline-block; width: 9px; height: 9px; margin-right: 7px;
-               border-radius: 2px; vertical-align: baseline; flex: none;
+               border-radius: var(--r-xs); vertical-align: baseline; flex: none;
                background: var(--asset, var(--text-muted));
                border: 1px solid var(--border); }
 
@@ -281,14 +293,14 @@
 
   /* Section tabs (Finary-style): only one panel visible at a time. */
   .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
-  .tab-btn { flex: none; padding: 10px 16px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  .tab-btn { flex: none; padding: 10px 16px; font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
   .tab-btn:hover { color: var(--text-primary); }
   .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--brand); background: var(--brand-wash); }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
   /* Small two-option switch (e.g. Country / Sector), for a local choice within a tab. */
-  .pill-btn { padding: 6px 14px; min-height: 40px; display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); background: transparent; border: none; cursor: pointer; }
+  .pill-btn { padding: 6px 14px; min-height: 40px; display: inline-flex; align-items: center; font-size: var(--text-xs); font-weight: 500; color: var(--text-secondary); background: transparent; border: none; cursor: pointer; }
   .pill-btn.active { background: var(--chip-bg); color: var(--text-primary); }
   .pill-btn + .pill-btn { border-left: 1px solid var(--border); }
 
@@ -304,11 +316,11 @@
   .list-row:last-child { border-bottom: none; }
   .list-row:active { background: var(--row-hover); }
   .list-row-main { flex: 1; min-width: 0; }
-  .list-row-title { font-size: 0.9rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .list-row-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-row-title { font-size: var(--text-md); font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list-row-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .list-row-end { flex-shrink: 0; text-align: right; }
-  .list-row-value { font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .list-row-meta { font-size: 0.78rem; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .list-row-value { font-size: var(--text-md); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .list-row-meta { font-size: var(--text-xs); margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
   /* A wide data table must scroll inside its container rather than squeeze until
      labels collide with their values. Paired with .overflow-x-auto on the parent. */
@@ -322,64 +334,64 @@
   .task:hover { background: var(--row-hover); }
   .task input[type="checkbox"] { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--brand); cursor: pointer; }
   .task-body { flex: 1; min-width: 0; }
-  .task-title { font-size: 0.925rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
-  .task-meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 2px 14px; }
-  .task-why { font-size: 0.79rem; color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
-  .task-amount { flex: none; text-align: right; font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .task-amount small { display: block; font-size: 0.72rem; font-weight: 400; color: var(--text-muted); }
+  .task-title { font-size: var(--text-md); font-weight: 600; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .task-meta { font-size: var(--text-xs); color: var(--text-secondary); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 2px 14px; }
+  .task-why { font-size: var(--text-xs); color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
+  .task-amount { flex: none; text-align: right; font-size: var(--text-lg); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .task-amount small { display: block; font-size: var(--text-2xs); font-weight: 400; color: var(--text-muted); }
   .task.done { opacity: 0.45; }
   .task.done .fund, .task.done .task-funding { display: none; }
   .task.done .task-title { text-decoration: line-through; }
-  .task-idx { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+  .task-idx { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--text-muted); font-weight: 400; }
 
   .phase { margin-bottom: 22px; }
   .phase:last-child { margin-bottom: 0; }
-  .phase-head { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; color: var(--text-primary); padding-bottom: 2px; }
-  .phase-hint { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 4px; }
+  .phase-head { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.02em; color: var(--text-primary); padding-bottom: 2px; }
+  .phase-hint { font-size: var(--text-xs); color: var(--text-muted); line-height: 1.5; margin-bottom: 4px; }
 
   /* Which account pays for this order. A two-column ledger rather than a
      sentence: the amounts have to line up to be checked against a bank app. */
-  .task-funding { margin-top: 8px; font-size: 0.78rem; display: flex; flex-direction: column; gap: 2px;
+  .task-funding { margin-top: 8px; font-size: var(--text-xs); display: flex; flex-direction: column; gap: 2px;
                   border-left: 2px solid var(--grid); padding: 4px 0 4px 10px; }
-  .task-funding-label { color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .task-funding-label { color: var(--text-muted); font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.04em; }
   .task-funding-row { display: flex; justify-content: space-between; gap: 12px; color: var(--text-secondary); }
 
   /* The product to actually buy. An ISIN is the one string here that gets
      copy-pasted into a broker, so it is set in monospace and given room. */
-  .fund { margin-top: 10px; padding: 10px 12px; border-radius: 9px; background: var(--row-hover); border: 1px solid var(--grid); }
+  .fund { margin-top: 10px; padding: 10px 12px; border-radius: var(--r-md); background: var(--row-hover); border: 1px solid var(--grid); }
   .fund-head { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
-  .fund-tag { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--info); font-weight: 600; }
-  .fund-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
-  .fund-isin { font-family: var(--font-mono); font-size: 0.78rem;
-               background: var(--chip-bg); color: var(--text-primary); border-radius: 5px; padding: 1px 6px; user-select: all; }
-  .fund-specs { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 3px 16px; font-size: 0.76rem; color: var(--text-secondary); }
+  .fund-tag { font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--info); font-weight: 600; }
+  .fund-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+  .fund-isin { font-family: var(--font-mono); font-size: var(--text-xs);
+               background: var(--chip-bg); color: var(--text-primary); border-radius: var(--r-sm); padding: 1px 6px; user-select: all; }
+  .fund-specs { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 3px 16px; font-size: var(--text-xs); color: var(--text-secondary); }
   .fund-specs b { color: var(--text-primary); font-weight: 600; }
-  .fund-why { margin-top: 7px; font-size: 0.79rem; color: var(--text-secondary); line-height: 1.55; }
+  .fund-why { margin-top: 7px; font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.55; }
   .fund-alt { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--grid); display: flex; flex-direction: column; gap: 6px; }
-  .fund-alt-row { font-size: 0.75rem; line-height: 1.5; }
+  .fund-alt-row { font-size: var(--text-xs); line-height: 1.5; }
   .fund-alt-name { color: var(--text-secondary); font-weight: 600; }
   .fund-alt-why { color: var(--text-muted); }
   .fund-alt-why::before { content: " — "; }
-  .fund-checked { margin-top: 8px; font-size: 0.7rem; color: var(--text-muted); }
+  .fund-checked { margin-top: 8px; font-size: var(--text-2xs); color: var(--text-muted); }
 
   /* Legend rendered outside the plot, as ordinary wrapping text. Plotly lays its
      own legend out inside the figure box, so with enough series it either
      overlaps the marks or squeezes them — this one just takes another row. */
   .chart-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; padding: 0 4px; }
-  .chart-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-secondary); }
-  .chart-legend-dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .chart-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-secondary); }
+  .chart-legend-dot { width: 9px; height: 9px; border-radius: var(--r-xs); flex: none; }
 
   .linkish { background: none; border: none; padding: 0; font: inherit; color: var(--brand); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 
   /* Bottom nav bar, mobile only (md:hidden) — replaces the header links
      (desktop-only, hidden md:flex) as the primary entry point. */
   .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; background: var(--brand-wash); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
-  .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; padding: 5px 4px; font-size: 0.68rem; font-weight: 500; color: var(--text-muted); text-decoration: none; }
+  .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 50px; padding: 5px 4px; font-size: var(--text-2xs); font-weight: 500; color: var(--text-muted); text-decoration: none; }
   .bottom-nav-item { position: relative; }
   .bottom-nav-item.active { color: var(--brand); }
   .bottom-nav-item.active::before { content: ""; position: absolute; top: 0; left: 24%; right: 24%;
                                     height: 2px; background: var(--brand); }
-  .bottom-nav-icon { font-size: 1.15rem; line-height: 1; }
+  .bottom-nav-icon { font-size: var(--text-xl); line-height: 1; }
 
   /* Compact mobile mode: the desktop templates (cards, text, line height,
      charts) force too much scrolling on a phone — densify below 768px.
@@ -391,18 +403,20 @@
     .card.p-4 { padding: 0.75rem; }
     .card.p-3 { padding: 0.6rem; }
     .mark { flex: none; display: block; width: 24px; height: 24px; }
-  @media (min-width: 768px) { .mark { width: 28px; height: 28px; } }
 
-  .hero-value { font-size: 1.75rem; line-height: 1.15; }
-    .stat-value { font-size: 1rem; }
-    .stat-label { font-size: 0.7rem; margin-bottom: 2px; }
-    .section-title { font-size: 0.875rem; }
-    .chip-delta { padding: 2px 8px; font-size: 0.72rem; }
+    /* The hero shrinks by redefining the token, not by overriding the rule:
+       anything else that adopts --text-hero follows automatically. */
+    :root { --text-hero: 1.75rem; }
+    .hero-value { line-height: 1.15; }
+    .stat-value { font-size: var(--text-lg); }
+    .stat-label { font-size: var(--text-2xs); margin-bottom: 2px; }
+    .section-title { font-size: var(--text-sm); }
+    .chip-delta { padding: 2px 8px; font-size: var(--text-2xs); }
     .tabs { margin-bottom: 14px; }
-    .tab-btn { padding: 8px 12px; font-size: 0.8rem; }
+    .tab-btn { padding: 8px 12px; font-size: var(--text-xs); }
     .list-row { padding: 8px 2px; min-height: 48px; gap: 10px; }
-    .list-row-title, .list-row-value { font-size: 0.82rem; }
-    .list-row-sub, .list-row-meta { font-size: 0.7rem; }
+    .list-row-title, .list-row-value { font-size: var(--text-sm); }
+    .list-row-sub, .list-row-meta { font-size: var(--text-2xs); }
 
     /* Charts: Python-side margins are already reduced, but the card padding
        (see .card.p-4 above, 0.75rem) still leaves a strip — cancel it so the

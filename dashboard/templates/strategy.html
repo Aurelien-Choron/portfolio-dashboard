@@ -14,7 +14,7 @@
 {% if no_policy %}
   <div class="card p-8 text-center">
     <div class="text-4xl mb-3">🎯</div>
-    <div class="section-title mb-2">No strategy defined yet</div>
+    <h2 class="section-title mb-2">No strategy defined yet</h2>
     <div class="ink-secondary text-sm mx-auto" style="max-width: 46ch;">
       Create <code>config/strategy.json</code> with your target allocation, then run
       <code>python scripts/build_strategy.py</code> to compute the risk figures behind it.
@@ -54,11 +54,11 @@
     </div>
 
     <div class="card p-5 md:p-8">
-      <div class="section-title mb-3">Risk, now vs target{% if current_risk and analytics %}{% call info() %}
+      <h2 class="section-title mb-3">Risk, now vs target{% if current_risk and analytics %}{% call info() %}
         Measured over {{ analytics.window.observations }} weekly returns in euros
         ({{ analytics.window.start }} → {{ analytics.window.end }}), against
         {{ analytics.benchmark.label }}.
-      {% endcall %}{% endif %}</div>
+      {% endcall %}{% endif %}</h2>
       {% if current_risk and analytics %}
       <table>
         <thead><tr><th>&nbsp;</th><th>Today</th><th>Target</th></tr></thead>
@@ -107,7 +107,7 @@
     <div class="card p-4 md:p-5 mb-8">
       <div class="flex items-baseline justify-between gap-3 flex-wrap mb-4">
         <div>
-          <div class="section-title">What to do, in order{% call info() %}Grouped by what each step actually costs you. Tick them off as you go — progress is saved in this browser.{% endcall %}</div>
+          <h2 class="section-title">What to do, in order{% call info() %}Grouped by what each step actually costs you. Tick them off as you go — progress is saved in this browser.{% endcall %}</h2>
         </div>
         <div class="ink-muted text-xs shrink-0">
           <span id="task-progress" class="ink-secondary font-medium">0</span> done ·
@@ -215,12 +215,12 @@
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Where the money comes from{% call info() %}
+      <h2 class="section-title">Where the money comes from{% call info() %}
         <span class="info-para">Each purchase above already names its account. This is the same money seen from the other side — the worst-paid euro is spent first, and each account keeps whatever the plan told it to keep.</span>
         {% if data.funding.locked_pool_eur > 1 %}
         <span class="info-para">The purchases marked <span class="ink-primary">not before</span> a date are the ones waiting on a locked account. Nothing forces you to wait: ask what breaking it early actually costs, and compare that number against the interest given up — the plan prices the order, not the penalty.</span>
         {% endif %}
-      {% endcall %}</div>
+      {% endcall %}</h2>
     </div>
     <div class="card p-4 mb-6">
       <div class="overflow-x-auto hidden md:block">
@@ -287,7 +287,7 @@
   <div id="tab-target" class="tab-panel">
 
     <div class="mb-4">
-      <div class="section-title">Today against the target{% call info() %}Every line as a share of total net worth. A line is left alone while it stays inside its tolerance band.{% endcall %}</div>
+      <h2 class="section-title">Today against the target{% call info() %}Every line as a share of total net worth. A line is left alone while it stays inside its tolerance band.{% endcall %}</h2>
     </div>
     <div class="card p-4 mb-6">
       <div id="chart-mix"></div>
@@ -382,20 +382,20 @@
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Gap to target, in points of net worth{% call info() %}Blue = below target, red = above. Grey lines are inside their band and need nothing.{% endcall %}</div>
+      <h2 class="section-title">Gap to target, in points of net worth{% call info() %}Blue = below target, red = above. Grey lines are inside their band and need nothing.{% endcall %}</h2>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-drift"></div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Envelope capacity{% call info() %}The PEA ceiling applies to contributions, not to value: gains never consume it. What the PEA cannot take has to be routed on, not silently parked on a taxable account.{% endcall %}</div>
+      <h2 class="section-title">Envelope capacity{% call info() %}The PEA ceiling applies to contributions, not to value: gains never consume it. What the PEA cannot take has to be routed on, not silently parked on a taxable account.{% endcall %}</h2>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       {% for e in data.envelopes %}
       <div class="card p-4 {{ 'card-accent-critical' if e.overflow_eur > 1 else '' }}">
         <div class="flex items-baseline justify-between gap-3 mb-1">
-          <div class="section-title">{{ e.label }}</div>
+          <h3 class="section-title">{{ e.label }}</h3>
           {% if e.tax_pct %}<span class="chip">{{ e.tax_pct|fr(1) }} % tax</span>{% endif %}
         </div>
         <div class="stat-value tabular mb-2">{{ e.current_eur|fr }} € held</div>
@@ -423,7 +423,7 @@
 
       <div class="card p-4 {{ 'card-accent-critical' if data.sleeve.over_eur > 1 else '' }}">
         <div class="flex items-baseline justify-between gap-3 mb-1">
-          <div class="section-title">Trading sleeve</div>
+          <h3 class="section-title">Trading sleeve</h3>
           <span class="chip">cap {{ data.sleeve.cap_pct|fr(1) }} %</span>
         </div>
         <div class="stat-value tabular mb-2">{{ data.sleeve.used_eur|fr }} € of {{ data.sleeve.cap_eur|fr }} €</div>
@@ -457,7 +457,7 @@
     {% if not analytics %}
       <div class="card p-8 text-center">
         <div class="text-4xl mb-3">📐</div>
-        <div class="section-title mb-2">Risk figures not computed yet</div>
+        <h2 class="section-title mb-2">Risk figures not computed yet</h2>
         <div class="ink-secondary text-sm mx-auto" style="max-width: 46ch;">
           Run <code>python scripts/build_strategy.py</code> to measure volatility, beta,
           correlations and the efficient frontier. The other tabs work without it.
@@ -466,21 +466,21 @@
     {% else %}
 
     <div class="mb-4">
-      <div class="section-title">The efficient frontier{% call info() %}
+      <h2 class="section-title">The efficient frontier{% call info() %}
         <span class="info-para">Expected return after tax against volatility. What matters is the vertical distance between “Today” and the curve: that gap is return given up at the risk already being taken.</span>
         <span class="info-para">Expected returns are judgements, not measurements: CAPM with a
         {{ analytics.equity_risk_premium_pct|fr(1) }} % equity risk premium over a
         {{ analytics.risk_free_gross_pct|fr(2) }} % risk-free rate, then net of each envelope's tax.
         Volatility, beta and correlations are measured over
         {{ analytics.window.observations }} weekly returns.</span>
-      {% endcall %}</div>
+      {% endcall %}</h2>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-frontier"></div>
     </div>
 
     <div class="mb-4">
-      <div class="section-title">Line by line{% call info() %}Past return is not expected return — the two columns deliberately disagree. A line held through a proxy is marked: it is too recent to carry its own statistic.{% endcall %}</div>
+      <h2 class="section-title">Line by line{% call info() %}Past return is not expected return — the two columns deliberately disagree. A line held through a proxy is marked: it is too recent to carry its own statistic.{% endcall %}</h2>
     </div>
     <div class="card p-4 mb-8">
       <div class="overflow-x-auto hidden md:block">
@@ -524,7 +524,7 @@
     </div>
 
     <div class="mb-4">
-      <div class="section-title">What actually diversifies what{% call info() %}Pairs near 100 are duplicates, not diversification. Gold's near-zero row is the only genuine decorrelation in this portfolio.{% endcall %}</div>
+      <h2 class="section-title">What actually diversifies what{% call info() %}Pairs near 100 are duplicates, not diversification. Gold's near-zero row is the only genuine decorrelation in this portfolio.{% endcall %}</h2>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-correlation"></div>
@@ -532,14 +532,14 @@
 
     {% if stress %}
     <div class="mb-4">
-      <div class="section-title">Loss in a crisis{% call info() %}
+      <h2 class="section-title">Loss in a crisis{% call info() %}
         <span class="info-para">The 2016-2026 window contains no systemic bear market, so its worst drawdown is misleadingly mild. These are explicit shocks applied to the whole net worth, savings included.</span>
         {% if tolerance_pct %}
         <span class="info-para">Your stated tolerance is {{ tolerance_pct|fr(0) }} %, or
         {{ (tolerance_pct / 100 * data.total)|fr }} €. The target allocation is sized to sit at
         that limit in a 2008-style crash, not below it.</span>
         {% endif %}
-      {% endcall %}</div>
+      {% endcall %}</h2>
     </div>
     <div class="card p-4 mb-6">
       <div id="chart-stress"></div>

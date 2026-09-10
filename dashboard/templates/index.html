@@ -61,8 +61,8 @@
   </div>
 
   {% if summary.nb_prix_live < summary.nb_positions %}
-  <div class="card p-3 mb-6 text-sm ink-secondary">
-    ⚠️ {{ summary.nb_prix_live }}/{{ summary.nb_positions }} positions have a live market price (via yfinance).
+  <div class="card card-note p-3 mb-6 text-sm ink-secondary">
+    {{ summary.nb_prix_live }}/{{ summary.nb_positions }} positions have a live market price (via yfinance).
     The others are valued at their average purchase price for lack of a ticker mapped in
     <code>config/tickers.json</code> — see the "price source" column in the positions table (Allocation tab).
   </div>
@@ -274,7 +274,7 @@
       <div>
         <h2 class="section-title">Geographic &amp; sector diversification{% call info() %}Computed from each fund's composition (entered in <code>config/exposure.json</code> from its factsheet — a snapshot to refresh occasionally, not real-time data).{% endcall %}</h2>
       </div>
-      <div class="flex items-center gap-2 shrink-0">
+      <div class="flex items-center gap-2 min-w-0">
         <div class="flex rounded-lg overflow-hidden border" style="border-color: var(--border);">
           <button type="button" class="pill-btn active" id="div-dim-country" data-dim="country">Country</button>
           <button type="button" class="pill-btn" id="div-dim-sector" data-dim="sector">Sector</button>

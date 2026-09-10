@@ -141,11 +141,11 @@ def capture(shots, out_dir, base, theme="dark") -> list:
 SHOTS = [
     ("strategy.png", "/strategy", DESKTOP, None),
     ("investments.png", "/", DESKTOP, None),
-    ("net-worth.png", "/patrimoine", DESKTOP, None),
-    ("forecast.png", "/projection", DESKTOP_TALL, _setup_forecast),
+    ("net-worth.png", "/net-worth", DESKTOP, None),
+    ("forecast.png", "/forecast", DESKTOP_TALL, _setup_forecast),
     ("mobile-strategy.png", "/strategy", PHONE, None),
     ("mobile-investments.png", "/", PHONE, None),
-    ("mobile-forecast.png", "/projection", PHONE, _setup_forecast),
+    ("mobile-forecast.png", "/forecast", PHONE, _setup_forecast),
 ]
 
 

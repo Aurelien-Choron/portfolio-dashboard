@@ -48,7 +48,7 @@ VIEWS = [
         ("activity", "tab-activity"),
     ], None),
     # No tabs any more: a 169-line page hiding half of itself behind a click.
-    ("net-worth", "/patrimoine", [("main", None)], None),
+    ("net-worth", "/net-worth", [("main", None)], None),
     ("strategy", "/strategy", [
         ("plan", None),
         ("target", "tab-target"),
@@ -56,7 +56,7 @@ VIEWS = [
     ], None),
     # No tabs, and it must keep it: every control drives every element through
     # one render(), so hiding the curve from its controls would break the page.
-    ("forecast", "/projection", [("main", None)], _setup_forecast),
+    ("forecast", "/forecast", [("main", None)], _setup_forecast),
 ]
 
 

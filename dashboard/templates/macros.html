@@ -62,9 +62,9 @@
 {% macro nav_icon(key) -%}
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  {%- if key == 'bourse' %}
+  {%- if key == 'investments' %}
   <path d="M3 20h18"/><path d="M4 16l5-5 3 3 7-8"/>
-  {%- elif key == 'patrimoine' %}
+  {%- elif key == 'net_worth' %}
   <path d="M3 9l9-5 9 5"/><path d="M5 9v9M19 9v9M3 20h18"/><path d="M10 20v-6h4v6"/>
   {%- elif key == 'strategy' %}
   <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>

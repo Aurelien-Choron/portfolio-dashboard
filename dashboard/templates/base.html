@@ -17,7 +17,8 @@
 
 <!-- Home screen app install (PWA): manifest + iOS/Android icons. -->
 <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}?v={{ icon_version }}">
-<meta name="theme-color" content="#1a2ba6">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="{{ brand_light }}">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="{{ brand_dark }}">
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}?v={{ icon_version }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}?v={{ icon_version }}">
 <meta name="mobile-web-app-capable" content="yes">
@@ -405,6 +406,21 @@
   /* A card that qualifies rather than reports. Was a warning-sign emoji. */
   .card-note { border-left: 3px solid var(--info); }
 
+  .app-footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--grid);
+                display: flex; flex-wrap: wrap; gap: 4px 16px;
+                font-size: var(--text-xs); color: var(--text-muted); }
+  .demo-flag { color: var(--text-secondary); }
+
+  /* Scroll entry. Nothing is hidden unless JS is running to reveal it again,
+     so a failed script leaves a readable page rather than a blank one — and
+     the whole thing is off when the reader asked for less motion.
+     transform is dropped once revealed: a lasting transform makes a
+     containing block, and these wrap Plotly figures. */
+  [data-motion="on"] .reveal { opacity: 0; transform: translateY(12px);
+                               transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
+                                           transform 600ms cubic-bezier(0.16, 1, 0.3, 1); }
+  [data-motion="on"] .reveal.shown { opacity: 1; transform: none; }
+
   /* A rule above a summary row. Was five identical inline border-tops. */
   .rule-top { border-top: 1px solid var(--grid); }
 
@@ -791,6 +807,43 @@
 
     initInfoBubbles(document);
 
+    // Sections arrive as you reach them. Deliberately narrow: section headings
+    // and the cards directly inside a tab panel, so the page has a rhythm of
+    // chapters rather than eighty things fading in independently.
+    (function () {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (!('IntersectionObserver' in window)) return;
+
+      const targets = document.querySelectorAll(
+        'h2.section-title, .tab-panel > .card, .app-footer');
+      if (!targets.length) return;
+
+      // Only now: until this runs, nothing is hidden, so a script that never
+      // arrives leaves the page readable instead of empty.
+      document.documentElement.setAttribute('data-motion', 'on');
+      targets.forEach(function (el) { el.classList.add('reveal'); });
+
+      const io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('shown');
+          io.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -40px 0px' });
+      targets.forEach(function (el) { io.observe(el); });
+
+      // A panel revealed by a tab click was never intersecting while hidden.
+      document.addEventListener('click', function (event) {
+        if (!event.target.closest('.tab-btn, [data-tab-link]')) return;
+        requestAnimationFrame(function () {
+          document.querySelectorAll('.tab-panel.active .reveal').forEach(function (el) {
+            el.classList.add('shown');
+          });
+        });
+      });
+    })();
+
+
     // Theme choice. Stored per browser, like the action-plan checkboxes — the app
     // never writes to disk, so this is a local preference, not shared state.
     (function () {
@@ -831,6 +884,13 @@
     })();
   </script>
   {% block scripts %}{% endblock %}
+
+  {# One home for the timestamp. It used to be in header_right on all four
+     pages, in two wordings ("Last updated" / "Updated") and two sizes. #}
+  <footer class="app-footer">
+    {% if last_update %}<span>Updated {{ last_update }}</span>{% endif %}
+    {% if is_demo %}<span class="demo-flag">Fictional demo dataset — every figure on this page is invented.</span>{% endif %}
+  </footer>
 </div>
 
 <!-- Mobile nav: equivalent of the desktop nav (hidden md:flex above), primary

@@ -2,11 +2,7 @@
 {% from "macros.html" import info %}
 {% block title %}Investments — Portfolio Dashboard{% endblock %}
 
-{% block header_right %}
-{% if not empty %}
-<span class="ink-muted text-sm">Last updated {{ last_update }}</span>
-{% endif %}
-{% endblock %}
+{% block header_right %}{% endblock %}
 
 {% block content %}
   {% if empty %}

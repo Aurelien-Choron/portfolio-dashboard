@@ -3,10 +3,7 @@
 {% block title %}Strategy — Portfolio Dashboard{% endblock %}
 
 {% block header_right %}
-<div class="text-right">
-  <div class="ink-muted text-xs">Updated {{ last_update }}</div>
-  {% if not no_policy %}<div class="ink-secondary text-xs">{{ data.profile }} profile · set {{ data.as_of }}</div>{% endif %}
-</div>
+{% if not no_policy %}<span class="ink-secondary text-sm">{{ data.profile }} profile · set {{ data.as_of }}</span>{% endif %}
 {% endblock %}
 
 {% block content %}

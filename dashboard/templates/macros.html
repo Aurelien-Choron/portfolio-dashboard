@@ -27,3 +27,49 @@
   {%- endfor %}
 </div>
 {%- endmacro %}
+
+{# A bar showing how much of a ceiling is used. `over` paints it as a breach. #}
+{% macro meter(pct, over=false) -%}
+<div class="meter{{ ' over' if over else '' }}"><span style="width: {{ [pct, 100]|min }}%;"></span></div>
+{%- endmacro %}
+
+{# "Nothing here yet", with what to run to change that. Called with a block:
+
+       {% call empty_state("No strategy defined yet") %}Create ...{% endcall %}
+
+   The mark is inline SVG rather than the emoji this used to open with: emoji
+   render as a different picture on every platform, and two of them had already
+   drifted into meaning roughly the same thing. #}
+{% macro empty_state(title) -%}
+<div class="card p-8 text-center">
+  <div class="empty-mark">
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true"
+         style="margin: 0 auto;">
+      <circle cx="15" cy="15" r="12" stroke="currentColor" stroke-width="1.5"
+              stroke-dasharray="3 4"/>
+      <circle cx="15" cy="15" r="3.5" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+  </div>
+  <h2 class="section-title mb-2">{{ title }}</h2>
+  <div class="ink-secondary text-sm mx-auto empty-copy">{{ caller() }}</div>
+</div>
+{%- endmacro %}
+
+{# Nav icons, drawn here rather than pulled from an icon set: four glyphs do not
+   justify a dependency in an app with no bundler. Replaces the emoji the bottom
+   bar used to carry — emoji render as a different picture on every platform,
+   and the target and telescope were doing a lot of guessing. #}
+{% macro nav_icon(key) -%}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  {%- if key == 'bourse' %}
+  <path d="M3 20h18"/><path d="M4 16l5-5 3 3 7-8"/>
+  {%- elif key == 'patrimoine' %}
+  <path d="M3 9l9-5 9 5"/><path d="M5 9v9M19 9v9M3 20h18"/><path d="M10 20v-6h4v6"/>
+  {%- elif key == 'strategy' %}
+  <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>
+  {%- else %}
+  <path d="M3 18c4 0 5-9 9-11"/><path d="M13 6c4 1 6 5 8 6" stroke-dasharray="2 3"/>
+  {%- endif %}
+</svg>
+{%- endmacro %}

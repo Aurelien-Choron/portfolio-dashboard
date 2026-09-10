@@ -736,24 +736,57 @@
     // Plotly charts in inactive panels get initialized at zero size
     // (display:none at newPlot time) — resize them the first time they're shown.
     function initTabs(root) {
-      root.querySelectorAll('.tabs').forEach(function (tabs) {
-        const buttons = tabs.querySelectorAll('.tab-btn');
-        buttons.forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            buttons.forEach(function (b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            root.querySelectorAll('.tab-panel').forEach(function (panel) {
-              panel.classList.toggle('active', panel.id === btn.dataset.tabTarget);
-            });
-            const shown = document.getElementById(btn.dataset.tabTarget);
-            if (shown && window.Plotly) {
-              shown.querySelectorAll('[id^="chart-"]').forEach(function (el) {
-                Plotly.Plots.resize(el);
-              });
-            }
-          });
+      // Charts drawn inside a display:none panel are measured against a zero-width
+      // container, so Plotly falls back to its 700px default; they are re-measured
+      // the first time their panel is shown.
+      function revealCharts(panel) {
+        if (!panel || !window.Plotly) return;
+        panel.querySelectorAll('[id^="chart-"]').forEach(function (el) {
+          // The selector also catches #chart-mix-legend, which is plain HTML and
+          // was never a graph div. Plotly rejects on those, unhandled.
+          if (el._fullLayout) Plotly.Plots.resize(el);
+        });
+      }
+
+      function showTab(targetId, opts) {
+        const btn = root.querySelector('.tab-btn[data-tab-target="' + targetId + '"]');
+        if (!btn) return false;
+        const group = btn.closest('.tabs');
+        group.querySelectorAll('.tab-btn').forEach(function (b) {
+          b.classList.toggle('active', b === btn);
+        });
+        root.querySelectorAll('.tab-panel').forEach(function (panel) {
+          panel.classList.toggle('active', panel.id === targetId);
+        });
+        const shown = document.getElementById(targetId);
+        revealCharts(shown);
+        if (opts && opts.scroll && shown) shown.scrollIntoView({ block: 'start' });
+        return true;
+      }
+
+      root.querySelectorAll('.tabs .tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          showTab(btn.dataset.tabTarget);
+          // Makes any tab addressable: /#costs, /strategy#risk. replaceState
+          // rather than pushState so a tab switch is not a back-button step.
+          if (window.history && history.replaceState) {
+            history.replaceState(null, '', '#' + btn.dataset.tabTarget.replace(/^tab-/, ''));
+          }
         });
       });
+
+      // A link from elsewhere on the page — or from another page — into a tab.
+      root.querySelectorAll('[data-tab-link]').forEach(function (el) {
+        el.addEventListener('click', function (event) {
+          event.preventDefault();
+          showTab(el.dataset.tabLink, { scroll: true });
+        });
+      });
+
+      // Arriving with a hash: /#costs opens the Costs tab rather than the default.
+      const wanted = (window.location.hash || '').replace(/^#/, '');
+      if (wanted) showTab(root.querySelector('#tab-' + wanted) ? 'tab-' + wanted : wanted,
+                          { scroll: true });
     }
 
     initInfoBubbles(document);

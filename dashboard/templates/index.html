@@ -20,7 +20,7 @@
   <!-- ============================================================ -->
   <!-- OVERVIEW — always visible, regardless of the active tab       -->
   <!-- ============================================================ -->
-  <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 mb-4">
+  <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4 md:gap-6 mb-4">
     <div class="card card-brand p-5 flex flex-col justify-center">
       <div class="stat-label">Total portfolio value</div>
       <div class="hero-value">{{ summary.total_value|fr }} €</div>
@@ -32,7 +32,7 @@
       </div>
       <div id="chart-sparkline" class="mt-2"></div>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="card p-4 {{ 'card-accent-good' if summary.unrealized_pnl >= 0 else 'card-accent-critical' }}">
         <div class="stat-label" title="Gain or loss on positions still held, if sold today">Unrealized gain/loss</div>
         <div class="stat-value {{ 'delta-good' if summary.unrealized_pnl >= 0 else 'delta-critical' }}">{{ summary.unrealized_pnl|fr(signed=True) }} €</div>
@@ -44,14 +44,6 @@
       <div class="card p-4">
         <div class="stat-label" title="Excludes checking-account interest — unrelated to market performance">Dividends received</div>
         <div class="stat-value">{{ summary.dividends|fr }} €</div>
-      </div>
-      <div class="card p-4">
-        <div class="stat-label" title="Brokerage fees paid on executed orders">Brokerage fees paid</div>
-        <div class="stat-value">{{ summary.fees|fr }} €</div>
-      </div>
-      <div class="card p-4">
-        <div class="stat-label">Cost of open positions</div>
-        <div class="stat-value">{{ summary.total_cost|fr }} €</div>
       </div>
       <div class="card p-4">
         <div class="stat-label">Open positions</div>
@@ -73,10 +65,10 @@
   <!-- ============================================================ -->
   <div class="tabs mt-4">
     <button class="tab-btn active" data-tab-target="tab-performance">Performance</button>
-    <button class="tab-btn" data-tab-target="tab-repartition">Allocation</button>
-    <button class="tab-btn" data-tab-target="tab-frais">Fees</button>
+    <button class="tab-btn" data-tab-target="tab-allocation">Allocation</button>
+    <button class="tab-btn" data-tab-target="tab-costs">Costs</button>
     <button class="tab-btn" data-tab-target="tab-diversification">Diversification</button>
-    <button class="tab-btn" data-tab-target="tab-journal">Activity</button>
+    <button class="tab-btn" data-tab-target="tab-activity">Activity</button>
   </div>
 
   <!-- ---------------------------------------------------------- -->
@@ -146,7 +138,7 @@
   <!-- ---------------------------------------------------------- -->
   <!-- Tab 2 — ALLOCATION                                           -->
   <!-- ---------------------------------------------------------- -->
-  <div id="tab-repartition" class="tab-panel">
+  <div id="tab-allocation" class="tab-panel">
     <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mb-8">
       <div class="card p-4">
         <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
@@ -214,10 +206,26 @@
   <!-- ---------------------------------------------------------- -->
   <!-- Tab 3 — FEES & REBALANCING                                   -->
   <!-- ---------------------------------------------------------- -->
-  <div id="tab-frais" class="tab-panel">
+  <div id="tab-costs" class="tab-panel">
+    {# The two costs of owning this portfolio, together: what the broker has
+       already charged to trade it, and what the issuers charge every year to
+       hold it. The first used to sit in the overview strip three screens up,
+       where it could not be compared with the second. #}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+      <div class="card p-4">
+        <div class="stat-label">Brokerage fees paid, to date</div>
+        <div class="stat-value tabular">{{ summary.fees|fr }} €</div>
+        <div class="ink-muted text-xs mt-1">One-off, on executed orders.</div>
+      </div>
+      <div class="card p-4">
+        <div class="stat-label">Fund fees, per year</div>
+        <div class="stat-value tabular">{{ total_annual_fees|fr(2) }} €</div>
+        <div class="ink-muted text-xs mt-1">Continuous, already inside the price.</div>
+      </div>
+    </div>
     <div class="mb-4">
-      <h2 class="section-title">Fund fees{% call info() %}
-        <span class="info-para">Annual management fees (TER) of the ETFs/funds held — charged continuously by the issuer, already baked into the price, but not included in "Brokerage fees paid" above.</span>
+      <h2 class="section-title">Fund fees, line by line{% call info() %}
+        <span class="info-para">Annual management fees (TER) of the ETFs/funds held — charged continuously by the issuer and already baked into the price, which is why they are not part of the brokerage fees above.</span>
         <span class="info-para">Individual stocks have no management fees — only ETFs/ETCs do.</span>
       {% endcall %}</h2>
     </div>
@@ -298,7 +306,7 @@
   <!-- ---------------------------------------------------------- -->
   <!-- Tab 5 — ACTIVITY                                             -->
   <!-- ---------------------------------------------------------- -->
-  <div id="tab-journal" class="tab-panel">
+  <div id="tab-activity" class="tab-panel">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <div class="card p-4">
         <h2 class="section-title mb-3">Recent transactions</h2>

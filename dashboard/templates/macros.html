@@ -73,3 +73,12 @@
   {%- endif %}
 </svg>
 {%- endmacro %}
+
+{# Where the risk numbers come from. Strategy stated this in a tooltip and
+   Forecast in a header line, in different words, and nothing kept the two
+   honest with each other. #}
+{% macro risk_window(analytics) -%}
+Measured over {{ analytics.window.observations }} weekly returns in euros
+({{ analytics.window.start }} → {{ analytics.window.end }}), against
+{{ analytics.benchmark.label }}.
+{%- endmacro %}

@@ -15,7 +15,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Portfolio">
 
-<script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
   /* Both palettes are rendered from dashboard/palette.py — the single source of
@@ -365,6 +364,19 @@
     [id^="chart-"] { margin-left: -0.75rem; margin-right: -0.75rem; }
   }
 </style>
+
+<!-- Utilities LAST, on purpose. cdn.tailwindcss.com injected its <style> at
+     runtime, after the block above, so a utility beat a same-specificity
+     component rule: .md:hidden hid .bottom-nav, which also declares display.
+     Loading this sheet in <head> instead put the component rules last and
+     the bottom nav reappeared on desktop. The two-class rules above
+     (.card.p-4 over .p-4) still win by specificity, whatever the order.
+
+     Compiled from tailwind.config.js by scripts/build_css.py. It used to be
+     the CDN, which ships a compiler to every visitor, warns in the console
+     that it is not for production, and takes the layout down with it if it
+     is unreachable. Rebuild after adding a utility class. -->
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ css_version }}">
 <script>
   // Runs before the body is painted: reading the stored choice after render
   // would flash the system theme first.

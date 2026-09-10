@@ -1,0 +1,6 @@
+/* Input for the Tailwind build (see tailwind.config.js, scripts/build_css.py).
+   Deliberately bare: every project-specific rule lives in base.html's style
+   block, next to the :root palette it depends on. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

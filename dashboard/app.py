@@ -455,7 +455,7 @@ def _institution_colors(labels) -> dict:
     return out
 
 
-def _build_pie(slices: list, total_label: str = "Total") -> dict:
+def _build_pie(slices: list, total_label: str | None = "Total") -> dict:
     """Each slice brings its own "color" — it is a property of the entity, not of
     where the entity happens to sit in the list.
 
@@ -501,10 +501,13 @@ def _build_pie(slices: list, total_label: str = "Total") -> dict:
         # over its neighbours. Dropping the label is the right answer: the legend
         # underneath carries every value, and the hover carries the exact one.
         uniformtext=dict(minsize=10, mode="hide"),
-        annotations=[dict(
+        # The centre reading is optional. On Net Worth the two donuts sum to the
+        # same figure, so the second one was printing the net worth a third time,
+        # a few hundred pixels under the first; it leaves its hole empty.
+        annotations=([dict(
             text=f"{_fmt_eur(total)}<br><span style='font-size:11px'>{total_label}</span>",
             x=0.5, y=0.5, font=dict(size=20), showarrow=False,
-        )],
+        )] if total_label else []),
     )
     return fig.to_dict()
 
@@ -1047,7 +1050,7 @@ def patrimoine():
 
     figs = {
         "repartition": _build_pie(category_slices),
-        "bank_repartition": _build_pie(bank_slices, total_label="Total"),
+        "bank_repartition": _build_pie(bank_slices, total_label=None),
     }
 
     return render_template(

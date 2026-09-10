@@ -10,3 +10,20 @@
 {% macro info() -%}
 <span class="info" tabindex="0" role="note"><span class="info-icon" aria-hidden="true">i</span><span class="info-bubble">{{ caller() }}</span></span>
 {%- endmacro %}
+
+{# The names for a pie's slices, as HTML beside the figure rather than as
+   labels around it. Plotly draws outside labels by shrinking the mark until
+   they fit, which on a phone left the ring at 58% of the canvas; a legend
+   costs nothing and stays readable at any width. Mirrors what the
+   diversification donut on the Investments page already does. #}
+{% macro slice_legend(slices, total) -%}
+<div class="chart-legend">
+  {%- for s in slices if s.value > 1e-9 %}
+  <span class="chart-legend-item">
+    <span class="chart-legend-dot" style="background: {{ s.color }};"></span>
+    <span>{{ s.label }}</span>
+    <span class="ink-muted tabular">{{ s.value|fr }} €</span>
+  </span>
+  {%- endfor %}
+</div>
+{%- endmacro %}

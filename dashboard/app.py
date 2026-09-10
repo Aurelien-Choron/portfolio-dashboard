@@ -480,16 +480,27 @@ def _build_pie(slices: list, total_label: str = "Total") -> dict:
             sort=False,
             direction="clockwise",
             marker=dict(colors=colors, line=dict(color="var(--surface-1)", width=2)),
-            textinfo="label+percent",
-            textposition="outside",
+            # Labels ride inside the ring, and the names live in an HTML legend
+            # beside it. Outside labels look tidy on a wide screen and are a
+            # disaster on a narrow one: Plotly shrinks the donut until
+            # "Savings Accounts 27.8%" fits on both flanks, which cost 94px of
+            # left margin and 44px of right on a 326px canvas — the ring itself
+            # got 58%. It was not much better on desktop, at 61%.
+            textinfo="percent",
+            textposition="inside",
+            insidetextorientation="horizontal",
             textfont=dict(size=12),
             hovertemplate="%{label}<br>%{value:,.0f} €  (%{percent})<extra></extra>",
         )
     )
     fig.update_layout(
-        margin=dict(l=20, r=20, t=16, b=16),
+        margin=dict(l=4, r=4, t=8, b=8),
         height=460,
         showlegend=False,
+        # A 3% slice has no room for "3.28%", and Plotly will happily spill it
+        # over its neighbours. Dropping the label is the right answer: the legend
+        # underneath carries every value, and the hover carries the exact one.
+        uniformtext=dict(minsize=10, mode="hide"),
         annotations=[dict(
             text=f"{_fmt_eur(total)}<br><span style='font-size:11px'>{total_label}</span>",
             x=0.5, y=0.5, font=dict(size=20), showarrow=False,
@@ -571,7 +582,12 @@ def _build_drift_fig(targets: list) -> dict:
     if not rows:
         return {}
     rows = sorted(rows, key=lambda t: t["drift_pt"])
-    labels = [_truncate_label(t["label"], 28) for t in rows]
+    # The label goes above its bar, not on the y axis, so it no longer buys its
+    # width out of the plot. Axis labels here were priced by automargin at
+    # whatever the longest name needed: on a 326px canvas that was 92px of left
+    # margin, and the bars were left with 55% of the figure. Above the bar the
+    # name gets the full width, so it can also be longer than it used to be.
+    labels = [_truncate_label(t["label"], 40) for t in rows]
     gaps = [t["drift_pt"] for t in rows]
     colors = [COLOR_MUTED if t["status"] == "on" else (COLOR_RED if t["drift_pt"] > 0 else COLOR_BLUE)
               for t in rows]
@@ -588,16 +604,26 @@ def _build_drift_fig(targets: list) -> dict:
         )
     )
     span = max(max(abs(g) for g in gaps), 2)
+    captions = [
+        dict(x=0, xref="paper", xanchor="left",
+             y=label, yref="y", yanchor="bottom", yshift=17,
+             text=label, showarrow=False,
+             font=dict(size=12, color="var(--text-secondary)"))
+        for label in labels
+    ]
     fig.update_layout(
+        annotations=captions,
         margin=dict(l=4, r=56, t=6, b=22),
-        height=max(220, 44 * len(rows) + 60),
+        # Taller per row than before: the caption now sits in the row too.
+        height=max(240, 58 * len(rows) + 60),
         font=dict(size=13),
         xaxis=dict(showgrid=True, gridcolor="var(--grid)", zeroline=True,
                    zerolinecolor="var(--baseline)", zerolinewidth=1,
                    range=[-span * 1.35, span * 1.35], ticksuffix=" pt",
                    tickfont=dict(size=12), fixedrange=True),
-        yaxis=dict(showgrid=False, automargin=True, tickfont=dict(size=13), fixedrange=True),
-        showlegend=False, bargap=0.32,
+        yaxis=dict(showgrid=False, automargin=False, showticklabels=False,
+                   fixedrange=True),
+        showlegend=False, bargap=0.45,
         meta=dict(content_height=True),
     )
     return fig.to_dict()
@@ -713,7 +739,7 @@ def _build_frontier_fig(analytics: dict, current: dict | None) -> dict:
         fig.add_trace(
             go.Scatter(
                 x=[target["vol_pct"]], y=[target["ret_pct"]],
-                mode="markers+text", name="Target",
+                mode="markers+text", name="Target", showlegend=False,
                 marker=dict(size=15, color=COLOR_AQUA, symbol="diamond",
                             line=dict(width=2.5, color="var(--surface-1)")),
                 text=["Target"], textposition="top center", textfont=dict(size=12),
@@ -725,7 +751,7 @@ def _build_frontier_fig(analytics: dict, current: dict | None) -> dict:
         fig.add_trace(
             go.Scatter(
                 x=[current["vol_pct"]], y=[current["ret_pct"]],
-                mode="markers+text", name="Today",
+                mode="markers+text", name="Today", showlegend=False,
                 marker=dict(size=15, color=COLOR_ORANGE, symbol="x",
                             line=dict(width=2, color="var(--surface-1)")),
                 text=["Today"], textposition="bottom center", textfont=dict(size=12),
@@ -750,6 +776,11 @@ def _build_frontier_fig(analytics: dict, current: dict | None) -> dict:
                    gridcolor="var(--grid)", fixedrange=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
                     font=dict(size=11)),
+        # Opted out of the mobile height cut in themeLayout. Seven legend entries
+        # wrap to four rows on a phone and autoexpand claims 147px of top margin;
+        # taking that out of an already-shortened 294px figure left the plot 36%
+        # of its own height. It keeps its 420 and spends the legend out of that.
+        meta=dict(content_height=True),
         hovermode="closest",
     )
     return fig.to_dict()
@@ -833,7 +864,10 @@ def _build_stress_fig(stress: list, total: float, tolerance_pct: float | None) -
     """Simulated loss per scenario, today vs target, against the stated tolerance."""
     if not stress:
         return {}
-    scenarios = [_truncate_label(s["scenario"], 34) for s in stress]
+    # Same move as the gap chart: the scenario name is written above its pair of
+    # bars instead of on the y axis. "2022-style inflation & rates shock" is 34
+    # characters and was costing 152px of a 326px figure, leaving the bars 39%.
+    scenarios = [_truncate_label(s["scenario"], 44) for s in stress]
     fig = go.Figure()
     for name, key, color in (("Today", "current_pct", COLOR_ORANGE),
                              ("Target", "target_pct", COLOR_BLUE)):
@@ -858,12 +892,20 @@ def _build_stress_fig(stress: list, total: float, tolerance_pct: float | None) -
         )
     fig.update_layout(
         barmode="group",
+        annotations=list(fig.layout.annotations) + [
+            dict(x=0, xref="paper", xanchor="left",
+                 y=name, yref="y", yanchor="bottom", yshift=26,
+                 text=name, showarrow=False,
+                 font=dict(size=12, color="var(--text-secondary)"))
+            for name in scenarios
+        ],
         margin=dict(l=4, r=48, t=6, b=22),
-        height=max(230, 78 * len(stress) + 70),
+        height=max(250, 96 * len(stress) + 70),
         xaxis=dict(showgrid=True, gridcolor="var(--grid)", zeroline=True,
                    zerolinecolor="var(--baseline)", ticksuffix=" %",
                    range=[span * 1.22, 2], fixedrange=True, tickfont=dict(size=12)),
-        yaxis=dict(showgrid=False, automargin=True, tickfont=dict(size=12), fixedrange=True),
+        yaxis=dict(showgrid=False, automargin=False, showticklabels=False,
+                   fixedrange=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
         bargap=0.3,
         meta=dict(content_height=True),
@@ -1018,6 +1060,10 @@ def patrimoine():
         by_category=data["by_category"],
         category_labels=CATEGORY_LABELS,
         figs_json=json.dumps(figs, cls=plotly.utils.PlotlyJSONEncoder),
+        # The pies name their slices in an HTML legend rather than in outside
+        # labels, so the same slices the figures were built from come along.
+        category_slices=category_slices,
+        bank_slices=bank_slices,
         last_update=pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"),
     )
 

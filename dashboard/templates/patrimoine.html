@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import info %}
+{% from "macros.html" import info, slice_legend %}
 {% block title %}Net Worth — Portfolio Dashboard{% endblock %}
 
 {% block header_right %}
@@ -68,6 +68,7 @@
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-repartition"></div>
+      {{ slice_legend(category_slices, total) }}
     </div>
 
     <div class="mb-4">
@@ -75,6 +76,7 @@
     </div>
     <div class="card p-4 mb-6">
       <div id="chart-bank-repartition"></div>
+      {{ slice_legend(bank_slices, total) }}
     </div>
   </div>
 

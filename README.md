@@ -40,6 +40,11 @@ Every figure above comes from the fictional demo dataset, not from a real
 portfolio — `scripts/generate_screenshots.py` regenerates these images and
 refuses to run against anything but `demo/`.*
 
+The stylesheet is compiled, not fetched: `dashboard/static/app.css` is built
+from the templates by `python scripts/build_css.py` (needs Node for `npx`, and
+only to rebuild — never at runtime). Run it after adding a utility class to a
+template, or the class will silently do nothing.
+
 ## Features
 
 - **Position reconstruction** at weighted average cost from the raw journal
@@ -99,6 +104,9 @@ portfolio-dashboard/
 │   ├── generate_demo_data.py # (Re)generates demo/ from scratch
 │   ├── generate_icons.py     # (Re)generates the PWA icon set from the monogram
 │   ├── generate_screenshots.py # (Re)generates docs/screenshots/ (demo only, dark)
+│   ├── review_shots.py      # Sweeps every view/tab/breakpoint, diffs two sweeps
+│   ├── chart_metrics.py     # Reports plot area vs margin per figure, per width
+│   ├── build_css.py         # (Re)builds dashboard/static/app.css from templates
 │   └── build_strategy.py     # Computes strategy_analytics.json (needs scipy)
 ├── importers/
 │   ├── fortuneo.py            # Fortuneo parser (CSV ';', cp1252)

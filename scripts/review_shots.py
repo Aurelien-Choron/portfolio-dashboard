@@ -78,35 +78,71 @@ def build_shots(widths):
     return shots
 
 
-def run_diff(label_a, label_b):
-    """Reports which frames changed between two labelled sweeps, by bytes.
+def _frames(root):
+    """Every .png under `root`, keyed by its path relative to it.
 
-    Deliberately crude: PNG equality is enough to say "look at this one", and a
-    real perceptual diff would mean another dependency for a judgement a human
-    makes better anyway.
+    Relative rather than flat: a two-theme sweep nests its frames under
+    dark/ and light/, and a diff that only listed the top level would
+    compare nothing and report success.
     """
+    found = set()
+    for dirpath, _dirs, files in os.walk(root):
+        for name in files:
+            if name.endswith(".png"):
+                found.add(os.path.relpath(os.path.join(dirpath, name), root))
+    return found
+
+
+def run_diff(label_a, label_b, threshold=0.2):
+    """Reports which frames changed between two labelled sweeps, by pixels.
+
+    Bytes are useless here: every page prints pd.Timestamp.now() into its
+    header (app.py:961 and friends), so two sweeps a minute apart differ in
+    all 44 frames and a byte diff reports total change every time.
+
+    So: count differing pixels and show the box that contains them. A frame
+    under `threshold` percent is reported as clock noise, and the box says
+    whether a real change is the header strip or the whole layout.
+    """
+    from PIL import Image, ImageChops
+
     dir_a, dir_b = os.path.join(OUT_ROOT, label_a), os.path.join(OUT_ROOT, label_b)
     for d in (dir_a, dir_b):
         if not os.path.isdir(d):
             sys.exit(f"no such sweep: {d}")
 
-    names_a = {f for f in os.listdir(dir_a) if f.endswith(".png")}
-    names_b = {f for f in os.listdir(dir_b) if f.endswith(".png")}
-    changed, same = [], 0
+    names_a, names_b = _frames(dir_a), _frames(dir_b)
+    if not names_a and not names_b:
+        sys.exit("both sweeps are empty - nothing to compare")
+
+    changed, quiet = [], 0
     for name in sorted(names_a & names_b):
-        with open(os.path.join(dir_a, name), "rb") as fa, open(os.path.join(dir_b, name), "rb") as fb:
-            if fa.read() == fb.read():
-                same += 1
-            else:
-                changed.append(name)
+        ia = Image.open(os.path.join(dir_a, name)).convert("RGB")
+        ib = Image.open(os.path.join(dir_b, name)).convert("RGB")
+        if ia.size != ib.size:
+            changed.append((name, 100.0, f"size {ia.size} -> {ib.size}"))
+            continue
+        diff = ImageChops.difference(ia, ib).convert("L")
+        box = diff.getbbox()
+        if box is None:
+            quiet += 1
+            continue
+        hits = sum(n for px, n in diff.getcolors(maxcolors=256) if px > 8)
+        pct = 100.0 * hits / (ia.width * ia.height)
+        if pct < threshold:
+            quiet += 1
+        else:
+            changed.append((name, pct, f"box {box[0]},{box[1]} -> {box[2]},{box[3]}"))
 
     for name in sorted(names_a - names_b):
         print(f"  gone     {name}")
     for name in sorted(names_b - names_a):
         print(f"  new      {name}")
-    for name in changed:
-        print(f"  CHANGED  {name}")
-    print(f"\n{len(changed)} changed, {same} identical, "
+    for name, pct, note in sorted(changed, key=lambda r: -r[1]):
+        print(f"  CHANGED  {name:44s} {pct:6.2f}%  {note}")
+
+    print("")
+    print(f"{len(changed)} changed, {quiet} unchanged (within {threshold}%), "
           f"{len(names_a - names_b)} gone, {len(names_b - names_a)} new")
 
 

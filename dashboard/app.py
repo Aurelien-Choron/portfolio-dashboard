@@ -29,12 +29,14 @@ def inject_palette():
 
     `icon_version` stamps the icon URLs: browsers cache a favicon far harder than
     any other asset — often straight through a hard reload — so a regenerated mark
-    needs a new URL to be picked up at all.
+    needs a new URL to be picked up at all. `css_version` does the same for the
+    compiled stylesheet, which is now the whole layout rather than a CDN script.
     """
     return {
         "css_light": palette.css_block(palette.LIGHT, indent="    "),
         "css_dark": palette.css_block(palette.DARK, indent="      "),
         "icon_version": _icon_version(),
+        "css_version": _css_version(),
     }
 
 
@@ -50,6 +52,15 @@ def _icon_version() -> int:
                 except OSError:
                     pass
     return max(stamps)
+
+
+def _css_version() -> int:
+    """mtime of the compiled stylesheet, so a rebuild is picked up immediately."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "app.css")
+    try:
+        return int(os.path.getmtime(path))
+    except OSError:
+        return 0
 
 
 # Colour now lives in dashboard/palette.py; these are re-exported so the figure

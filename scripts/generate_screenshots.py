@@ -37,6 +37,7 @@ if _requested != "demo":
              "these screenshots are published, so they may only ever show demo data")
 os.environ["PORTFOLIO_ROOT"] = "demo"
 
+import market_data  # noqa: E402  (same reason)
 from dashboard.app import app  # noqa: E402  (must follow the env var above)
 
 OUT_DIR = os.path.join(REPO_ROOT, "docs", "screenshots")
@@ -67,6 +68,15 @@ def _free_port() -> int:
 
 def serve() -> str:
     """Starts the demo app on a free port in a daemon thread; returns its base URL."""
+    # Freeze the price cache for the life of the capture. market_data holds
+    # last prices for 15 minutes (LAST_PRICE_TTL), so two sweeps taken either
+    # side of that boundary differ by a euro here and there — which reads as a
+    # rendering change in a screenshot diff and hides the real one. Pinning the
+    # TTL does not disable the fetch: an empty cache still populates, it just
+    # never refetches, so every sweep in a session sees the same numbers.
+    market_data.LAST_PRICE_TTL = 10 ** 9
+    market_data.HISTORY_TTL = 10 ** 9
+
     port = _free_port()
     threading.Thread(target=lambda: app.run(port=port, use_reloader=False),
                      daemon=True).start()

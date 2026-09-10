@@ -37,6 +37,14 @@ def inject_palette():
         "css_dark": palette.css_block(palette.DARK, indent="      "),
         "icon_version": _icon_version(),
         "css_version": _css_version(),
+        # The browser chrome cannot read a CSS variable, so the one place a raw
+        # brand hex still has to appear is the theme-color meta tag. It comes
+        # from palette.py rather than being typed into the template again.
+        "brand_light": palette.BRAND_LIGHT,
+        "brand_dark": palette.BRAND_DARK,
+        # The public demo runs with PORTFOLIO_ROOT set; a visitor reading real-
+        # looking euro amounts deserves to be told they are invented.
+        "is_demo": os.environ.get("PORTFOLIO_ROOT") is not None,
     }
 
 

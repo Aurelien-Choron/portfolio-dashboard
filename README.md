@@ -53,11 +53,13 @@ template, or the class will silently do nothing.
   mapped assets (`config/tickers.json`), with an explicit fallback to average
   purchase price for the rest — never an invented price.
 - **Investments view**: performance over time, asset ranking, allocation by
-  broker, geographic/sector diversification, annual management fees,
-  transaction/dividend activity log.
+  broker, geographic/sector diversification, cost of ownership (brokerage fees
+  already paid and the funds' annual charges, side by side), transaction and
+  dividend activity log.
 - **Net Worth view**: investments + savings accounts (regulated savings,
-  retirement plans, life insurance...), comparison against a target allocation
-  with gaps highlighted.
+  retirement plans, life insurance...) split by asset class and by institution,
+  over an account table that adds up to the total. Comparing that against a
+  target is the Strategy view's job.
 - **Strategy view**: a strategic allocation you define once, and everything that
   follows from it — drift against target, envelope capacity (including the PEA
   contribution ceiling), a trading sleeve capped at a share of net worth, and an

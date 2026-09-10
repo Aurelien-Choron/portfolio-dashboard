@@ -549,8 +549,11 @@
                  // The floor of 1 keeps Plotly off a degenerate [0, 0] range on a
                  // brand-new setup with nothing saved and nothing contributed yet.
                  fixedrange: true, range: [0, Math.max(top * 1.06, 1)], automargin: true },
-        legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'left', x: 0,
-                  font: { size: 11 } },
+        // Inside the plot, top left. These curves rise left to right, so that
+        // corner is empty; above the plot the legend wrapped and took 54px off
+        // a 294px figure on a phone.
+        legend: { yanchor: 'top', y: 0.99, xanchor: 'left', x: 0.01,
+                  bgcolor: 'rgba(0,0,0,0)', font: { size: 11 } },
         hovermode: 'x unified',
         shapes: showTarget ? [{ type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y',
                                 y0: target, y1: target,

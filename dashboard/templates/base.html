@@ -141,6 +141,12 @@
      child of the icon, so moving onto it keeps :hover alive and its links stay
      clickable. Opens rightwards from the icon (never centered) so a title near
      the left edge cannot push the bubble off-screen. */
+  /* The bubble and its icon live inside h2.section-title, so they inherited
+     the display serif and set explanatory prose in a heading face. The serif
+     is for headings; everything that only happens to sit inside one is not a
+     heading. */
+  .info, .info-icon, .info-bubble, .info-para { font-family: var(--font-sans); }
+
   .info { position: relative; display: inline-flex; align-items: center; justify-content: center;
           width: 15px; height: 15px; margin-left: 6px; flex: none; vertical-align: middle;
           border: 1px solid var(--border); border-radius: var(--r-pill); background: transparent;

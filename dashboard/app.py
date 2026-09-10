@@ -399,7 +399,7 @@ def _build_performance_fig(hist: pd.DataFrame, events: pd.DataFrame) -> dict:
             fig.add_trace(
                 go.Scatter(
                     x=buys["date"], y=buys["y"],
-                    name="Buy",
+                    name="Buy", showlegend=False,
                     mode="markers",
                     marker=dict(symbol="triangle-up", size=10, color=COLOR_AQUA, line=dict(width=1.5, color="var(--surface-1)")),
                     customdata=list(zip(buys["name"], buys["amount"])),
@@ -410,7 +410,7 @@ def _build_performance_fig(hist: pd.DataFrame, events: pd.DataFrame) -> dict:
             fig.add_trace(
                 go.Scatter(
                     x=sells["date"], y=sells["y"],
-                    name="Sell",
+                    name="Sell", showlegend=False,
                     mode="markers",
                     # Red against the green Buy: the universal convention, and the
                     # one the eye expects on a trade marker. (It was violet before
@@ -430,8 +430,20 @@ def _build_performance_fig(hist: pd.DataFrame, events: pd.DataFrame) -> dict:
         # gets captured by Plotly as a pan/zoom instead of scrolling the page — the
         # chart feels "stuck" to touch. Hover/tap stays active.
         xaxis=dict(showgrid=False, fixedrange=True),
-        yaxis=dict(showgrid=True, gridcolor="var(--grid)", tickformat=",.0f", ticksuffix=" €", fixedrange=True, tickfont=dict(size=11)),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        # "20k €" rather than "20 000 €". Five ticks spelled out in full cost 41px
+        # of a 326px canvas — a tenth of the figure spent writing the same three
+        # zeros five times.
+        yaxis=dict(showgrid=True, gridcolor="var(--grid)", tickformat="~s", ticksuffix=" €",
+                   fixedrange=True, tickfont=dict(size=11)),
+        # The legend sits inside the plot, top left. This curve rises left to
+        # right, so that corner is empty by construction; above the plot it was
+        # wrapping to two rows and taking 54px off a 266px figure on a phone.
+        # Stacked, not laid out horizontally: a horizontal legend spans the whole
+        # width and so reaches into the top right, where a rising curve ends. The
+        # empty region on this chart is the top left triangle, and a vertical
+        # legend stays inside it.
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01,
+                    bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
         hovermode="closest",
     )
     return fig.to_dict()
@@ -728,8 +740,11 @@ def _build_frontier_fig(analytics: dict, current: dict | None) -> dict:
                    gridcolor="var(--grid)", fixedrange=True, rangemode="tozero"),
         yaxis=dict(title="Expected return, after tax", ticksuffix=" %", showgrid=True,
                    gridcolor="var(--grid)", fixedrange=True),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
-                    font=dict(size=11)),
+        # Bottom right, inside the plot: the frontier climbs from bottom left to
+        # top right, so that corner is empty by construction. Above the plot,
+        # five entries wrapped and claimed 112px of a 420px figure.
+        legend=dict(yanchor="bottom", y=0.02, xanchor="right", x=0.98,
+                    bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
         # Opted out of the mobile height cut in themeLayout. Seven legend entries
         # wrap to four rows on a phone and autoexpand claims 147px of top margin;
         # taking that out of an already-shortened 294px figure left the plot 36%

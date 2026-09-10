@@ -37,6 +37,43 @@
 {{ css_dark }}
   }
 
+  /* Fraunces, subset to latin and self-hosted. Google would serve this too,
+     but that is a third-party request on every page load of an app whose
+     whole point is that it depends on nothing at runtime. OFL.txt ships
+     beside the file, as the licence requires.
+
+     One face, variable on weight: the display sizes want 600 and the body
+     never uses the serif at all, so a static pair would cost two requests to
+     say less. */
+  @font-face {
+    font-family: "Fraunces";
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url({{ url_for('static', filename='fonts/fraunces-latin-var.woff2') }}) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                   U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                   U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+
+  /* Shape and type. Colour lives in palette.py and only there; these have no
+     business in it — nothing on the Python side needs a border radius. The
+     font stacks are the exception, and they are read back out of here by
+     themeLayout so a figure and the text beside it cannot drift apart. */
+  :root {
+    --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* Four radii, against the eleven that had accumulated. --r-xs exists
+       because a 9px data dot at 4px reads as a circle, and those dots have
+       to stay square to be told apart from the pie legend. */
+    --r-xs: 2px;
+    --r-sm: 4px;
+    --r-md: 10px;
+    --r-pill: 999px;
+  }
+
   /* Brand presence beyond the corner mark.
      Saturated brand = "you can click this". A brand *wash* — the same hue at 8%
      over the surface — = "this is the app's own furniture". Different saturation,
@@ -53,7 +90,7 @@
   @media (prefers-reduced-motion: reduce) {
     .nav-link::before, .tab-btn::before, .pill-btn::before, .info-bubble { transition: none; }
   }
-  body { background: var(--page); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+  body { background: var(--page); color: var(--text-primary); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
   .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; }
   .ink-primary { color: var(--text-primary); }
   .ink-secondary { color: var(--text-secondary); }
@@ -65,8 +102,17 @@
   .mark { flex: none; display: block; width: 24px; height: 24px; }
   @media (min-width: 768px) { .mark { width: 28px; height: 28px; } }
 
-  .hero-value { font-size: 2.5rem; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
-  .section-title { font-size: 1rem; font-weight: 600; }
+  /* The serif is for headings and the one display figure per page, never for
+     a number in a column: Fraunces figures are proportional, so a table of
+     euros in it stops lining up. WONK stays at 0 — the wonky forms are the
+     reason to pick this face and the reason not to point it at money. */
+  .hero-value { font-family: var(--font-serif); font-size: 2.5rem; line-height: 1.05;
+                font-weight: 600; letter-spacing: -0.02em;
+                font-variation-settings: 'SOFT' 30, 'WONK' 0; }
+  .section-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 600;
+                   letter-spacing: -0.01em; font-variation-settings: 'SOFT' 30, 'WONK' 0; }
+  .app-header h1 { font-family: var(--font-serif); letter-spacing: -0.02em;
+                   font-variation-settings: 'SOFT' 30, 'WONK' 0; }
   /* Explanation on demand. A section title carries a small "i"; the text only
      appears on hover, or on tap/focus where there is no pointer. The bubble is a
      child of the icon, so moving onto it keeps :hover alive and its links stay
@@ -97,7 +143,7 @@
   /* <p> cannot live inside the <span> the macro emits — blocks are made, not nested. */
   .info-para { display: block; }
   .info-para + .info-para { margin-top: 7px; }
-  .info-bubble code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.95em;
+  .info-bubble code { font-family: var(--font-mono); font-size: 0.95em;
                       background: var(--chip-bg); border-radius: 4px; padding: 0 4px; }
   .chip { display: inline-block; background: var(--chip-bg); color: var(--text-secondary); border-radius: 999px; padding: 1px 8px; font-size: 0.75rem; }
   table { border-collapse: collapse; width: 100%; }
@@ -284,7 +330,7 @@
   .task.done { opacity: 0.45; }
   .task.done .fund, .task.done .task-funding { display: none; }
   .task.done .task-title { text-decoration: line-through; }
-  .task-idx { font-family: ui-monospace, monospace; font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+  .task-idx { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
 
   .phase { margin-bottom: 22px; }
   .phase:last-child { margin-bottom: 0; }
@@ -304,7 +350,7 @@
   .fund-head { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
   .fund-tag { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--info); font-weight: 600; }
   .fund-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
-  .fund-isin { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem;
+  .fund-isin { font-family: var(--font-mono); font-size: 0.78rem;
                background: var(--chip-bg); color: var(--text-primary); border-radius: 5px; padding: 1px 6px; user-select: all; }
   .fund-specs { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 3px 16px; font-size: 0.76rem; color: var(--text-secondary); }
   .fund-specs b { color: var(--text-primary); font-weight: 600; }
@@ -440,7 +486,13 @@
       return node;
     }
 
-    const CHART_FONT = 'system-ui, -apple-system, Segoe UI, sans-serif';
+    // Read from CSS rather than repeated here. The old copy had drifted from
+    // the stylesheet already — it spelled Segoe UI without quotes — and a
+    // figure captioned in one font beside text in another is exactly the kind
+    // of seam this palette/token split exists to prevent.
+    const CHART_FONT = getComputedStyle(document.documentElement)
+      .getPropertyValue('--font-sans').trim()
+      || 'system-ui, -apple-system, sans-serif';
 
     // House style for every figure, applied here rather than in each of the twelve
     // builders. Plotly's stock look is recognisable mostly by two things: the white

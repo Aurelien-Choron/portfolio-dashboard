@@ -42,15 +42,13 @@ HEIGHTS = {360: 2400, 420: 2400, 767: 2200, 1440: 1600}
 VIEWS = [
     ("investments", "/", [
         ("performance", None),
-        ("allocation", "tab-repartition"),
-        ("fees", "tab-frais"),
+        ("allocation", "tab-allocation"),
+        ("costs", "tab-costs"),
         ("diversification", "tab-diversification"),
-        ("activity", "tab-journal"),
+        ("activity", "tab-activity"),
     ], None),
-    ("net-worth", "/patrimoine", [
-        ("allocation", None),
-        ("accounts", "tab-comptes"),
-    ], None),
+    # No tabs any more: a 169-line page hiding half of itself behind a click.
+    ("net-worth", "/patrimoine", [("main", None)], None),
     ("strategy", "/strategy", [
         ("plan", None),
         ("target", "tab-target"),

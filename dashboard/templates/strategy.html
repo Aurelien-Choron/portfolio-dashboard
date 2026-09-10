@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import info, meter, empty_state %}
+{% from "macros.html" import info, meter, empty_state, risk_window %}
 {% block title %}Strategy — Portfolio Dashboard{% endblock %}
 
 {% block header_right %}
@@ -50,37 +50,27 @@
     </div>
 
     <div class="card p-5 md:p-8">
-      <h2 class="section-title mb-3">Risk, now vs target{% if current_risk and analytics %}{% call info() %}
-        Measured over {{ analytics.window.observations }} weekly returns in euros
-        ({{ analytics.window.start }} → {{ analytics.window.end }}), against
-        {{ analytics.benchmark.label }}.
-      {% endcall %}{% endif %}</h2>
+      <h2 class="section-title mb-3">Risk, now vs target</h2>
       {% if current_risk and analytics %}
-      <table>
-        <thead><tr><th>&nbsp;</th><th>Today</th><th>Target</th></tr></thead>
-        <tbody>
-          <tr>
-            <td class="ink-secondary">Volatility</td>
-            <td class="tabular">{{ current_risk.vol_pct|fr(1) }} %</td>
-            <td class="tabular font-semibold">{{ analytics.target_portfolio.vol_pct|fr(1) }} %</td>
-          </tr>
-          <tr>
-            <td class="ink-secondary">Expected return, net</td>
-            <td class="tabular">{{ current_risk.ret_pct|fr(2) }} %</td>
-            <td class="tabular font-semibold delta-good">{{ analytics.target_portfolio.ret_pct|fr(2) }} %</td>
-          </tr>
-          <tr>
-            <td class="ink-secondary">Beta vs world equities</td>
-            <td class="tabular">{{ current_risk.beta|fr(2) }}</td>
-            <td class="tabular font-semibold">{{ analytics.target_portfolio.beta|fr(2) }}</td>
-          </tr>
-          <tr>
-            <td class="ink-secondary">Sharpe ratio</td>
-            <td class="tabular">{{ current_risk.sharpe|fr(3) }}</td>
-            <td class="tabular font-semibold">{{ analytics.target_portfolio.sharpe|fr(3) }}</td>
-          </tr>
-        </tbody>
-      </table>
+      {# A summary above the fold; the full four-metric table lives beside the
+         frontier, whose "Today" and "Target" markers plot these same numbers. #}
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="stat-label">Volatility</div>
+          <div class="stat-value tabular">{{ current_risk.vol_pct|fr(1) }} %
+            <span class="ink-muted text-sm font-normal">&rarr; {{ analytics.target_portfolio.vol_pct|fr(1) }} %</span>
+          </div>
+        </div>
+        <div>
+          <div class="stat-label">Expected return, net</div>
+          <div class="stat-value tabular">{{ current_risk.ret_pct|fr(2) }} %
+            <span class="delta-good text-sm font-normal">&rarr; {{ analytics.target_portfolio.ret_pct|fr(2) }} %</span>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="linkish mt-3 text-sm" data-tab-link="tab-risk">
+        Beta, Sharpe and the frontier &darr;
+      </button>
       {% else %}
       <div class="ink-secondary text-sm">
         Risk figures not computed yet. Run <code>python scripts/build_strategy.py</code>.
@@ -378,13 +368,6 @@
     </div>
 
     <div class="mb-4">
-      <h2 class="section-title">Gap to target, in points of net worth{% call info() %}Blue = below target, red = above. Grey lines are inside their band and need nothing.{% endcall %}</h2>
-    </div>
-    <div class="card p-4 mb-8">
-      <div id="chart-drift"></div>
-    </div>
-
-    <div class="mb-4">
       <h2 class="section-title">Envelope capacity{% call info() %}The PEA ceiling applies to contributions, not to value: gains never consume it. What the PEA cannot take has to be routed on, not silently parked on a taxable account.{% endcall %}</h2>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -463,8 +446,40 @@
         {{ analytics.window.observations }} weekly returns.</span>
       {% endcall %}</h2>
     </div>
-    <div class="card p-4 mb-8">
+    <div class="card p-4 mb-4">
       <div id="chart-frontier"></div>
+    </div>
+    {# The four metrics the two markers on that chart stand for. This used to sit
+       in the page header, three tabs away from the picture of itself. #}
+    <div class="card p-4 mb-8">
+      <div class="overflow-x-auto">
+        <table>
+          <thead><tr><th>&nbsp;</th><th>Today</th><th>Target</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="ink-secondary">Volatility</td>
+              <td class="tabular">{{ current_risk.vol_pct|fr(1) }} %</td>
+              <td class="tabular font-semibold">{{ analytics.target_portfolio.vol_pct|fr(1) }} %</td>
+            </tr>
+            <tr>
+              <td class="ink-secondary">Expected return, net</td>
+              <td class="tabular">{{ current_risk.ret_pct|fr(2) }} %</td>
+              <td class="tabular font-semibold delta-good">{{ analytics.target_portfolio.ret_pct|fr(2) }} %</td>
+            </tr>
+            <tr>
+              <td class="ink-secondary">Beta vs world equities</td>
+              <td class="tabular">{{ current_risk.beta|fr(2) }}</td>
+              <td class="tabular font-semibold">{{ analytics.target_portfolio.beta|fr(2) }}</td>
+            </tr>
+            <tr>
+              <td class="ink-secondary">Sharpe ratio</td>
+              <td class="tabular">{{ current_risk.sharpe|fr(3) }}</td>
+              <td class="tabular font-semibold">{{ analytics.target_portfolio.sharpe|fr(3) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ink-muted text-xs mt-3">{{ risk_window(analytics) }}</div>
     </div>
 
     <div class="mb-4">
@@ -561,7 +576,7 @@
 <script>
   const figs = {{ figs_json|safe }};
   initTabs(document);
-  ['drift', 'mix', 'frontier', 'correlation', 'stress'].forEach(function (name) {
+  ['mix', 'frontier', 'correlation', 'stress'].forEach(function (name) {
     renderFig('chart-' + name, figs[name]);
   });
 

@@ -575,63 +575,6 @@ def _build_diversification_payload(pos_df: pd.DataFrame) -> dict:
     return {"portfolio": portfolio, "funds": funds}
 
 
-def _build_drift_fig(targets: list) -> dict:
-    """Gap to target, in percentage points of net worth, per strategy line.
-
-    Bars are colored by direction rather than by identity: what matters here is
-    "too much / not enough", the same reading as _build_target_gap_fig.
-    """
-    rows = [t for t in targets if abs(t["drift_pt"]) > 0.01 or t["target_pct"] > 0]
-    if not rows:
-        return {}
-    rows = sorted(rows, key=lambda t: t["drift_pt"])
-    # The label goes above its bar, not on the y axis, so it no longer buys its
-    # width out of the plot. Axis labels here were priced by automargin at
-    # whatever the longest name needed: on a 326px canvas that was 92px of left
-    # margin, and the bars were left with 55% of the figure. Above the bar the
-    # name gets the full width, so it can also be longer than it used to be.
-    labels = [_truncate_label(t["label"], 40) for t in rows]
-    gaps = [t["drift_pt"] for t in rows]
-    colors = [COLOR_MUTED if t["status"] == "on" else (COLOR_RED if t["drift_pt"] > 0 else COLOR_BLUE)
-              for t in rows]
-
-    fig = go.Figure(
-        go.Bar(
-            x=gaps, y=labels, orientation="h",
-            marker=dict(color=colors),
-            text=[f"{g:+.1f} pt" for g in gaps],
-            textposition="outside", textfont=dict(size=12), cliponaxis=False,
-            customdata=[(t["label"], t["current_eur"], t["target_eur"], t["drift_eur"]) for t in rows],
-            hovertemplate=("%{customdata[0]}<br>Now %{customdata[1]:,.0f} € · "
-                           "target %{customdata[2]:,.0f} €<br>Gap %{customdata[3]:+,.0f} €<extra></extra>"),
-        )
-    )
-    span = max(max(abs(g) for g in gaps), 2)
-    captions = [
-        dict(x=0, xref="paper", xanchor="left",
-             y=label, yref="y", yanchor="bottom", yshift=17,
-             text=label, showarrow=False,
-             font=dict(size=12, color="var(--text-secondary)"))
-        for label in labels
-    ]
-    fig.update_layout(
-        annotations=captions,
-        margin=dict(l=4, r=56, t=6, b=22),
-        # Taller per row than before: the caption now sits in the row too.
-        height=max(240, 58 * len(rows) + 60),
-        font=dict(size=13),
-        xaxis=dict(showgrid=True, gridcolor="var(--grid)", zeroline=True,
-                   zerolinecolor="var(--baseline)", zerolinewidth=1,
-                   range=[-span * 1.35, span * 1.35], ticksuffix=" pt",
-                   tickfont=dict(size=12), fixedrange=True),
-        yaxis=dict(showgrid=False, automargin=False, showticklabels=False,
-                   fixedrange=True),
-        showlegend=False, bargap=0.45,
-        meta=dict(content_height=True),
-    )
-    return fig.to_dict()
-
-
 def _build_mix_fig(targets: list, sleeve: dict, total: float) -> dict:
     """Current vs target composition, as two stacked bars.
 
@@ -1105,7 +1048,6 @@ def strategy():
 
     tolerance = (data["risk"] or {}).get("max_drawdown_tolerance_pct")
     figs = {
-        "drift": _build_drift_fig(data["targets"]),
         "mix": _build_mix_fig(data["targets"], data["sleeve"], total),
         "frontier": _build_frontier_fig(analytics, current_risk),
         "correlation": _build_correlation_fig(analytics),

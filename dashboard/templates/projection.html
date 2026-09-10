@@ -1,11 +1,10 @@
 {% extends "base.html" %}
-{% from "macros.html" import info %}
+{% from "macros.html" import info, risk_window %}
 {% block title %}Forecast — Portfolio Dashboard{% endblock %}
 
 {% block header_right %}
 <div class="text-right">
   <div class="ink-muted text-xs">Updated {{ last_update }}</div>
-  {% if analytics %}<div class="ink-secondary text-xs">Risk measured {{ analytics.window.start }} → {{ analytics.window.end }}</div>{% endif %}
 </div>
 {% endblock %}
 
@@ -160,7 +159,11 @@
   </div>
 
   <div class="card p-5 md:p-6">
-    <h2 class="section-title mb-3">What this rests on</h2>
+    <h2 class="section-title mb-1">Parameters behind each curve</h2>
+    <div class="ink-muted text-xs mb-3">
+      {% if analytics %}{{ risk_window(analytics) }}
+      <a class="link" href="/strategy#risk">Beta, Sharpe and the frontier</a> live on Strategy.{% endif %}
+    </div>
     {% if refs %}
     <table class="mb-4">
       <thead><tr><th>Mix</th><th class="text-right">Return, net</th><th class="text-right">Volatility</th></tr></thead>
@@ -185,8 +188,9 @@
         the chart is only as good as the first one.
       </li>
       <li class="mb-2">
-        Those returns are before the funds' own ongoing charges — the Investments page prices
-        what those cost you each year.
+        Those returns are before the funds' own ongoing charges —
+        <a class="link" href="/#costs">what those cost you each year</a> is priced on the
+        Investments page.
       </li>
       <li class="mb-2">
         The <span class="ink-primary font-medium">ideal</span> line is the tangency portfolio

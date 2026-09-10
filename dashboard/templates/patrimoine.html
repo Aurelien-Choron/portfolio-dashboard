@@ -15,7 +15,7 @@
     <h2 class="section-title">Overview{% call info() %}Investments + savings, all accounts combined, by asset class.{% endcall %}</h2>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 mb-8">
+  <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4 md:gap-6 mb-8">
     <div class="card card-brand p-5 flex flex-col justify-center">
       <div class="stat-label">Total net worth</div>
       <div class="hero-value">{{ total|fr }} €</div>
@@ -51,20 +51,9 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- TABS                                                           -->
-  <!-- ============================================================ -->
-  <div class="tabs mt-4">
-    <button class="tab-btn active" data-tab-target="tab-repartition">Allocation</button>
-    <button class="tab-btn" data-tab-target="tab-comptes">Accounts</button>
-  </div>
 
-  <!-- ---------------------------------------------------------- -->
-  <!-- Tab 1 — ALLOCATION                                            -->
-  <!-- ---------------------------------------------------------- -->
-  <div id="tab-repartition" class="tab-panel active">
     <div class="mb-4">
-      <h2 class="section-title">Net worth allocation{% call info() %}Weight of each asset class in the total — per-account detail in the Accounts tab.{% endcall %}</h2>
+      <h2 class="section-title">Net worth allocation{% call info() %}Weight of each asset class in the total — per-account detail further down.{% endcall %}</h2>
     </div>
     <div class="card p-4 mb-8">
       <div id="chart-repartition"></div>
@@ -78,12 +67,7 @@
       <div id="chart-bank-repartition"></div>
       {{ slice_legend(bank_slices, total) }}
     </div>
-  </div>
 
-  <!-- ---------------------------------------------------------- -->
-  <!-- Tab 2 — ACCOUNTS                                              -->
-  <!-- ---------------------------------------------------------- -->
-  <div id="tab-comptes" class="tab-panel">
     <div class="mb-4">
       <h2 class="section-title">Account detail{% call info() %}Savings and investment envelopes together — this table adds up to your net worth. Position-by-position detail lives on the <a href="/" class="link">Investments</a> page.{% endcall %}</h2>
     </div>
@@ -155,7 +139,6 @@
         {% endfor %}
       </div>
     </div>
-  </div>
 
 {% endblock %}
 
@@ -166,6 +149,5 @@
   renderFig('chart-repartition', figs.repartition);
   renderFig('chart-bank-repartition', figs.bank_repartition);
 
-  initTabs(document);
 </script>
 {% endblock %}

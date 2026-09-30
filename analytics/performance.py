@@ -30,8 +30,10 @@ def build_history(transactions: pd.DataFrame, positions_df: pd.DataFrame) -> pd.
 
     # --- Quantity held per asset over time ---
     trades = transactions[transactions["type"].isin(["BUY", "SELL"])].copy()
+    # abs() for the same reason as positions.build_positions: Trade Republic
+    # exports sells with an already-negative quantity.
     trades["signed_qty"] = trades.apply(
-        lambda r: r["quantity"] if r["type"] == "BUY" else -r["quantity"], axis=1
+        lambda r: abs(r["quantity"]) if r["type"] == "BUY" else -abs(r["quantity"]), axis=1
     )
     qty_by_asset = {}
     for asset_key, grp in trades.groupby("asset_key"):

@@ -13,10 +13,16 @@ COLUMNS = [
 
 
 def asset_key(row) -> str:
-    """An asset's aggregation key: ISIN if known, otherwise its normalized name."""
-    if row.get("isin"):
-        return str(row["isin"])
-    return str(row.get("name") or "UNKNOWN").strip()
+    """An asset's aggregation key: ISIN if known, otherwise its normalized name.
+
+    Missing values arrive as None or NaN depending on the source, and NaN is
+    truthy: a plain `or` turned cash rows into an asset literally keyed "nan".
+    """
+    for field in ("isin", "name"):
+        value = row.get(field)
+        if pd.notna(value) and str(value).strip():
+            return str(value).strip()
+    return "UNKNOWN"
 
 
 def load_all(data_root: str) -> pd.DataFrame:

@@ -63,7 +63,10 @@ def load(data_dir: str) -> pd.DataFrame:
     out["isin"] = None
     out["quantity"] = pd.to_numeric(raw["Qté"], errors="coerce")
     out["price"] = pd.to_numeric(raw["Prix d'éxé"], errors="coerce")
-    out["fee"] = pd.to_numeric(raw["Courtage/Prélèvement"], errors="coerce").abs()
+    # Deposits and dividends leave the fee cell empty: without fillna the NaN
+    # reaches positions.py, where `fee or 0.0` lets it through (NaN is truthy)
+    # and blanks the asset's whole fee total.
+    out["fee"] = pd.to_numeric(raw["Courtage/Prélèvement"], errors="coerce").abs().fillna(0.0)
     out["tax"] = 0.0
     out["amount"] = pd.to_numeric(raw["Montant net"], errors="coerce")
     out["currency"] = raw["Devise"].str.strip()

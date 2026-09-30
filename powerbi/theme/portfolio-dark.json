@@ -1,0 +1,121 @@
+{
+  "name": "Portfolio Dashboard (dark)",
+  "dataColors": [
+    "#70aff3",
+    "#de9d6c",
+    "#36beac",
+    "#bcab62",
+    "#eb8fb6",
+    "#80b97b",
+    "#cf98d8",
+    "#f1908e"
+  ],
+  "foreground": "#faf8fe",
+  "foregroundNeutralSecondary": "#c8c5d0",
+  "foregroundNeutralTertiary": "#8d8a97",
+  "background": "#1a1a19",
+  "backgroundLight": "#2c2c2b",
+  "backgroundNeutral": "#3a3743",
+  "tableAccent": "#a491ff",
+  "hyperlink": "#70aff3",
+  "good": "#3ad12a",
+  "neutral": "#8d8a97",
+  "bad": "#ff9b90",
+  "maximum": "#3c8c3d",
+  "center": "#837f8d",
+  "minimum": "#ce5458",
+  "textClasses": {
+    "callout": {
+      "fontFace": "Georgia",
+      "fontSize": 28,
+      "color": "#faf8fe"
+    },
+    "title": {
+      "fontFace": "Georgia",
+      "fontSize": 12,
+      "color": "#faf8fe"
+    },
+    "header": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 11,
+      "color": "#faf8fe"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 10,
+      "color": "#c8c5d0"
+    }
+  },
+  "visualStyles": {
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#0d0d0d"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "outspace": [
+          {
+            "color": {
+              "solid": {
+                "color": "#0d0d0d"
+              }
+            },
+            "transparency": 0
+          }
+        ]
+      }
+    },
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#1a1a19"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#373737"
+              }
+            },
+            "radius": 10
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": false
+          }
+        ],
+        "valueAxis": [
+          {
+            "gridlineColor": {
+              "solid": {
+                "color": "#3a3743"
+              }
+            },
+            "gridlineStyle": "dotted"
+          }
+        ],
+        "categoryAxis": [
+          {
+            "gridlineShow": false
+          }
+        ]
+      }
+    }
+  }
+}

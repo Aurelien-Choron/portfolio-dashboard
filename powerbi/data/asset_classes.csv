@@ -1,0 +1,6 @@
+asset_class,label,sort_order,color_dark,color_light
+Actions,Stocks,1,#4cc1c0,#027474
+Obligations,Bonds,2,#379393,#0f9b9b
+Fonds Euros,Euro Funds,3,#9894a3,#7e7a89
+Livrets,Savings Accounts,4,#c8c5d0,#adaab4
+Autres,Other,5,#dfc65a,#a68d03

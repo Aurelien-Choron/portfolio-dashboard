@@ -1,0 +1,667 @@
+{
+  "_readme": "Figures computed by the Python app (analytics/*) on the frozen prices in prices_daily.csv, as of the date below. The Power BI report must reproduce them. Regenerate with: python scripts/export_powerbi.py",
+  "as_of": "2026-09-28",
+  "journal": {
+    "rows": 32,
+    "by_type": {
+      "BUY": 12,
+      "DEPOSIT": 10,
+      "DIVIDEND": 8,
+      "SELL": 2
+    },
+    "by_broker": {
+      "fortuneo": 16,
+      "trade_republic": 16
+    }
+  },
+  "investments": {
+    "summary": {
+      "total_value": 19856.0932,
+      "total_cost": 15226.3733,
+      "unrealized_pnl": 4629.7199,
+      "unrealized_pnl_pct": 30.4059,
+      "realized_pnl": -224.1867,
+      "dividends": 119.17,
+      "fees": 27.3,
+      "deposits": 17550.0,
+      "withdrawals": 0.0,
+      "nb_positions": 6,
+      "nb_transactions": 32
+    },
+    "annual_fund_fees_eur": 49.3504,
+    "by_broker": [
+      {
+        "broker": "fortuneo",
+        "value": 12510.3
+      },
+      {
+        "broker": "trade_republic",
+        "value": 7345.7932
+      }
+    ],
+    "assets": [
+      {
+        "asset_key": "Amundi MSCI World UCITS ETF - EUR (C)",
+        "name": "Amundi MSCI World UCITS ETF - EUR (C)",
+        "broker": "fortuneo",
+        "quantity": 16.0,
+        "avg_cost": 525.395,
+        "cost_basis": 8406.32,
+        "current_price": 701.13,
+        "current_value": 11218.08,
+        "unrealized_pnl": 2811.76,
+        "unrealized_pnl_pct": 33.4482,
+        "realized_pnl": 0.0,
+        "dividends": 0.0,
+        "fees_paid": 11.6,
+        "total_bought": 8406.32,
+        "total_sold": 0.0,
+        "total_gain": 2811.76,
+        "total_return_pct": 33.4482,
+        "first_buy_date": "2024-02-05",
+        "months_held": 31.7379,
+        "monthly_avg_pct": 1.0539,
+        "monthly_avg_eur": 88.5931,
+        "ter_pct": 0.38,
+        "annual_fee_eur": 42.6287
+      },
+      {
+        "asset_key": "IE00BK5BQT80",
+        "name": "Vanguard FTSE All-World UCITS ETF",
+        "broker": "trade_republic",
+        "quantity": 18.0,
+        "avg_cost": 123.2867,
+        "cost_basis": 2219.16,
+        "current_price": 169.74,
+        "current_value": 3055.32,
+        "unrealized_pnl": 836.16,
+        "unrealized_pnl_pct": 37.6791,
+        "realized_pnl": 0.0,
+        "dividends": 0.0,
+        "fees_paid": 2.0,
+        "total_bought": 2219.16,
+        "total_sold": 0.0,
+        "total_gain": 836.16,
+        "total_return_pct": 37.6791,
+        "first_buy_date": "2024-03-04",
+        "months_held": 30.818,
+        "monthly_avg_pct": 1.2226,
+        "monthly_avg_eur": 27.1322,
+        "ter_pct": 0.22,
+        "annual_fee_eur": 6.7217
+      },
+      {
+        "asset_key": "US0378331005",
+        "name": "Apple Inc.",
+        "broker": "trade_republic",
+        "quantity": 10.0,
+        "avg_cost": 181.902,
+        "cost_basis": 1819.02,
+        "current_price": 297.4164,
+        "current_value": 2974.164,
+        "unrealized_pnl": 1155.144,
+        "unrealized_pnl_pct": 63.5036,
+        "realized_pnl": 0.0,
+        "dividends": 3.06,
+        "fees_paid": 2.0,
+        "total_bought": 1819.02,
+        "total_sold": 0.0,
+        "total_gain": 1158.204,
+        "total_return_pct": 63.6719,
+        "first_buy_date": "2024-03-04",
+        "months_held": 30.818,
+        "monthly_avg_pct": 2.0661,
+        "monthly_avg_eur": 37.5821,
+        "ter_pct": null,
+        "annual_fee_eur": null
+      },
+      {
+        "asset_key": "Sanofi",
+        "name": "Sanofi",
+        "broker": "fortuneo",
+        "quantity": 18.0,
+        "avg_cost": 79.3307,
+        "cost_basis": 1427.9533,
+        "current_price": 71.79,
+        "current_value": 1292.22,
+        "unrealized_pnl": -135.7333,
+        "unrealized_pnl_pct": -9.5054,
+        "realized_pnl": -31.1167,
+        "dividends": 92.5,
+        "fees_paid": 8.7,
+        "total_bought": 1838.32,
+        "total_sold": 379.25,
+        "total_gain": -74.35,
+        "total_return_pct": -4.0445,
+        "first_buy_date": "2024-06-10",
+        "months_held": 27.5982,
+        "monthly_avg_pct": -0.1465,
+        "monthly_avg_eur": -2.694,
+        "ter_pct": null,
+        "annual_fee_eur": null
+      },
+      {
+        "asset_key": "US1912161007",
+        "name": "Coca-Cola Co.",
+        "broker": "trade_republic",
+        "quantity": 12.0,
+        "avg_cost": 56.85,
+        "cost_basis": 682.2,
+        "current_price": 76.6216,
+        "current_value": 919.4592,
+        "unrealized_pnl": 237.2592,
+        "unrealized_pnl_pct": 34.7785,
+        "realized_pnl": 0.0,
+        "dividends": 10.61,
+        "fees_paid": 1.0,
+        "total_bought": 682.2,
+        "total_sold": 0.0,
+        "total_gain": 247.8692,
+        "total_return_pct": 36.3338,
+        "first_buy_date": "2025-01-12",
+        "months_held": 20.5015,
+        "monthly_avg_pct": 1.7723,
+        "monthly_avg_eur": 12.0903,
+        "ter_pct": null,
+        "annual_fee_eur": null
+      },
+      {
+        "asset_key": "FR0000121014",
+        "name": "LVMH",
+        "broker": "trade_republic",
+        "quantity": 1.0,
+        "avg_cost": 671.72,
+        "cost_basis": 671.72,
+        "current_price": 396.85,
+        "current_value": 396.85,
+        "unrealized_pnl": -274.87,
+        "unrealized_pnl_pct": -40.9203,
+        "realized_pnl": -193.07,
+        "dividends": 13.0,
+        "fees_paid": 2.0,
+        "total_bought": 1343.44,
+        "total_sold": 478.65,
+        "total_gain": -454.94,
+        "total_return_pct": -33.8638,
+        "first_buy_date": "2024-07-15",
+        "months_held": 26.4482,
+        "monthly_avg_pct": -1.2804,
+        "monthly_avg_eur": -17.2011,
+        "ter_pct": null,
+        "annual_fee_eur": null
+      }
+    ],
+    "value_over_time": [
+      {
+        "date": "2024-02-29",
+        "invested_capital": 2838.02,
+        "portfolio_value": 2901.345
+      },
+      {
+        "date": "2024-03-31",
+        "invested_capital": 4945.92,
+        "portfolio_value": 5130.0266
+      },
+      {
+        "date": "2024-04-30",
+        "invested_capital": 4945.92,
+        "portfolio_value": 5051.258
+      },
+      {
+        "date": "2024-05-31",
+        "invested_capital": 4945.92,
+        "portfolio_value": 5211.7258
+      },
+      {
+        "date": "2024-06-30",
+        "invested_capital": 6177.02,
+        "portfolio_value": 6754.2759
+      },
+      {
+        "date": "2024-07-31",
+        "invested_capital": 7520.46,
+        "portfolio_value": 8130.9782
+      },
+      {
+        "date": "2024-08-31",
+        "invested_capital": 7520.46,
+        "portfolio_value": 8246.8557
+      },
+      {
+        "date": "2024-09-30",
+        "invested_capital": 7520.46,
+        "portfolio_value": 8372.3039
+      },
+      {
+        "date": "2024-10-31",
+        "invested_capital": 7520.46,
+        "portfolio_value": 8188.9352
+      },
+      {
+        "date": "2024-11-30",
+        "invested_capital": 9765.44,
+        "portfolio_value": 10805.2134
+      },
+      {
+        "date": "2024-12-31",
+        "invested_capital": 9765.44,
+        "portfolio_value": 10966.9511
+      },
+      {
+        "date": "2025-01-31",
+        "invested_capital": 11517.4,
+        "portfolio_value": 13243.625
+      },
+      {
+        "date": "2025-02-28",
+        "invested_capital": 11517.4,
+        "portfolio_value": 13136.5421
+      },
+      {
+        "date": "2025-03-31",
+        "invested_capital": 11517.4,
+        "portfolio_value": 12049.0792
+      },
+      {
+        "date": "2025-04-30",
+        "invested_capital": 11517.4,
+        "portfolio_value": 11385.381
+      },
+      {
+        "date": "2025-05-31",
+        "invested_capital": 13593.5,
+        "portfolio_value": 13875.4019
+      },
+      {
+        "date": "2025-06-30",
+        "invested_capital": 13593.5,
+        "portfolio_value": 13770.5698
+      },
+      {
+        "date": "2025-07-31",
+        "invested_capital": 13593.5,
+        "portfolio_value": 14283.7531
+      },
+      {
+        "date": "2025-08-31",
+        "invested_capital": 13593.5,
+        "portfolio_value": 14488.4821
+      },
+      {
+        "date": "2025-09-30",
+        "invested_capital": 12735.6,
+        "portfolio_value": 13911.2829
+      },
+      {
+        "date": "2025-10-31",
+        "invested_capital": 12735.6,
+        "portfolio_value": 14670.2924
+      },
+      {
+        "date": "2025-11-30",
+        "invested_capital": 12735.6,
+        "portfolio_value": 14722.204
+      },
+      {
+        "date": "2025-12-31",
+        "invested_capital": 12735.6,
+        "portfolio_value": 14635.5755
+      },
+      {
+        "date": "2026-01-31",
+        "invested_capital": 13982.82,
+        "portfolio_value": 15749.5213
+      },
+      {
+        "date": "2026-02-28",
+        "invested_capital": 14843.34,
+        "portfolio_value": 16953.0864
+      },
+      {
+        "date": "2026-03-31",
+        "invested_capital": 14843.34,
+        "portfolio_value": 16216.6408
+      },
+      {
+        "date": "2026-04-30",
+        "invested_capital": 14843.34,
+        "portfolio_value": 17290.2514
+      },
+      {
+        "date": "2026-05-31",
+        "invested_capital": 14843.34,
+        "portfolio_value": 18394.0926
+      },
+      {
+        "date": "2026-06-30",
+        "invested_capital": 15450.56,
+        "portfolio_value": 19089.1016
+      },
+      {
+        "date": "2026-07-31",
+        "invested_capital": 15450.56,
+        "portfolio_value": 19148.5356
+      },
+      {
+        "date": "2026-08-31",
+        "invested_capital": 15450.56,
+        "portfolio_value": 19514.8502
+      },
+      {
+        "date": "2026-09-28",
+        "invested_capital": 15450.56,
+        "portfolio_value": 19856.0932
+      }
+    ],
+    "diversification": {
+      "country": {
+        "United States": 13640.5776,
+        "France": 2111.1614,
+        "Other": 1061.1104,
+        "Japan": 841.1274,
+        "United Kingdom": 555.6594,
+        "China": 428.202,
+        "Canada": 419.036,
+        "Germany": 341.5584,
+        "Switzerland": 341.5584,
+        "India": 61.1064,
+        "Taiwan": 54.9958
+      },
+      "sector": {
+        "Technology": 6736.3224,
+        "Healthcare": 2719.56,
+        "Financials": 2314.2972,
+        "Consumer Discretionary": 1839.4666,
+        "Consumer Staples": 1775.8632,
+        "Industrials": 1600.6272,
+        "Communication": 1126.5954,
+        "Energy": 586.2126,
+        "Materials": 443.4786,
+        "Utilities": 356.835,
+        "Real Estate": 356.835
+      }
+    }
+  },
+  "net_worth": {
+    "total": 46056.0932,
+    "investments": 19856.0932,
+    "savings": 26200,
+    "by_class": [
+      {
+        "class": "Actions",
+        "label": "Stocks",
+        "value": 19856.0932,
+        "pct": 43.1128
+      },
+      {
+        "class": "Fonds Euros",
+        "label": "Euro Funds",
+        "value": 12000.0,
+        "pct": 26.0552
+      },
+      {
+        "class": "Livrets",
+        "label": "Savings Accounts",
+        "value": 12700.0,
+        "pct": 27.5751
+      },
+      {
+        "class": "Autres",
+        "label": "Other",
+        "value": 1500.0,
+        "pct": 3.2569
+      }
+    ],
+    "by_bank": [
+      {
+        "label": "Demo Bank",
+        "value": 14200.0
+      },
+      {
+        "label": "Fortuneo",
+        "value": 12510.3
+      },
+      {
+        "label": "Demo Insurer",
+        "value": 12000.0
+      },
+      {
+        "label": "Trade Republic",
+        "value": 7345.7932
+      }
+    ],
+    "accounts": [
+      {
+        "id": "livret_a",
+        "label": "Livret A",
+        "bank": "Demo Bank",
+        "category": "Livrets",
+        "balance": 8500,
+        "rate_pct": 3.0,
+        "ceiling": 22950,
+        "maturity_date": null
+      },
+      {
+        "id": "ldds",
+        "label": "LDDS",
+        "bank": "Demo Bank",
+        "category": "Livrets",
+        "balance": 4200,
+        "rate_pct": 3.0,
+        "ceiling": 12000,
+        "maturity_date": null
+      },
+      {
+        "id": "av_euro",
+        "label": "Life Insurance — Euro Fund",
+        "bank": "Demo Insurer",
+        "category": "Fonds Euros",
+        "balance": 12000,
+        "rate_pct": 2.6,
+        "ceiling": null,
+        "maturity_date": null
+      },
+      {
+        "id": "checking",
+        "label": "Checking Account",
+        "bank": "Demo Bank",
+        "category": "Autres",
+        "balance": 1500,
+        "rate_pct": null,
+        "ceiling": null,
+        "maturity_date": null
+      },
+      {
+        "id": "envelope_pea",
+        "label": "PEA",
+        "bank": "Fortuneo",
+        "category": "__INVESTMENTS__",
+        "balance": 12510.3,
+        "rate_pct": null,
+        "ceiling": 150000,
+        "maturity_date": null
+      },
+      {
+        "id": "envelope_cto",
+        "label": "CTO",
+        "bank": "Trade Republic",
+        "category": "__INVESTMENTS__",
+        "balance": 7345.7932,
+        "rate_pct": null,
+        "ceiling": null,
+        "maturity_date": null
+      }
+    ]
+  },
+  "strategy": {
+    "profile": "Balanced",
+    "total": 46056.0932,
+    "invested_now_pct": 43.1128,
+    "invested_target_pct": 70.0,
+    "cash_now_eur": 26200,
+    "to_deploy_eur": 13360.2559,
+    "targets": [
+      {
+        "key": "Amundi MSCI World UCITS ETF - EUR (C)",
+        "label": "MSCI World",
+        "envelope": "PEA",
+        "target_pct": 42.0,
+        "band_pt": 3.0,
+        "current_eur": 11218.08,
+        "current_pct": 24.3574,
+        "target_eur": 19343.5591,
+        "drift_eur": -8125.4791,
+        "drift_pt": -17.6426,
+        "status": "under"
+      },
+      {
+        "key": "IE00BK5BQT80",
+        "label": "FTSE All-World",
+        "envelope": "CTO",
+        "target_pct": 18.0,
+        "band_pt": 2.0,
+        "current_eur": 3055.32,
+        "current_pct": 6.6339,
+        "target_eur": 8290.0968,
+        "drift_eur": -5234.7768,
+        "drift_pt": -11.3661,
+        "status": "under"
+      },
+      {
+        "key": "__CASH__",
+        "label": "Guaranteed savings",
+        "envelope": "SAVINGS",
+        "target_pct": 30.0,
+        "band_pt": 3.0,
+        "current_eur": 26200,
+        "current_pct": 56.8872,
+        "target_eur": 13816.828,
+        "drift_eur": 12383.172,
+        "drift_pt": 26.8872,
+        "status": "over"
+      }
+    ],
+    "sleeve": {
+      "cap_pct": 10.0,
+      "cap_eur": 4605.6093,
+      "used_eur": 5582.6932,
+      "used_pct": 12.1215,
+      "headroom_eur": -977.0839
+    },
+    "envelopes": [
+      {
+        "name": "PEA",
+        "label": "PEA (Demo Broker)",
+        "ceiling_eur": 150000,
+        "contributed_eur": 11150.0,
+        "room_eur": 138850.0,
+        "current_eur": 12510.3,
+        "fill_pct": 7.4333
+      },
+      {
+        "name": "CTO",
+        "label": "Brokerage account",
+        "ceiling_eur": null,
+        "contributed_eur": null,
+        "room_eur": null,
+        "current_eur": 7345.7932,
+        "fill_pct": null
+      },
+      {
+        "name": "SAVINGS",
+        "label": "Regulated savings",
+        "ceiling_eur": null,
+        "contributed_eur": null,
+        "room_eur": null,
+        "current_eur": 26200.0,
+        "fill_pct": null
+      }
+    ],
+    "weights": {
+      "Amundi MSCI World UCITS ETF - EUR (C)": 0.2436,
+      "IE00BK5BQT80": 0.0663,
+      "__TRADING__": 0.1212
+    },
+    "current_risk": {
+      "vol_pct": 6.39,
+      "ret_pct": 3.34,
+      "beta": 0.4,
+      "sharpe": 0.195,
+      "invested_pct": 43.1,
+      "cash_pct": 56.9
+    },
+    "target_risk": {
+      "vol_pct": 10.482,
+      "ret_pct": 4.205,
+      "beta": 0.67,
+      "sharpe": 0.201,
+      "invested_pct": 70.0,
+      "cash_pct": 30.0
+    },
+    "stress": [
+      {
+        "scenario": "2008-style systemic crash",
+        "target_pct": -32.18,
+        "current_pct": -20.07
+      },
+      {
+        "scenario": "2022-style inflation & rates shock",
+        "target_pct": -13.18,
+        "current_pct": -8.31
+      }
+    ]
+  },
+  "forecast": {
+    "capital": {
+      "invested_eur": 19856.0932,
+      "cash_eur": 26200,
+      "total_eur": 46056.0932
+    },
+    "scenarios": [
+      {
+        "key": "today",
+        "label": "Today's mix",
+        "ret_pct": 3.34,
+        "vol_pct": 6.39
+      },
+      {
+        "key": "target",
+        "label": "Strategy target",
+        "ret_pct": 4.205,
+        "vol_pct": 10.482
+      },
+      {
+        "key": "ideal",
+        "label": "Ideal at today's risk",
+        "ret_pct": 3.53,
+        "vol_pct": 6.39
+      },
+      {
+        "key": "savings",
+        "label": "Guaranteed savings only",
+        "ret_pct": 2.1,
+        "vol_pct": 0.0
+      },
+      {
+        "key": "asset:Amundi MSCI World UCITS ETF - EUR (C)",
+        "label": "100 % MSCI World",
+        "ret_pct": 5.59,
+        "vol_pct": 15.59
+      },
+      {
+        "key": "asset:IE00BK5BQT80",
+        "label": "100 % FTSE All-World",
+        "ret_pct": 4.61,
+        "vol_pct": 15.12
+      },
+      {
+        "key": "asset:__TRADING__",
+        "label": "100 % Trading sleeve",
+        "ret_pct": 3.98,
+        "vol_pct": 16.39
+      }
+    ],
+    "inflation_pct": 2.2,
+    "risk_free_net_pct": 2.1
+  }
+}

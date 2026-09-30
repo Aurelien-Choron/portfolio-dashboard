@@ -29,6 +29,13 @@ data/cache/
 demo/data/cache/
 demo/data/processed/
 
+# Power BI: a .pbix and a project's cache.abf both embed the data they were last
+# refreshed with, so neither is ever committed — the PBIP text files are. The
+# release .pbix (demo data only) is attached to a GitHub Release, not the tree.
+*.pbix
+powerbi/**/.pbi/cache.abf
+powerbi/**/.pbi/localSettings.json
+
 # Local working notes for Claude Code (personal runbooks, not project docs)
 .claude/
 

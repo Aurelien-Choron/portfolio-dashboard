@@ -1,0 +1,222 @@
+expression RepoPath = "C:\Users\Travail\OneDrive\Bureau\Dossiers\Projets\portfolio-dashboard" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: d4ac87b3-c125-4e34-bc29-147fdb264f86
+	queryGroup: Parameters
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+
+expression DataSet = "demo" meta [IsParameterQuery=true, List={"demo"}, DefaultValue=..., Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 725c99d6-6804-444c-a5bd-45286f72c627
+	queryGroup: Parameters
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+
+expression fortuneo_SampleParam = fortuneo_SampleFile meta [IsParameterQuery=true, BinaryIdentifier=fortuneo_SampleFile, Type="Binary", IsParameterQueryRequired=true]
+	lineageTag: b3b0c4bb-efca-4d5f-a54c-5410172cbc08
+	queryGroup: Staging\Fortuneo
+
+	annotation PBI_ResultType = Binary
+
+expression fortuneo_SampleFile =
+		let
+		    Source = Folder.Files(RepoPath & "\" & DataSet & "\data\fortuneo"),
+		    Navigation1 = Source{0}[Content]
+		in
+		    Navigation1
+	lineageTag: be80255a-8bba-4537-ace5-86ec3e6883d1
+	queryGroup: Staging\Fortuneo
+
+	annotation PBI_ResultType = Binary
+
+expression fortuneo_TransformSample =
+		let
+		    Source = Csv.Document(fortuneo_SampleParam,[Delimiter=";", Encoding=1252, QuoteStyle=QuoteStyle.Csv]),
+		    #"Removed Columns" = Table.RemoveColumns(Source, {"Column11"}, MissingField.Ignore),
+		    #"Promoted Headers" = Table.PromoteHeaders(#"Removed Columns", [PromoteAllScalars=true])
+		in
+		    #"Promoted Headers"
+	lineageTag: 514679d9-574f-4310-8bf3-597629b14dbc
+	queryGroup: Staging\Fortuneo
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+
+expression fx_ParseFortuneoFile =
+		let
+		    Source = (fortuneo_SampleParam as binary) => let
+		    Source = Csv.Document(fortuneo_SampleParam,[Delimiter=";", Encoding=1252, QuoteStyle=QuoteStyle.Csv]),
+		    #"Removed Columns" = Table.RemoveColumns(Source, {"Column11"}, MissingField.Ignore),
+		    #"Promoted Headers" = Table.PromoteHeaders(#"Removed Columns", [PromoteAllScalars=true])
+		in
+		    #"Promoted Headers"
+		in
+		    Source
+	mAttributes: [ FunctionQueryBinding = "{""exemplarFormulaName"":""fortuneo_TransformSample""}" ]
+	lineageTag: 7d1c123b-9836-48e0-b128-4947c321e2b9
+	queryGroup: Staging\Fortuneo
+
+	annotation PBI_ResultType = Function
+
+	annotation PBI_NavigationStepName = Navigation
+
+expression tradeRepublic_SampleParam = tradeRepublic_SampleFile meta [IsParameterQuery=true, BinaryIdentifier=tradeRepublic_SampleFile, Type="Binary", IsParameterQueryRequired=true]
+	lineageTag: 0af48ce5-7091-4652-8aff-d68e6d056d28
+	queryGroup: 'Staging\Trade Republic'
+
+	annotation PBI_ResultType = Binary
+
+expression tradeRepublic_SampleFile =
+		let
+		    Source = Folder.Files(RepoPath & "\" & DataSet & "\data\trade_republic"),
+		    Navigation1 = Source{0}[Content]
+		in
+		    Navigation1
+	lineageTag: d7d03421-bc9e-415d-aa35-5ff1d9835ae8
+	queryGroup: 'Staging\Trade Republic'
+
+	annotation PBI_ResultType = Binary
+
+expression tradeRepublic_TransformSample =
+		let
+		    Source = Csv.Document(tradeRepublic_SampleParam,[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true])
+		in
+		    #"Promoted Headers"
+	lineageTag: 2569f71f-6dfa-4edc-8685-cb4964b989fd
+	queryGroup: 'Staging\Trade Republic'
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+
+expression fx_ParseTradeRepublicFile =
+		let
+		    Source = (tradeRepublic_SampleParam as binary) => let
+		    Source = Csv.Document(tradeRepublic_SampleParam,[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true])
+		in
+		    #"Promoted Headers"
+		in
+		    Source
+	mAttributes: [ FunctionQueryBinding = "{""exemplarFormulaName"":""tradeRepublic_TransformSample""}" ]
+	lineageTag: 8f17b327-4f80-4f97-8723-8f2653b57150
+	queryGroup: 'Staging\Trade Republic'
+
+	annotation PBI_ResultType = Function
+
+	annotation PBI_NavigationStepName = Navigation
+
+expression stg_Fortuneo =
+		let
+		    Source = Folder.Files(RepoPath & "\" & DataSet & "\data\fortuneo"),
+		    #"Filtered Hidden Files1" = Table.SelectRows(Source, each [Attributes]?[Hidden]? <> true),
+		    #"Invoke Custom Function1" = Table.AddColumn(#"Filtered Hidden Files1", "Parsed", each fx_ParseFortuneoFile([Content])),
+		    #"Renamed Columns1" = Table.RenameColumns(#"Invoke Custom Function1", {"Name", "Source.Name"}),
+		    #"Removed Other Columns1" = Table.SelectColumns(#"Renamed Columns1", {"Source.Name", "Parsed"}),
+		    #"Expanded Table Column1" = Table.ExpandTableColumn(#"Removed Other Columns1", "Parsed", Table.ColumnNames(fx_ParseFortuneoFile(fortuneo_SampleFile))),
+		    #"Blanks to Null" = Table.ReplaceValue(#"Expanded Table Column1", "", null, Replacer.ReplaceValue, Table.ColumnNames(#"Expanded Table Column1")),
+		    #"Changed Type Text" = Table.TransformColumnTypes(#"Blanks to Null", {{"Source.Name", type text}, {"libellé", type text}, {"Opération", type text}, {"Place", type text}, {"Devise", type text}}),
+		    #"Changed Type with Locale" = Table.TransformColumnTypes(#"Changed Type Text", {{"Qté", type number}, {"Prix d'éxé", type number}, {"Montant brut", type number}, {"Courtage/Prélèvement", type number}, {"Montant net", type number}}, "en-US"),
+		    #"Changed Type with Locale1" = Table.TransformColumnTypes(#"Changed Type with Locale", {{"Date", type date}}, "fr-FR"),
+		    #"Removed Columns" = Table.RemoveColumns(#"Changed Type with Locale1",{"Source.Name"}),
+		    #"Removed Duplicates" = Table.Distinct(#"Removed Columns"),
+		    #"Added Custom" = Table.AddColumn(#"Removed Duplicates", "op_key", each Text.Lower(Text.Trim([Opération]))),
+		    #"Merged Queries" = Table.NestedJoin(#"Added Custom", {"op_key"}, map_FortuneoOperation, {"label"}, "map_FortuneoOperation", JoinKind.LeftOuter),
+		    #"Expanded type" = Table.ExpandTableColumn(#"Merged Queries", "map_FortuneoOperation", {"type"}, {"type"}),
+		    #"Unknown to OTHER" = Table.ReplaceValue(#"Expanded type", null, "OTHER", Replacer.ReplaceValue, {"type"}),
+		    #"Added fee" = Table.AddColumn(#"Unknown to OTHER", "fee", each if [#"Courtage/Prélèvement"] = null then 0 else Number.Abs([#"Courtage/Prélèvement"]), type number),
+		    #"Added broker" = Table.AddColumn(#"Added fee", "broker", each "fortuneo", type text),
+		    #"Added account" = Table.AddColumn(#"Added broker", "account", each "PEA", type text),
+		    #"Added isin" = Table.AddColumn(#"Added account", "isin", each null, type nullable text),
+		    #"Added tax" = Table.AddColumn(#"Added isin", "tax", each 0, type number),
+		    #"Added raw_operation" = Table.AddColumn(#"Added tax", "raw_operation", each Text.Trim([Opération]), type text),
+		    #"Trimmed Text" = Table.TransformColumns(#"Added raw_operation", {{"libellé", Text.Trim, type nullable text}, {"Devise", Text.Trim, type text}}),
+		    #"Renamed Columns" = Table.RenameColumns(#"Trimmed Text", {{"libellé", "name"}, {"Date", "date"}, {"Qté", "quantity"}, {"Prix d'éxé", "price"}, {"Montant net", "amount"}, {"Devise", "currency"}}),
+		    #"Chosen Columns" = Table.SelectColumns(#"Renamed Columns", {"date", "broker", "account", "type", "name", "isin", "quantity", "price", "fee", "tax", "amount", "currency", "raw_operation"}),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Chosen Columns", {{"type", type text}})
+		in
+		    #"Changed Type"
+	lineageTag: 9fd26619-5107-4548-a9f7-6bc4a5d35338
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression stg_TradeRepublic =
+		let
+		    Source = Folder.Files(RepoPath & "\" & DataSet & "\data\trade_republic"),
+		    #"Filtered Hidden Files1" = Table.SelectRows(Source, each [Attributes]?[Hidden]? <> true),
+		    #"Invoke Custom Function1" = Table.AddColumn(#"Filtered Hidden Files1", "Parsed", each fx_ParseTradeRepublicFile([Content])),
+		    #"Renamed Columns1" = Table.RenameColumns(#"Invoke Custom Function1", {"Name", "Source.Name"}),
+		    #"Removed Other Columns1" = Table.SelectColumns(#"Renamed Columns1", {"Source.Name", "Parsed"}),
+		    #"Expanded Table Column1" = Table.ExpandTableColumn(#"Removed Other Columns1", "Parsed", Table.ColumnNames(fx_ParseTradeRepublicFile(tradeRepublic_SampleFile))),
+		    #"Removed datetime" = Table.RemoveColumns(#"Expanded Table Column1", {"datetime"}, MissingField.Ignore),
+		    #"Blanks to Null" = Table.ReplaceValue(#"Removed datetime", "", null, Replacer.ReplaceValue, Table.ColumnNames(#"Removed datetime")),
+		    #"Changed Type Text" = Table.TransformColumnTypes(#"Blanks to Null", {{"Source.Name", type text}, {"transaction_id", type text}, {"account_type", type text}, {"category", type text}, {"type", type text}, {"asset_class", type text}, {"name", type text}, {"symbol", type text}, {"currency", type text}}),
+		    #"Changed Type with Locale" = Table.TransformColumnTypes(#"Changed Type Text", {{"date", type date}, {"shares", type number}, {"price", type number}, {"amount", type number}, {"fee", type number}, {"tax", type number}}, "en-US"),
+		    #"Removed Duplicates" = Table.Distinct(#"Changed Type with Locale", {"transaction_id"}),
+		    #"Merged Queries" = Table.NestedJoin(#"Removed Duplicates", {"type"}, map_TradeRepublicType, {"raw"}, "map_TradeRepublicType", JoinKind.LeftOuter),
+		    #"Added Custom" = Table.AddColumn(#"Merged Queries", "tax_abs", each if [tax] = null then 0 else Number.Abs([tax])),
+		    #"Added Custom1" = Table.AddColumn(#"Added Custom", "amount_net", each [amount] - [tax_abs]),
+		    #"Added Custom2" = Table.AddColumn(#"Added Custom1", "fee_abs", each if [fee] = null then 0 else Number.Abs([fee])),
+		    #"Added Custom3" = Table.AddColumn(#"Added Custom2", "raw_operation", each Text.Trim([type])),
+		    #"Added Custom4" = Table.AddColumn(#"Added Custom3", "broker", each "trade_republic"),
+		    #"Removed Columns" = Table.RemoveColumns(#"Added Custom4",{"category", "type", "amount", "fee", "tax", "Source.Name", "transaction_id", "asset_class"}),
+		    #"Expanded type" = Table.ExpandTableColumn(#"Removed Columns", "map_TradeRepublicType", {"normalized"}, {"normalized"}),
+		    #"Unknown to OTHER" = Table.ReplaceValue(#"Expanded type", null, "OTHER", Replacer.ReplaceValue, {"normalized"}),
+		    #"Renamed Columns" = Table.RenameColumns(#"Unknown to OTHER", {{"normalized", "type"}, {"amount_net", "amount"}, {"fee_abs", "fee"}, {"tax_abs", "tax"}, {"account_type", "account"}, {"symbol", "isin"}, {"shares", "quantity"}}),
+		    #"Chosen Columns" = Table.SelectColumns(#"Renamed Columns", {"date", "broker", "account", "type", "name", "isin", "quantity", "price", "fee", "tax", "amount", "currency", "raw_operation"}),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Chosen Columns", {{"broker", type text}, {"type", type text}, {"fee", type number}, {"tax", type number}, {"amount", type number}, {"raw_operation", type text}})
+		in
+		    #"Changed Type"
+	lineageTag: a0e21e79-c613-41bf-b98f-501669cd0e58
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression map_FortuneoOperation =
+		let
+		    Source = #table(type table [label = text, #"type" = text], {
+		        {"achat comptant", "BUY"},
+		        {"vente comptant", "SELL"},
+		        {"encaissement coupons intérêt/dividende", "DIVIDEND"},
+		        {"versement", "DEPOSIT"},
+		        {"retrait", "WITHDRAWAL"}
+		    })
+		in
+		    Source
+	lineageTag: 14387adc-0dd9-4a0b-ac6e-e7f1e6ae16cc
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression map_TradeRepublicType =
+		let
+		    Source = #table(type table [raw = text, normalized = text], {
+		        {"BUY", "BUY"},
+		        {"SELL", "SELL"},
+		        {"DIVIDEND", "DIVIDEND"},
+		        {"INTEREST_PAYMENT", "INTEREST"},
+		        {"TRANSFER_INBOUND", "DEPOSIT"},
+		        {"TRANSFER_INSTANT_INBOUND", "DEPOSIT"},
+		        {"TRANSFER_OUTBOUND", "WITHDRAWAL"},
+		        {"TRANSFER_INSTANT_OUTBOUND", "WITHDRAWAL"}
+		    })
+		in
+		    Source
+	lineageTag: cc1d7007-3761-4d1b-b3f1-fffe08287dfa
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

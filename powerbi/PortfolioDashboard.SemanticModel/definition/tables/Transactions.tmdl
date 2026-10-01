@@ -1,0 +1,157 @@
+table Transactions
+	lineageTag: af315246-de80-423a-8016-a60617d6407f
+
+	column date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: d6d328f1-9778-4188-a3a3-df1b011545e8
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column broker
+		dataType: string
+		lineageTag: 743da5db-66a4-427d-92f5-50ab9a7a816c
+		summarizeBy: none
+		sourceColumn: broker
+
+		annotation SummarizationSetBy = Automatic
+
+	column account
+		dataType: string
+		lineageTag: c90de35d-fdeb-4340-a02b-4322d33a56ef
+		summarizeBy: none
+		sourceColumn: account
+
+		annotation SummarizationSetBy = Automatic
+
+	column type
+		dataType: string
+		lineageTag: 41fdb3dd-341d-4c12-bfaa-873fdb38474e
+		summarizeBy: none
+		sourceColumn: type
+
+		annotation SummarizationSetBy = Automatic
+
+	column name
+		dataType: string
+		lineageTag: b506db4b-a1bf-4ac8-8136-130d040aaf53
+		summarizeBy: none
+		sourceColumn: name
+
+		annotation SummarizationSetBy = Automatic
+
+	column isin
+		dataType: string
+		lineageTag: bf5bb0d5-5087-414e-b508-e0157b7d574a
+		summarizeBy: none
+		sourceColumn: isin
+
+		annotation SummarizationSetBy = Automatic
+
+	column quantity
+		dataType: double
+		lineageTag: 37fd5ba8-5464-46f0-9bc4-b717748573fb
+		summarizeBy: sum
+		sourceColumn: quantity
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column price
+		dataType: double
+		lineageTag: 3757dff1-12b6-4847-82a7-efa9b60f7b0d
+		summarizeBy: sum
+		sourceColumn: price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column fee
+		dataType: double
+		lineageTag: dc2c6216-d141-438e-a31b-d84c529797c0
+		summarizeBy: sum
+		sourceColumn: fee
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column tax
+		dataType: double
+		lineageTag: 14ce18fe-febc-4adf-b13d-c541a41e6531
+		summarizeBy: sum
+		sourceColumn: tax
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column amount
+		dataType: double
+		lineageTag: 7ae2e4e9-b6e4-40de-994c-b1d38869966e
+		summarizeBy: sum
+		sourceColumn: amount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column currency
+		dataType: string
+		lineageTag: 3b42e71d-014c-47a7-a0dd-96bc41b751ef
+		summarizeBy: none
+		sourceColumn: currency
+
+		annotation SummarizationSetBy = Automatic
+
+	column raw_operation
+		dataType: string
+		lineageTag: 1b1172f2-4163-4887-aed0-d6f2fd395dc0
+		summarizeBy: none
+		sourceColumn: raw_operation
+
+		annotation SummarizationSetBy = Automatic
+
+	column row_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 98355a54-fd4e-4fde-a893-acfcababd9a7
+		summarizeBy: sum
+		sourceColumn: row_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column asset_key
+		dataType: string
+		lineageTag: 277bbd1a-3c00-4378-8de7-138b108cdf35
+		summarizeBy: none
+		sourceColumn: asset_key
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Transactions = m
+		mode: import
+		queryGroup: Facts
+		source =
+				let
+				    Source = Table.Combine({stg_Fortuneo, stg_TradeRepublic}),
+				    #"Sorted Rows" = Table.Sort(Source,{{"date", Order.Ascending}, {"broker", Order.Ascending}}),
+				    #"Added Index" = Table.AddIndexColumn(#"Sorted Rows", "Index", 1, 1, Int64.Type),
+				    #"Renamed Columns" = Table.RenameColumns(#"Added Index",{{"Index", "row_id"}}),
+				    #"Added Custom" = Table.AddColumn(#"Renamed Columns", "asset_key", each if List.Contains({"BUY", "SELL", "DIVIDEND"}, [type])
+				then (if [isin] <> null then [isin] else [name])
+				else null),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"asset_key", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

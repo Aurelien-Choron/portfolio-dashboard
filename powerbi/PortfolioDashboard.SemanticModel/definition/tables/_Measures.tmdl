@@ -1,0 +1,258 @@
+table _Measures
+	lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c01
+
+	/// Last frozen close in the model: the report's "today".
+	measure 'As Of Date' = CALCULATE ( MAX ( Prices[date] ), REMOVEFILTERS () )
+		formatString: dd mmm yyyy
+		displayFolder: Dates
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c02
+
+	/// The date a stock measure is read at: the last day in the current filter, never after As Of Date.
+	measure 'Report Date' = MIN ( MAX ( 'Date'[Date] ), [As Of Date] )
+		formatString: dd mmm yyyy
+		displayFolder: Dates
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c03
+
+	/// Shares held at Report Date: running sum of the replayed qty_delta. One asset at a time.
+	measure 'Quantity Held' =
+			VAR _d = [Report Date]
+			RETURN
+			    IF (
+			        HASONEVALUE ( Asset[asset_key] ),
+			        CALCULATE ( SUM ( Transactions[qty_delta] ), REMOVEFILTERS ( 'Date' ), 'Date'[Date] <= _d )
+			    )
+		formatString: #,0.####
+		displayFolder: Investments\Positions
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c04
+
+	/// Cost of the shares still held at Report Date (weighted average cost, fees included for Fortuneo).
+	measure 'Cost Basis' =
+			VAR _d = [Report Date]
+			RETURN
+			    CALCULATE ( SUM ( Transactions[cost_delta] ), REMOVEFILTERS ( 'Date' ), 'Date'[Date] <= _d )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Positions
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c05
+
+	measure 'Avg Cost' = IF ( HASONEVALUE ( Asset[asset_key] ), DIVIDE ( [Cost Basis], [Quantity Held] ) )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Positions
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c06
+
+	/// Last close on or before Report Date (no price on weekends and holidays).
+	/// Before an asset's first close, its first close; with no price at all, its average cost, as in analytics/kpis.py.
+	measure 'Last Price' =
+			VAR _d = [Report Date]
+			VAR _last = CALCULATE ( MAX ( Prices[date] ), REMOVEFILTERS ( 'Date' ), 'Date'[Date] <= _d )
+			VAR _first = CALCULATE ( MIN ( Prices[date] ), REMOVEFILTERS ( 'Date' ) )
+			VAR _on = COALESCE ( _last, _first )
+			RETURN
+			    IF (
+			        HASONEVALUE ( Asset[asset_key] ),
+			        COALESCE (
+			            CALCULATE ( MAX ( Prices[close_eur] ), REMOVEFILTERS ( 'Date' ), Prices[date] = _on ),
+			            [Avg Cost]
+			        )
+			    )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Positions
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c07
+
+	/// Market value of open positions at Report Date: quantity x last close, asset by asset.
+	measure 'Market Value' =
+			SUMX (
+			    VALUES ( Asset[asset_key] ),
+			    VAR _q = [Quantity Held]
+			    RETURN IF ( _q > 1e-9, _q * [Last Price] )
+			)
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c08
+
+	measure 'Unrealized P&L' = [Market Value] - [Cost Basis]
+		formatString: +\€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c09
+
+	measure 'Unrealized P&L %' = DIVIDE ( [Unrealized P&L], [Cost Basis] )
+		formatString: +0.00%;-0.00%;0.00%
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c0a
+
+	/// Flow: gains locked in by the sells inside the current filter (all of them without a date filter).
+	measure 'Realized P&L' = SUM ( Transactions[realized_pnl] )
+		formatString: +\€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c0b
+
+	/// Flow. Trade Republic dividends are net of withholding tax (amount - tax in the ETL).
+	measure Dividends = CALCULATE ( SUM ( Transactions[amount] ), KEEPFILTERS ( Transactions[type] = "DIVIDEND" ) )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c0c
+
+	/// Flow: broker fees (brokerage commissions), not fund TER.
+	measure Fees = SUM ( Transactions[fee] )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c0d
+
+	measure Deposits = CALCULATE ( SUM ( Transactions[amount] ), KEEPFILTERS ( Transactions[type] = "DEPOSIT" ) )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Cash flows
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c0e
+
+	measure Withdrawals = CALCULATE ( SUMX ( Transactions, ABS ( Transactions[amount] ) ), KEEPFILTERS ( Transactions[type] = "WITHDRAWAL" ) )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Cash flows
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c0f
+
+	/// Net cash put into investments up to Report Date: purchases minus sale proceeds (analytics/performance.py).
+	measure 'Invested Capital' =
+			VAR _d = [Report Date]
+			RETURN
+			    CALCULATE (
+			        SUMX (
+			            Transactions,
+			            SWITCH (
+			                Transactions[type],
+			                "BUY", ABS ( Transactions[amount] ),
+			                "SELL", - ABS ( Transactions[amount] )
+			            )
+			        ),
+			        REMOVEFILTERS ( 'Date' ),
+			        'Date'[Date] <= _d
+			    )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Cash flows
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c10
+
+	measure Positions = COUNTROWS ( FILTER ( VALUES ( Asset[asset_key] ), [Quantity Held] > 1e-9 ) )
+		formatString: 0
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c11
+
+	measure 'Transaction Count' = COUNTROWS ( Transactions )
+		formatString: 0
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c12
+
+	/// Yearly cost of fund fees at today's value: market value x TER, fund by fund.
+	measure 'Annual Fund Fees' = SUMX ( Asset, [Market Value] * Asset[ter_pct] / 100 )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c13
+
+	measure 'Total Bought' = CALCULATE ( SUMX ( Transactions, ABS ( Transactions[amount] ) ), KEEPFILTERS ( Transactions[type] = "BUY" ) )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Performance
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c14
+
+	measure 'Total Sold' = CALCULATE ( SUMX ( Transactions, ABS ( Transactions[amount] ) ), KEEPFILTERS ( Transactions[type] = "SELL" ) )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Performance
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c15
+
+	/// Realized + unrealized + dividends (analytics/performance_by_asset.py).
+	measure 'Total Gain' = [Realized P&L] + [Unrealized P&L] + [Dividends]
+		formatString: +\€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Performance
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c16
+
+	/// Total gain over everything ever bought, closed round trips included.
+	measure 'Total Return %' = DIVIDE ( [Total Gain], [Total Bought] )
+		formatString: +0.00%;-0.00%;0.00%
+		displayFolder: Investments\Performance
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c17
+
+	measure 'First Buy Date' = CALCULATE ( MIN ( Transactions[date] ), KEEPFILTERS ( Transactions[type] = "BUY" ), REMOVEFILTERS ( 'Date' ) )
+		formatString: dd mmm yyyy
+		displayFolder: Investments\Performance
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c18
+
+	/// Months from the first purchase to As Of Date (30.4368 days a month, as in the app).
+	measure 'Months Held' =
+			VAR _first = [First Buy Date]
+			RETURN IF ( NOT ISBLANK ( _first ), MAX ( DATEDIFF ( _first, [As Of Date], DAY ), 1 ) / 30.4368 )
+		formatString: 0.0
+		displayFolder: Investments\Performance
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c19
+
+	/// Simple average, not compounded: total return / months held.
+	measure 'Monthly Avg Return %' = DIVIDE ( [Total Return %], [Months Held] )
+		formatString: +0.00%;-0.00%;0.00%
+		displayFolder: Investments\Performance
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c1a
+
+	measure 'Monthly Avg Gain' = DIVIDE ( [Total Gain], [Months Held] )
+		formatString: +\€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments\Performance
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c1b
+
+	/// Market value spread over countries or sectors by each fund's weights (Exposure bridge).
+	/// Needs exactly one Exposure[dimension] in context, otherwise a fund would count twice.
+	measure 'Exposure Value' =
+			IF (
+			    HASONEVALUE ( Exposure[dimension] ),
+			    SUMX (
+			        VALUES ( Exposure[asset_key] ),
+			        VAR _key = Exposure[asset_key]
+			        VAR _pct = CALCULATE ( SUM ( Exposure[pct] ) )
+			        VAR _value = CALCULATE ( [Market Value], TREATAS ( { _key }, Asset[asset_key] ) )
+			        RETURN _pct / 100 * _value
+			    )
+			)
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Investments
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c1c
+
+	/// Balances of the savings accounts (entered by hand in accounts.json, no history).
+	measure Savings = SUM ( Account[balance] )
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Net Worth
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c1d
+
+	measure 'Net Worth' = [Market Value] + [Savings]
+		formatString: \€#,0.00;-\€#,0.00;\€#,0.00
+		displayFolder: Net Worth
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c1e
+
+	/// Share of the whole net worth, whatever the visual is split by.
+	measure 'Share of Net Worth' =
+			DIVIDE (
+			    [Net Worth],
+			    CALCULATE (
+			        [Net Worth],
+			        REMOVEFILTERS ( AssetClass ),
+			        REMOVEFILTERS ( Institution ),
+			        REMOVEFILTERS ( Broker ),
+			        REMOVEFILTERS ( Asset ),
+			        REMOVEFILTERS ( Account )
+			    )
+			)
+		formatString: 0.0%
+		displayFolder: Net Worth
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c1f
+
+	/// Invested share of net worth (the rest is guaranteed savings).
+	measure 'Invested Share' = DIVIDE ( [Market Value], [Net Worth] )
+		formatString: 0.0%
+		displayFolder: Net Worth
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c20
+
+	column Value
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c21
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = User
+
+	partition _Measures = calculated
+		mode: import
+		source = ROW ( "Value", 0 )
+
+	annotation PBI_Id = 6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c22

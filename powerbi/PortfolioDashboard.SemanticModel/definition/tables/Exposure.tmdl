@@ -2,6 +2,7 @@ table Exposure
 	lineageTag: da950402-d716-4190-a833-39183f0669aa
 
 	column asset_key
+		isHidden
 		dataType: string
 		lineageTag: c2c89d72-1c45-4f4e-89d4-c19b725697e7
 		summarizeBy: none

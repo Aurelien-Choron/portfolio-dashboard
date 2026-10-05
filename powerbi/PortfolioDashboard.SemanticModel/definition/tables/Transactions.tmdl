@@ -65,7 +65,7 @@ table Transactions
 	column price
 		dataType: double
 		lineageTag: 3757dff1-12b6-4847-82a7-efa9b60f7b0d
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: price
 
 		annotation SummarizationSetBy = Automatic
@@ -122,12 +122,13 @@ table Transactions
 		dataType: int64
 		formatString: 0
 		lineageTag: 98355a54-fd4e-4fde-a893-acfcababd9a7
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: row_id
 
 		annotation SummarizationSetBy = Automatic
 
 	column asset_key
+		isHidden
 		dataType: string
 		lineageTag: 277bbd1a-3c00-4378-8de7-138b108cdf35
 		summarizeBy: none
@@ -135,21 +136,52 @@ table Transactions
 
 		annotation SummarizationSetBy = Automatic
 
+	column qty_delta
+		dataType: double
+		isHidden
+		lineageTag: 049cbb87-a9af-4627-b2cc-260e7d68fcd7
+		summarizeBy: none
+		sourceColumn: qty_delta
+
+		annotation SummarizationSetBy = User
+
+	column cost_delta
+		dataType: double
+		isHidden
+		lineageTag: fa445536-8b13-4131-81a3-bad7cfbb0ea9
+		summarizeBy: none
+		sourceColumn: cost_delta
+
+		annotation SummarizationSetBy = User
+
+	column realized_pnl
+		dataType: double
+		isHidden
+		lineageTag: d81a9f6e-28f5-4f90-b4ff-4a1f83f762db
+		summarizeBy: none
+		sourceColumn: realized_pnl
+
+		annotation SummarizationSetBy = User
+
+	column avg_cost_after
+		dataType: double
+		isHidden
+		lineageTag: df872e98-72a2-459d-82ac-a59b5f76edfb
+		summarizeBy: none
+		sourceColumn: avg_cost_after
+
+		annotation SummarizationSetBy = User
+
 	partition Transactions = m
 		mode: import
 		queryGroup: Facts
 		source =
 				let
-				    Source = Table.Combine({stg_Fortuneo, stg_TradeRepublic}),
-				    #"Sorted Rows" = Table.Sort(Source,{{"date", Order.Ascending}, {"broker", Order.Ascending}}),
-				    #"Added Index" = Table.AddIndexColumn(#"Sorted Rows", "Index", 1, 1, Int64.Type),
-				    #"Renamed Columns" = Table.RenameColumns(#"Added Index",{{"Index", "row_id"}}),
-				    #"Added Custom" = Table.AddColumn(#"Renamed Columns", "asset_key", each if List.Contains({"BUY", "SELL", "DIVIDEND"}, [type])
-				then (if [isin] <> null then [isin] else [name])
-				else null),
-				    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"asset_key", type text}})
+				    Source = Table.NestedJoin(stg_Journal, {"row_id"}, CostBasisReplay, {"row_id"}, "Replay", JoinKind.LeftOuter),
+				    #"Expanded Replay" = Table.ExpandTableColumn(Source, "Replay", {"qty_delta", "cost_delta", "realized_pnl", "avg_cost_after"}),
+				    #"Sorted Rows" = Table.Sort(#"Expanded Replay", {{"row_id", Order.Ascending}})
 				in
-				    #"Changed Type"
+				    #"Sorted Rows"
 
 	annotation PBI_NavigationStepName = Navigation
 

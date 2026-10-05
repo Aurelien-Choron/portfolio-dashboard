@@ -1,0 +1,36 @@
+table Institution
+	lineageTag: 36029a64-07c0-43d3-a514-62437c5f03da
+
+	column institution
+		dataType: string
+		lineageTag: a38324a5-cb6a-41a9-b54e-b0d73091610b
+		summarizeBy: none
+		sourceColumn: institution
+
+		annotation SummarizationSetBy = Automatic
+
+	column kind
+		dataType: string
+		lineageTag: 4c6e1d95-2ae0-430a-9966-dc0c1c329bdc
+		summarizeBy: none
+		sourceColumn: kind
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Institution = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				    // Where the money sits: brokers and banks in one list, so the Net Worth page
+				    // can split investments and savings by institution on a single axis.
+				    Brokers = Table.AddColumn(Table.RenameColumns(Table.SelectColumns(Broker, {"label"}), {{"label", "institution"}}), "kind", each "Broker", type text),
+				    Banks = Table.AddColumn(Table.RenameColumns(Table.SelectColumns(Account, {"bank"}), {{"bank", "institution"}}), "kind", each "Bank", type text),
+				    Combined = Table.Distinct(Table.Combine({Brokers, Banks}), {"institution"}),
+				    Typed = Table.TransformColumnTypes(Combined, {{"institution", type text}, {"kind", type text}})
+				in
+				    Typed
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table

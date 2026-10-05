@@ -1,0 +1,40 @@
+relationship 4e2c68c8-4c89-4d96-b574-0737dc3b89c1
+	fromColumn: Transactions.asset_key
+	toColumn: Asset.asset_key
+
+relationship b8f10239-a6d2-4cc5-9689-75b0a3995158
+	fromColumn: Prices.asset_key
+	toColumn: Asset.asset_key
+
+relationship faa7d043-e3e1-4108-8480-6aeaf3093255
+	fromColumn: Exposure.asset_key
+	toColumn: Asset.asset_key
+
+relationship e5f66de2-bfc8-4e05-a926-c8d6d4b8acee
+	fromColumn: Transactions.date
+	toColumn: Date.Date
+
+relationship 21758d2a-fb5c-47fe-bed2-78836c30531a
+	fromColumn: Prices.date
+	toColumn: Date.Date
+
+relationship fde389f0-dfe5-4dc3-be36-478a718fe1d5
+	fromColumn: Asset.broker
+	toColumn: Broker.broker
+
+relationship a4de974c-04ac-465e-903e-ae27dcb9721a
+	fromColumn: Asset.asset_class
+	toColumn: AssetClass.asset_class
+
+relationship 21ed2d51-7ad4-42fb-aadc-af7ea46809ee
+	fromColumn: Account.asset_class
+	toColumn: AssetClass.asset_class
+
+relationship d8fcf0ab-23c4-45ab-bad4-0ad0d4d23296
+	fromColumn: Broker.label
+	toColumn: Institution.institution
+
+relationship 2ce682b6-7eda-420d-8209-89ea37e7b5d0
+	fromColumn: Account.bank
+	toColumn: Institution.institution
+

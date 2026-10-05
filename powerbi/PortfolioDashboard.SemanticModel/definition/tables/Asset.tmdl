@@ -26,6 +26,7 @@ table Asset
 		annotation SummarizationSetBy = Automatic
 
 	column broker
+		isHidden
 		dataType: string
 		lineageTag: 59e70c89-3b14-4ccb-950f-ca7e91791b0f
 		summarizeBy: none
@@ -52,6 +53,7 @@ table Asset
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	column asset_class
+		isHidden
 		dataType: string
 		lineageTag: 8047e040-a6ad-41c1-b1ef-fc6445789e30
 		summarizeBy: none
@@ -81,7 +83,7 @@ table Asset
 		queryGroup: Dimensions
 		source =
 				let
-				    Source = Table.SelectRows(Transactions, each [asset_key] <> null),
+				    Source = Table.SelectRows(stg_Journal, each [asset_key] <> null),
 				    #"Grouped Rows" = Table.Group(Source, {"asset_key"}, {
 				        {"name", each List.First(List.RemoveNulls([name])), type nullable text},
 				        {"isin", each List.First(List.RemoveNulls([isin])), type nullable text},

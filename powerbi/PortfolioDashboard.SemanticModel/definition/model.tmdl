@@ -36,7 +36,7 @@ annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode"]
 
-annotation PBI_QueryOrder = ["RepoPath","DataSet","stg_Fortuneo","fortuneo_SampleFile","fortuneo_SampleParam","fortuneo_TransformSample","fx_ParseFortuneoFile","stg_TradeRepublic","tradeRepublic_SampleFile","tradeRepublic_SampleParam","tradeRepublic_TransformSample","fx_ParseTradeRepublicFile","map_FortuneoOperation","map_TradeRepublicType","Transactions","AssetClass","stg_Strategy","stg_BrokerEnvelope","stg_Envelope","fx_ConfigMap","Broker","Prices","Asset","Exposure","Account","StrategyTarget"]
+annotation PBI_QueryOrder = ["RepoPath","DataSet","stg_Fortuneo","fortuneo_SampleFile","fortuneo_SampleParam","fortuneo_TransformSample","fx_ParseFortuneoFile","stg_TradeRepublic","tradeRepublic_SampleFile","tradeRepublic_SampleParam","tradeRepublic_TransformSample","fx_ParseTradeRepublicFile","map_FortuneoOperation","map_TradeRepublicType","stg_Journal","CostBasisReplay","Transactions","AssetClass","stg_Strategy","stg_BrokerEnvelope","stg_Envelope","fx_ConfigMap","Broker","Prices","Asset","Exposure","Account","StrategyTarget","Institution"]
 
 ref table Transactions
 ref table AssetClass
@@ -46,6 +46,9 @@ ref table Asset
 ref table Exposure
 ref table Account
 ref table StrategyTarget
+ref table Date
+ref table Institution
+ref table _Measures
 
 ref cultureInfo en-US
 

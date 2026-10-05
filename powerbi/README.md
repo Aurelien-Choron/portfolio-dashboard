@@ -9,7 +9,7 @@ The report is saved as a **Power BI Project (PBIP)**: the semantic model is stor
 TMDL and the report as PBIR, both plain text. That makes the Power Query code and
 every DAX measure readable and diffable right here on GitHub.
 
-## What is here so far
+## Files
 
 | Path | What it is |
 |---|---|
@@ -31,6 +31,70 @@ python scripts/export_powerbi.py   # refuses to run on anything but demo/
 ```
 
 Note that this re-freezes prices at today's date, so the answer key moves with it.
+
+## The model
+
+| Dimension (one side) | Filters (many side) |
+|---|---|
+| `Date` | `Transactions`, `Prices` |
+| `Asset` | `Transactions`, `Prices`, `Exposure` |
+| `Broker` | `Asset` |
+| `AssetClass` | `Asset`, `Account` |
+| `Institution` | `Broker`, `Account` |
+
+- **Facts.** `Transactions` is the normalized journal. `Prices` holds the daily closes.
+- **Dimensions.** `Asset`, `Broker`, `AssetClass`, `Institution`, `Account`,
+  `StrategyTarget` and a DAX `Date` table.
+- **Relationships.** All are one-to-many and filter in one direction only.
+- **Bridge.** `Exposure` splits a fund over countries and sectors with weights,
+  since one cell cannot hold ten countries.
+
+**The weighted-average cost is computed in Power Query, not DAX.** A sale's realized
+gain depends on the average cost at that moment, which depends on every earlier trade.
+That is a running state, and a DAX calculated column cannot read the row before it.
+
+`CostBasisReplay` therefore folds each asset's trades with `List.Accumulate`, and tags
+every row with what it did to its position:
+
+- `qty_delta`;
+- `cost_delta`;
+- `realized_pnl`.
+
+From there, every measure is a sum:
+
+- quantity held at a date = running sum of `qty_delta`;
+- cost basis = running sum of `cost_delta`;
+- market value = quantity × last close on or before that date.
+
+**Stock or flow.** Measures that describe a position, such as market value, cost basis
+or invested capital, are read at the last day of the current filter. Measures that
+count events, such as dividends, fees or realized P&L, are summed over the period.
+That way the same measures serve both a KPI card and a monthly chart.
+
+### Reconciliation
+
+On the frozen prices, the measures match `expected_values.json` to the cent:
+
+| Figure | Python app | Power BI |
+|---|---|---|
+| Market value | 19,856.09 | 19,856.09 |
+| Cost basis | 15,226.37 | 15,226.37 |
+| Unrealized P&L | +4,629.72 (+30.41 %) | +4,629.72 (+30.41 %) |
+| Realized P&L | −224.19 | −224.19 |
+| Dividends | 119.17 | 119.17 |
+| Annual fund fees (TER) | 49.35 | 49.35 |
+| Net worth | 46,056.09 | 46,056.09 |
+
+The same holds for:
+
+- the per-asset table: quantity, average cost, total return, monthly average;
+- the split by broker, by asset class, by institution and by country;
+- the month-end value curve.
+
+**Data-quality note.** On Fortuneo, the net amount of a purchase *includes* brokerage.
+On Trade Republic, the 1 € fee sits *outside* the amount. The app keeps this asymmetry
+in the cost basis, and so does the report, because the goal is parity. A silent fix
+would make the two disagree without anyone knowing why.
 
 ## Opening the report
 

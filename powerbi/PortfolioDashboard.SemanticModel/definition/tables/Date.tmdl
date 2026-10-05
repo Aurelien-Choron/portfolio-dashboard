@@ -1,0 +1,85 @@
+table Date
+	lineageTag: 23ef1636-2db7-47ab-b312-dfde0dac681d
+	dataCategory: Time
+
+	column Date
+		dataType: dateTime
+		isKey
+		formatString: dd mmm yyyy
+		lineageTag: 35a717ca-b328-461b-90e5-a200663d7b5b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: f1d79ad4-4587-4c28-9ce0-2003df2b435a
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Year]
+
+		annotation SummarizationSetBy = User
+
+	column 'Month Number'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 6877620a-24f1-47d0-a1fd-336ea74b4f8e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month Number]
+
+		annotation SummarizationSetBy = User
+
+	column Month
+		dataType: string
+		lineageTag: 8166d0a2-06c5-4279-8fef-404f6c9b74c7
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month]
+		sortByColumn: 'Year Month'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Year Month'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: f451c590-ae8c-4b80-ba2a-e8f28d77a94c
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Year Month]
+
+		annotation SummarizationSetBy = User
+
+	column 'Month Start'
+		dataType: dateTime
+		formatString: mmm yyyy
+		lineageTag: a9c5abb2-3179-4a66-89ff-5e8efd8a787b
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month Start]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Date = calculated
+		mode: import
+		source =
+				-- One row per day, from the first trade or price to the last frozen close.
+				-- No future dates: "today" for this report is the last close (as of).
+				VAR _start = MIN ( MIN ( Transactions[date] ), MIN ( Prices[date] ) )
+				VAR _end = MAX ( Prices[date] )
+				RETURN
+				    ADDCOLUMNS (
+				        CALENDAR ( _start, _end ),
+				        "Year", YEAR ( [Date] ),
+				        "Month Number", MONTH ( [Date] ),
+				        "Month", FORMAT ( [Date], "mmm yyyy" ),
+				        "Year Month", YEAR ( [Date] ) * 100 + MONTH ( [Date] ),
+				        "Month Start", DATE ( YEAR ( [Date] ), MONTH ( [Date] ), 1 )
+				    )
+
+	annotation PBI_Id = c1cc74ba-e556-4cca-aa78-a0e0330cb71a

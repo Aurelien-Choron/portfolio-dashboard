@@ -277,3 +277,69 @@ expression fx_ConfigMap =
 
 	annotation PBI_ResultType = Function
 
+expression stg_Journal =
+		let
+		    Source = Table.Combine({stg_Fortuneo, stg_TradeRepublic}),
+		    #"Sorted Rows" = Table.Sort(Source,{{"date", Order.Ascending}, {"broker", Order.Ascending}}),
+		    #"Added Index" = Table.AddIndexColumn(#"Sorted Rows", "Index", 1, 1, Int64.Type),
+		    #"Renamed Columns" = Table.RenameColumns(#"Added Index",{{"Index", "row_id"}}),
+		    #"Added Custom" = Table.AddColumn(#"Renamed Columns", "asset_key", each if List.Contains({"BUY", "SELL", "DIVIDEND"}, [type])
+		then (if [isin] <> null then [isin] else [name])
+		else null),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Added Custom",{{"asset_key", type text}})
+		in
+		    #"Changed Type"
+	lineageTag: f1ade19f-4532-4c70-b868-a97ea6ae7aac
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression CostBasisReplay =
+		let
+		    // Weighted-average cost, replayed trade by trade (analytics/positions.py).
+		    // Each BUY/SELL row comes out with what it did to its position, so DAX only
+		    // has to sum: quantity held = running sum of qty_delta, and so on.
+		    Trades = Table.SelectRows(stg_Journal, each [type] = "BUY" or [type] = "SELL"),
+		    Replay = (rows as list) as list => List.Accumulate(
+		        rows,
+		        [qty = 0, cost = 0, out = {}],
+		        (state, r) =>
+		            let
+		                isBuy = r[type] = "BUY",
+		                q = Number.Abs(r[quantity]),
+		                cash = Number.Abs(r[amount]),
+		                avgBefore = if state[qty] > 1e-9 then state[cost] / state[qty] else 0,
+		                removed = if isBuy then 0 else avgBefore * q,
+		                qtyRaw = if isBuy then state[qty] + q else state[qty] - q,
+		                costRaw = if isBuy then state[cost] + cash else state[cost] - removed,
+		                // a position sold down to dust is closed: quantity and cost back to 0
+		                closed = qtyRaw < 1e-6,
+		                qtyAfter = if closed then 0 else qtyRaw,
+		                costAfter = if closed then 0 else costRaw,
+		                row = [
+		                    row_id = r[row_id],
+		                    qty_delta = qtyAfter - state[qty],
+		                    cost_delta = costAfter - state[cost],
+		                    realized_pnl = if isBuy then 0 else cash - removed,
+		                    avg_cost_after = if qtyAfter > 1e-9 then costAfter / qtyAfter else 0
+		                ]
+		            in
+		                [qty = qtyAfter, cost = costAfter, out = state[out] & {row}]
+		    )[out],
+		    // sorted inside each group: Power Query does not promise to keep an upstream sort
+		    Grouped = Table.Group(Trades, {"asset_key"}, {{"Replayed", each Table.FromRecords(
+		        Replay(Table.ToRecords(Table.Sort(_, {{"date", Order.Ascending}, {"row_id", Order.Ascending}}))))}}),
+		    Expanded = Table.ExpandTableColumn(Table.RemoveColumns(Grouped, {"asset_key"}), "Replayed",
+		        {"row_id", "qty_delta", "cost_delta", "realized_pnl", "avg_cost_after"}),
+		    Typed = Table.TransformColumnTypes(Expanded, {{"row_id", Int64.Type}, {"qty_delta", type number},
+		        {"cost_delta", type number}, {"realized_pnl", type number}, {"avg_cost_after", type number}})
+		in
+		    Typed
+	lineageTag: bd32a3e6-14a6-4b9d-b8bc-d1308bf1716c
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table

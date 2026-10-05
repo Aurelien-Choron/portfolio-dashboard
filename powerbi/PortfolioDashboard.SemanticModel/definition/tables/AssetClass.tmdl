@@ -10,6 +10,7 @@ table AssetClass
 		annotation SummarizationSetBy = Automatic
 
 	column label
+		sortByColumn: sort_order
 		dataType: string
 		lineageTag: fb6a89bd-a329-461d-8c11-50db195e878f
 		summarizeBy: none
@@ -18,10 +19,11 @@ table AssetClass
 		annotation SummarizationSetBy = Automatic
 
 	column sort_order
+		isHidden
 		dataType: int64
 		formatString: 0
 		lineageTag: d6ed00f8-d332-4ec3-8d1e-ff14b399dbdb
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: sort_order
 
 		annotation SummarizationSetBy = Automatic

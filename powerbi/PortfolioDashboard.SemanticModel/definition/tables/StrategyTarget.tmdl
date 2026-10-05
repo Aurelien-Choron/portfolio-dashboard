@@ -1,0 +1,79 @@
+table StrategyTarget
+	lineageTag: ebb9ac11-91b8-43f3-82c1-6121fca95107
+
+	column key
+		dataType: string
+		lineageTag: 7e8f14ff-380b-4ee0-a02c-9bd5a3e89e2f
+		summarizeBy: none
+		sourceColumn: key
+
+		annotation SummarizationSetBy = Automatic
+
+	column label
+		dataType: string
+		lineageTag: 3a5e492f-698d-41f6-a2cb-0fd798dd2204
+		summarizeBy: none
+		sourceColumn: label
+
+		annotation SummarizationSetBy = Automatic
+
+	column target_pct
+		dataType: double
+		lineageTag: 1972b262-585b-4350-9a5c-073a8a1fb81a
+		summarizeBy: sum
+		sourceColumn: target_pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column band_pt
+		dataType: double
+		lineageTag: b257a737-1e4b-4934-bd56-81f905f8e386
+		summarizeBy: none
+		sourceColumn: band_pt
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column envelope
+		dataType: string
+		lineageTag: 71260a07-65ca-4df8-b13e-f8ac19c2af55
+		summarizeBy: none
+		sourceColumn: envelope
+
+		annotation SummarizationSetBy = Automatic
+
+	column asset_class
+		dataType: string
+		lineageTag: 2b4c0578-1bf8-4918-8d12-cc38ad4718be
+		summarizeBy: none
+		sourceColumn: asset_class
+
+		annotation SummarizationSetBy = Automatic
+
+	column role
+		dataType: string
+		lineageTag: 5ada8763-924d-484a-a3e1-004bdedb8d30
+		summarizeBy: none
+		sourceColumn: role
+
+		annotation SummarizationSetBy = Automatic
+
+	partition StrategyTarget = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				    Source = Table.FromRecords(stg_Strategy[targets], {"key", "label", "target_pct", "band_pt", "envelope", "asset_class", "role"}, MissingField.UseNull),
+				    #"Changed Type" = Table.TransformColumnTypes(Source, {{"key", type text}, {"label", type text},
+				        {"target_pct", type number}, {"band_pt", type number}, {"envelope", type text},
+				        {"asset_class", type text}, {"role", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

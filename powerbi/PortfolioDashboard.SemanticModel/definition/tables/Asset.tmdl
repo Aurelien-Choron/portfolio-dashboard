@@ -1,0 +1,110 @@
+table Asset
+	lineageTag: f2d99ba0-6762-48a2-9037-0a39f6039e35
+
+	column asset_key
+		dataType: string
+		lineageTag: c98668a4-3737-4111-8cae-9dfe626b2a3a
+		summarizeBy: none
+		sourceColumn: asset_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column name
+		dataType: string
+		lineageTag: a0e9088a-fd6c-4a4b-8ae7-9bcf6700e73f
+		summarizeBy: none
+		sourceColumn: name
+
+		annotation SummarizationSetBy = Automatic
+
+	column isin
+		dataType: string
+		lineageTag: c96564ac-1de2-47aa-a416-d6ac09971752
+		summarizeBy: none
+		sourceColumn: isin
+
+		annotation SummarizationSetBy = Automatic
+
+	column broker
+		dataType: string
+		lineageTag: 59e70c89-3b14-4ccb-950f-ca7e91791b0f
+		summarizeBy: none
+		sourceColumn: broker
+
+		annotation SummarizationSetBy = Automatic
+
+	column ticker
+		dataType: string
+		lineageTag: 3c2c40a6-b07b-4c92-b9de-dfc494eef560
+		summarizeBy: none
+		sourceColumn: ticker
+
+		annotation SummarizationSetBy = Automatic
+
+	column ter_pct
+		dataType: double
+		lineageTag: 23ef91bb-40f6-482c-a1e3-c044d7c52778
+		summarizeBy: none
+		sourceColumn: ter_pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column asset_class
+		dataType: string
+		lineageTag: 8047e040-a6ad-41c1-b1ef-fc6445789e30
+		summarizeBy: none
+		sourceColumn: asset_class
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_trading_sleeve
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 501e9bb4-b72f-4abf-abf8-09917fb5884c
+		summarizeBy: none
+		sourceColumn: is_trading_sleeve
+
+		annotation SummarizationSetBy = Automatic
+
+	column strategy_line
+		dataType: string
+		lineageTag: 46814471-d0b6-4ba2-8ade-5dee4162fbb8
+		summarizeBy: none
+		sourceColumn: strategy_line
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Asset = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				    Source = Table.SelectRows(Transactions, each [asset_key] <> null),
+				    #"Grouped Rows" = Table.Group(Source, {"asset_key"}, {
+				        {"name", each List.First(List.RemoveNulls([name])), type nullable text},
+				        {"isin", each List.First(List.RemoveNulls([isin])), type nullable text},
+				        {"broker", each List.First([broker]), type text}}),
+				    #"Merged Ticker" = Table.NestedJoin(#"Grouped Rows", {"asset_key"}, fx_ConfigMap("tickers.json", "ticker"), {"asset_key"}, "Ticker", JoinKind.LeftOuter),
+				    #"Expanded Ticker" = Table.ExpandTableColumn(#"Merged Ticker", "Ticker", {"ticker"}, {"ticker"}),
+				    #"Merged Ter" = Table.NestedJoin(#"Expanded Ticker", {"asset_key"}, fx_ConfigMap("fees.json", "ter_pct"), {"asset_key"}, "Ter", JoinKind.LeftOuter),
+				    #"Expanded Ter" = Table.ExpandTableColumn(#"Merged Ter", "Ter", {"ter_pct"}, {"ter_pct"}),
+				    #"Merged Class" = Table.NestedJoin(#"Expanded Ter", {"asset_key"}, fx_ConfigMap("asset_classes.json", "asset_class"), {"asset_key"}, "Class", JoinKind.LeftOuter),
+				    #"Expanded Class" = Table.ExpandTableColumn(#"Merged Class", "Class", {"asset_class"}, {"asset_class"}),
+				    #"Default Class" = Table.ReplaceValue(#"Expanded Class", null, "Actions", Replacer.ReplaceValue, {"asset_class"}),
+				    SleeveMembers = stg_Strategy[trading_sleeve][members],
+				    TargetKeys = List.Transform(stg_Strategy[targets], each [key]),
+				    #"Added Sleeve" = Table.AddColumn(#"Default Class", "is_trading_sleeve", each List.Contains(SleeveMembers, [asset_key]), type logical),
+				    #"Added Strategy Line" = Table.AddColumn(#"Added Sleeve", "strategy_line", each
+				        if [is_trading_sleeve] then "__TRADING__"
+				        else if List.Contains(TargetKeys, [asset_key]) then [asset_key]
+				        else null, type nullable text),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Added Strategy Line", {{"ticker", type text}, {"ter_pct", type number}, {"asset_class", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

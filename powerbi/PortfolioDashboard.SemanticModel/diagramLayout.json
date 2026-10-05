@@ -10,13 +10,104 @@
       "nodes": [
         {
           "location": {
-            "x": 0,
+            "x": 2272,
             "y": 0
           },
           "nodeIndex": "Transactions",
           "nodeLineageTag": "af315246-de80-423a-8016-a60617d6407f",
           "size": {
             "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1704,
+            "y": 50
+          },
+          "nodeIndex": "AssetClass",
+          "nodeLineageTag": "ccbda844-4145-45b1-a049-7b9269bd0e58",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 0,
+            "y": 14
+          },
+          "nodeIndex": "Account",
+          "nodeLineageTag": "0c5d56c9-3586-4e8a-a162-eca81ca60008",
+          "size": {
+            "height": 272,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 284,
+            "y": 2
+          },
+          "nodeIndex": "Asset",
+          "nodeLineageTag": "f2d99ba0-6762-48a2-9037-0a39f6039e35",
+          "size": {
+            "height": 296,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 568,
+            "y": 0
+          },
+          "nodeIndex": "Broker",
+          "nodeLineageTag": "49f606ed-66e4-4263-81d7-22ddadc48267",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 852,
+            "y": 62
+          },
+          "nodeIndex": "Exposure",
+          "nodeLineageTag": "da950402-d716-4190-a833-39183f0669aa",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1136,
+            "y": 74
+          },
+          "nodeIndex": "Prices",
+          "nodeLineageTag": "42ea224e-fa87-4f97-a312-b654358e6bb0",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1420,
+            "y": 26
+          },
+          "nodeIndex": "StrategyTarget",
+          "nodeLineageTag": "ebb9ac11-91b8-43f3-82c1-6121fca95107",
+          "size": {
+            "height": 248,
             "width": 234
           },
           "zIndex": 0

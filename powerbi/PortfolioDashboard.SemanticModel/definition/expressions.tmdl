@@ -220,3 +220,60 @@ expression map_TradeRepublicType =
 
 	annotation PBI_ResultType = Table
 
+expression stg_Strategy =
+		let
+		    Source = Json.Document(File.Contents(RepoPath & "\" & DataSet & "\config\strategy.json"))
+		in
+		    Source
+	lineageTag: acb2bdad-2528-4ccf-befe-7888335f7b8c
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Record
+
+expression stg_BrokerEnvelope =
+		let
+		    Source = stg_Strategy[broker_envelopes],
+		    #"Converted to Table" = Record.ToTable(Source),
+		    #"Renamed Columns" = Table.RenameColumns(#"Converted to Table", {{"Name", "broker"}, {"Value", "envelope"}})
+		in
+		    #"Renamed Columns"
+	lineageTag: cd2b62d4-7e53-4009-81a7-0ec15a06a878
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression stg_Envelope =
+		let
+		    Source = stg_Strategy[envelopes],
+		    #"Converted to Table" = Record.ToTable(Source),
+		    #"Renamed Columns" = Table.RenameColumns(#"Converted to Table", {{"Name", "envelope"}}),
+		    #"Expanded Value" = Table.ExpandRecordColumn(#"Renamed Columns", "Value",
+		        {"label", "tax_pct", "ceiling_eur", "priority"},
+		        {"envelope_label", "tax_pct", "ceiling_eur", "envelope_priority"})
+		in
+		    #"Expanded Value"
+	lineageTag: 22efb024-aecd-4a30-bc4b-43bc2d6a2642
+	queryGroup: Staging
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression fx_ConfigMap =
+		(fileName as text, valueColumn as text) as table =>
+		let
+		    Raw = Json.Document(File.Contents(RepoPath & "\" & DataSet & "\config\" & fileName)),
+		    AsTable = Record.ToTable(Raw),
+		    NoComments = Table.SelectRows(AsTable, each not Text.StartsWith([Name], "_")),
+		    Renamed = Table.RenameColumns(NoComments, {{"Name", "asset_key"}, {"Value", valueColumn}})
+		in
+		    Renamed
+	lineageTag: a2a8a021-898c-4f2a-b3b2-78bb42bb00f1
+	queryGroup: Staging
+
+	annotation PBI_ResultType = Function
+

@@ -1,0 +1,113 @@
+table Broker
+	lineageTag: 49f606ed-66e4-4263-81d7-22ddadc48267
+
+	column broker
+		dataType: string
+		lineageTag: e6b75a2a-7dd8-4185-af3c-5a54ebc248d0
+		summarizeBy: none
+		sourceColumn: broker
+
+		annotation SummarizationSetBy = Automatic
+
+	column label
+		dataType: string
+		lineageTag: 3bdcf4f6-8e59-4556-a75e-4a7116d1695e
+		summarizeBy: none
+		sourceColumn: label
+
+		annotation SummarizationSetBy = Automatic
+
+	column sort_order
+		dataType: int64
+		formatString: 0
+		lineageTag: 3cf9b7f5-f999-4f5a-a749-d98354f47a64
+		summarizeBy: none
+		sourceColumn: sort_order
+
+		annotation SummarizationSetBy = Automatic
+
+	column color_dark
+		dataType: string
+		lineageTag: 26edb360-22be-4d43-a29c-4512eb22af13
+		summarizeBy: none
+		sourceColumn: color_dark
+
+		annotation SummarizationSetBy = Automatic
+
+	column color_light
+		dataType: string
+		lineageTag: 548dcfb1-4d1a-4b74-aad1-30ed73ddf3ce
+		summarizeBy: none
+		sourceColumn: color_light
+
+		annotation SummarizationSetBy = Automatic
+
+	column envelope
+		dataType: string
+		lineageTag: 33c35937-fe00-4812-b44c-3e1ea5b7d1a2
+		summarizeBy: none
+		sourceColumn: envelope
+
+		annotation SummarizationSetBy = Automatic
+
+	column envelope_label
+		dataType: string
+		lineageTag: 7b36c79f-c246-4bda-9923-cc5174c0dc10
+		summarizeBy: none
+		sourceColumn: envelope_label
+
+		annotation SummarizationSetBy = Automatic
+
+	column tax_pct
+		dataType: double
+		lineageTag: 33f9ed94-de2b-4eb5-8110-2b260a861698
+		summarizeBy: none
+		sourceColumn: tax_pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ceiling_eur
+		dataType: double
+		lineageTag: 8ce6be4c-8baf-4dbc-ba35-550ef97014c6
+		summarizeBy: none
+		sourceColumn: ceiling_eur
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column envelope_priority
+		dataType: int64
+		formatString: 0
+		lineageTag: 10698eed-f647-4f29-a0dd-cab14a0afdc7
+		summarizeBy: none
+		sourceColumn: envelope_priority
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Broker = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				    Source = Csv.Document(File.Contents(RepoPath & "\powerbi\data\brokers.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Merged Envelope" = Table.NestedJoin(#"Promoted Headers", {"broker"}, stg_BrokerEnvelope, {"broker"}, "stg_BrokerEnvelope", JoinKind.LeftOuter),
+				    #"Expanded Envelope" = Table.ExpandTableColumn(#"Merged Envelope", "stg_BrokerEnvelope", {"envelope"}, {"envelope"}),
+				    #"Merged Terms" = Table.NestedJoin(#"Expanded Envelope", {"envelope"}, stg_Envelope, {"envelope"}, "stg_Envelope", JoinKind.LeftOuter),
+				    #"Expanded Terms" = Table.ExpandTableColumn(#"Merged Terms", "stg_Envelope",
+				        {"envelope_label", "tax_pct", "ceiling_eur", "envelope_priority"},
+				        {"envelope_label", "tax_pct", "ceiling_eur", "envelope_priority"}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Terms", {{"broker", type text}, {"label", type text},
+				        {"sort_order", Int64.Type}, {"color_dark", type text}, {"color_light", type text},
+				        {"envelope", type text}, {"envelope_label", type text}, {"tax_pct", type number},
+				        {"ceiling_eur", type number}, {"envelope_priority", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

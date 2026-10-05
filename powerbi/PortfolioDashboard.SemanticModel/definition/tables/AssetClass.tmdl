@@ -1,0 +1,59 @@
+table AssetClass
+	lineageTag: ccbda844-4145-45b1-a049-7b9269bd0e58
+
+	column asset_class
+		dataType: string
+		lineageTag: d1446adb-ab88-473a-b5b5-583ba2f0a71e
+		summarizeBy: none
+		sourceColumn: asset_class
+
+		annotation SummarizationSetBy = Automatic
+
+	column label
+		dataType: string
+		lineageTag: fb6a89bd-a329-461d-8c11-50db195e878f
+		summarizeBy: none
+		sourceColumn: label
+
+		annotation SummarizationSetBy = Automatic
+
+	column sort_order
+		dataType: int64
+		formatString: 0
+		lineageTag: d6ed00f8-d332-4ec3-8d1e-ff14b399dbdb
+		summarizeBy: sum
+		sourceColumn: sort_order
+
+		annotation SummarizationSetBy = Automatic
+
+	column color_dark
+		dataType: string
+		lineageTag: ecea1d21-7437-460f-8712-227af6156cef
+		summarizeBy: none
+		sourceColumn: color_dark
+
+		annotation SummarizationSetBy = Automatic
+
+	column color_light
+		dataType: string
+		lineageTag: 1f63249b-6330-4b15-be61-7d79ed044ac8
+		summarizeBy: none
+		sourceColumn: color_light
+
+		annotation SummarizationSetBy = Automatic
+
+	partition AssetClass = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				    Source = Csv.Document(File.Contents(RepoPath & "\powerbi\data\asset_classes.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"asset_class", type text}, {"label", type text}, {"sort_order", Int64.Type}, {"color_dark", type text}, {"color_light", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

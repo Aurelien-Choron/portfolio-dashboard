@@ -1,0 +1,59 @@
+table Exposure
+	lineageTag: da950402-d716-4190-a833-39183f0669aa
+
+	column asset_key
+		dataType: string
+		lineageTag: c2c89d72-1c45-4f4e-89d4-c19b725697e7
+		summarizeBy: none
+		sourceColumn: asset_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column dimension
+		dataType: string
+		lineageTag: af622d0c-a10a-48fb-bfa4-1473b8fb7430
+		summarizeBy: none
+		sourceColumn: dimension
+
+		annotation SummarizationSetBy = Automatic
+
+	column label
+		dataType: string
+		lineageTag: 65b3424e-9121-4996-bf58-de5b4fd4d6ae
+		summarizeBy: none
+		sourceColumn: label
+
+		annotation SummarizationSetBy = Automatic
+
+	column pct
+		dataType: double
+		lineageTag: 945c47cb-f9e7-4a67-b9e5-9d105c5643eb
+		summarizeBy: sum
+		sourceColumn: pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Exposure = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				    Source = Json.Document(File.Contents(RepoPath & "\" & DataSet & "\config\exposure.json")),
+				    #"Converted to Table" = Record.ToTable(Source),
+				    #"No Comments" = Table.SelectRows(#"Converted to Table", each not Text.StartsWith([Name], "_")),
+				    #"Renamed Columns" = Table.RenameColumns(#"No Comments", {{"Name", "asset_key"}}),
+				    #"Expanded Value" = Table.ExpandRecordColumn(#"Renamed Columns", "Value", {"country", "sector"}),
+				    #"Unpivoted Columns" = Table.UnpivotOtherColumns(#"Expanded Value", {"asset_key"}, "dimension", "breakdown"),
+				    #"Breakdown to Table" = Table.AddColumn(#"Unpivoted Columns", "rows", each Record.ToTable([breakdown])),
+				    #"Removed breakdown" = Table.RemoveColumns(#"Breakdown to Table", {"breakdown"}),
+				    #"Expanded rows" = Table.ExpandTableColumn(#"Removed breakdown", "rows", {"Name", "Value"}, {"label", "pct"}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Expanded rows", {{"asset_key", type text}, {"dimension", type text}, {"label", type text}, {"pct", type number}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

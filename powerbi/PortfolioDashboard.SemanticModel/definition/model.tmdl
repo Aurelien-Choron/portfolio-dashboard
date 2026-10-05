@@ -4,6 +4,7 @@ model Model
 	sourceQueryCulture: fr-FR
 	valueFilterBehavior: independent
 	dataAccessOptions
+		fastCombine
 		legacyRedirects
 		returnErrorValuesAsNull
 
@@ -35,9 +36,16 @@ annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode"]
 
-annotation PBI_QueryOrder = ["RepoPath","DataSet","stg_Fortuneo","fortuneo_SampleFile","fortuneo_SampleParam","fortuneo_TransformSample","fx_ParseFortuneoFile","stg_TradeRepublic","tradeRepublic_SampleFile","tradeRepublic_SampleParam","tradeRepublic_TransformSample","fx_ParseTradeRepublicFile","map_FortuneoOperation","map_TradeRepublicType","Transactions"]
+annotation PBI_QueryOrder = ["RepoPath","DataSet","stg_Fortuneo","fortuneo_SampleFile","fortuneo_SampleParam","fortuneo_TransformSample","fx_ParseFortuneoFile","stg_TradeRepublic","tradeRepublic_SampleFile","tradeRepublic_SampleParam","tradeRepublic_TransformSample","fx_ParseTradeRepublicFile","map_FortuneoOperation","map_TradeRepublicType","Transactions","AssetClass","stg_Strategy","stg_BrokerEnvelope","stg_Envelope","fx_ConfigMap","Broker","Prices","Asset","Exposure","Account","StrategyTarget"]
 
 ref table Transactions
+ref table AssetClass
+ref table Broker
+ref table Prices
+ref table Asset
+ref table Exposure
+ref table Account
+ref table StrategyTarget
 
 ref cultureInfo en-US
 

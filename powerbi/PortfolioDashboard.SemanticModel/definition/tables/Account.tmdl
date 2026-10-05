@@ -1,0 +1,98 @@
+table Account
+	lineageTag: 0c5d56c9-3586-4e8a-a162-eca81ca60008
+
+	column id
+		dataType: string
+		lineageTag: 0ed75a06-85be-4195-ae5d-f7f162467d40
+		summarizeBy: none
+		sourceColumn: id
+
+		annotation SummarizationSetBy = Automatic
+
+	column label
+		dataType: string
+		lineageTag: 65d2a330-12e6-4b57-a115-991c9e393da5
+		summarizeBy: none
+		sourceColumn: label
+
+		annotation SummarizationSetBy = Automatic
+
+	column bank
+		dataType: string
+		lineageTag: bf7ffc51-6579-4625-907c-c37c7e20f4f9
+		summarizeBy: none
+		sourceColumn: bank
+
+		annotation SummarizationSetBy = Automatic
+
+	column asset_class
+		dataType: string
+		lineageTag: c68d81f4-d80a-45e5-b896-09bba5cd3dc6
+		summarizeBy: none
+		sourceColumn: asset_class
+
+		annotation SummarizationSetBy = Automatic
+
+	column balance
+		dataType: double
+		lineageTag: fb214c58-476b-44a0-a9b3-8fdf9a5564c9
+		summarizeBy: sum
+		sourceColumn: balance
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column rate_pct
+		dataType: double
+		lineageTag: b8f4afa4-a20f-4274-84dd-97ca18e35140
+		summarizeBy: none
+		sourceColumn: rate_pct
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ceiling
+		dataType: double
+		lineageTag: 766b5c10-3335-4e72-a9bd-d1549cc94a25
+		summarizeBy: none
+		sourceColumn: ceiling
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column maturity_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: e5801f64-84cf-4adb-81af-55803913c943
+		summarizeBy: none
+		sourceColumn: maturity_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition Account = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				    Source = Json.Document(File.Contents(RepoPath & "\" & DataSet & "\data\accounts\accounts.json")),
+				    Accounts = Table.FromRecords(Source[accounts],
+				        {"id", "label", "bank", "category", "balance", "rate_pct", "ceiling", "maturity_date", "visible"},
+				        MissingField.UseNull),
+				    #"Visible Only" = Table.SelectRows(Accounts, each [visible] <> false),
+				    #"Removed visible" = Table.RemoveColumns(#"Visible Only", {"visible"}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Removed visible", {{"category", "asset_class"}}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Renamed Columns", {{"id", type text}, {"label", type text},
+				        {"bank", type text}, {"asset_class", type text}, {"balance", type number},
+				        {"rate_pct", type number}, {"ceiling", type number}, {"maturity_date", type date}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

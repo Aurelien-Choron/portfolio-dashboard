@@ -1,0 +1,48 @@
+table Prices
+	lineageTag: 42ea224e-fa87-4f97-a312-b654358e6bb0
+
+	column date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: cded193f-909a-4aed-a5c4-139a89c00569
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column asset_key
+		dataType: string
+		lineageTag: a488931a-a3a8-49e3-ad99-7c576e4f510a
+		summarizeBy: none
+		sourceColumn: asset_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column close_eur
+		dataType: double
+		lineageTag: 75f15b85-a294-44a8-bb58-ae67b02bda58
+		summarizeBy: none
+		sourceColumn: close_eur
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Prices = m
+		mode: import
+		queryGroup: Facts
+		source =
+				let
+				    Source = Csv.Document(File.Contents(RepoPath & "\powerbi\data\prices_daily.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Removed Other Columns" = Table.SelectColumns(#"Promoted Headers", {"date", "asset_key", "close_eur"}),
+				    #"Changed Type with Locale" = Table.TransformColumnTypes(#"Removed Other Columns", {{"date", type date}, {"asset_key", type text}, {"close_eur", type number}}, "en-US")
+				in
+				    #"Changed Type with Locale"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

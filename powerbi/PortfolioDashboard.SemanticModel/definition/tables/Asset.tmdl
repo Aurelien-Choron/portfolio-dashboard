@@ -26,8 +26,8 @@ table Asset
 		annotation SummarizationSetBy = Automatic
 
 	column broker
-		isHidden
 		dataType: string
+		isHidden
 		lineageTag: 59e70c89-3b14-4ccb-950f-ca7e91791b0f
 		summarizeBy: none
 		sourceColumn: broker
@@ -53,8 +53,8 @@ table Asset
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	column asset_class
-		isHidden
 		dataType: string
+		isHidden
 		lineageTag: 8047e040-a6ad-41c1-b1ef-fc6445789e30
 		summarizeBy: none
 		sourceColumn: asset_class

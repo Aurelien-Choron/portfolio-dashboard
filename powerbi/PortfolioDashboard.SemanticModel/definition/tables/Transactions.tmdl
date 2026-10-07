@@ -128,8 +128,8 @@ table Transactions
 		annotation SummarizationSetBy = Automatic
 
 	column asset_key
-		isHidden
 		dataType: string
+		isHidden
 		lineageTag: 277bbd1a-3c00-4378-8de7-138b108cdf35
 		summarizeBy: none
 		sourceColumn: asset_key

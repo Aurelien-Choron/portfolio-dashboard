@@ -1,0 +1,308 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "8e8851e42afe305829f2",
+  "position": {
+    "x": 24,
+    "y": 24,
+    "z": 0,
+    "height": 600,
+    "width": 1872,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Transactions"
+                    }
+                  },
+                  "Property": "row_id"
+                }
+              },
+              "queryRef": "Transactions.row_id",
+              "nativeQueryRef": "row_id",
+              "displayName": "#"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Transactions"
+                    }
+                  },
+                  "Property": "date"
+                }
+              },
+              "queryRef": "Transactions.date",
+              "nativeQueryRef": "date"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Transactions"
+                    }
+                  },
+                  "Property": "type"
+                }
+              },
+              "queryRef": "Transactions.type",
+              "nativeQueryRef": "type"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Transactions"
+                    }
+                  },
+                  "Property": "name"
+                }
+              },
+              "queryRef": "Transactions.name",
+              "nativeQueryRef": "name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Transactions"
+                    }
+                  },
+                  "Property": "quantity"
+                }
+              },
+              "queryRef": "Transactions.quantity",
+              "nativeQueryRef": "quantity"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Transactions"
+                    }
+                  },
+                  "Property": "amount"
+                }
+              },
+              "queryRef": "Transactions.amount",
+              "nativeQueryRef": "amount"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Transactions"
+                    }
+                  },
+                  "Property": "fee"
+                }
+              },
+              "queryRef": "Transactions.fee",
+              "nativeQueryRef": "fee"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Transactions"
+                    }
+                  },
+                  "Property": "broker"
+                }
+              },
+              "queryRef": "Transactions.broker",
+              "nativeQueryRef": "broker"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Transactions"
+                  }
+                },
+                "Property": "date"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "total": [
+        {
+          "properties": {
+            "totals": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Transactions'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "4a9340b861dda657b04a",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Transactions"
+              }
+            },
+            "Property": "date"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "a2e41d62c72bb60b50ec",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Transactions"
+              }
+            },
+            "Property": "type"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "3bb59b14da3f2729099f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Transactions"
+              }
+            },
+            "Property": "name"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "41e63a6e5d167efbae50",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Transactions"
+              }
+            },
+            "Property": "broker"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "729ceb9ad9a5be990000",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Transactions"
+              }
+            },
+            "Property": "quantity"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "455613e9bbb5a8a273c5",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Transactions"
+              }
+            },
+            "Property": "amount"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "413309e2ef44f0e8ca6f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Transactions"
+              }
+            },
+            "Property": "fee"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "2086637f0d76e0aa9873",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Transactions"
+              }
+            },
+            "Property": "row_id"
+          }
+        },
+        "type": "Advanced",
+        "isHiddenInViewMode": true
+      }
+    ]
+  }
+}

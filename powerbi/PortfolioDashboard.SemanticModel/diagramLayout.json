@@ -111,6 +111,45 @@
             "width": 234
           },
           "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2556,
+            "y": 0
+          },
+          "nodeIndex": "_Measures",
+          "nodeLineageTag": "6b0d7c1e-3f52-4c1a-9d0e-2a6f4b8e1c01",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2840,
+            "y": 38
+          },
+          "nodeIndex": "Date",
+          "nodeLineageTag": "23ef1636-2db7-47ab-b312-dfde0dac681d",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 3124,
+            "y": 86
+          },
+          "nodeIndex": "Institution",
+          "nodeLineageTag": "36029a64-07c0-43d3-a514-62437c5f03da",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
         }
       ],
       "name": "All tables",

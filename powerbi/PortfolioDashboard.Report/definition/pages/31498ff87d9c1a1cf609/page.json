@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
-  "name": "2e40e856111c5ede7730",
-  "displayName": "Investments",
+  "name": "31498ff87d9c1a1cf609",
+  "displayName": "Holdings",
   "displayOption": "FitToPage",
   "height": 1080,
   "width": 1920

@@ -13,8 +13,8 @@ table Prices
 		annotation UnderlyingDateTimeDataType = Date
 
 	column asset_key
-		isHidden
 		dataType: string
+		isHidden
 		lineageTag: a488931a-a3a8-49e3-ad99-7c576e4f510a
 		summarizeBy: none
 		sourceColumn: asset_key

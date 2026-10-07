@@ -1,0 +1,75 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "dfdbf8a07d0ef1abdc3f",
+  "position": {
+    "x": 1272,
+    "y": 270,
+    "z": 8000,
+    "height": 480,
+    "width": 616,
+    "tabOrder": 8000
+  },
+  "visual": {
+    "visualType": "treemap",
+    "query": {
+      "queryState": {
+        "Group": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Asset"
+                    }
+                  },
+                  "Property": "name"
+                }
+              },
+              "queryRef": "Asset.name",
+              "nativeQueryRef": "name",
+              "active": true
+            }
+          ]
+        },
+        "Tooltips": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Unrealized P&L %"
+                }
+              },
+              "queryRef": "_Measures.Unrealized P&L %",
+              "nativeQueryRef": "Unrealized P&L %"
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Market Value"
+                }
+              },
+              "queryRef": "_Measures.Market Value",
+              "nativeQueryRef": "Market Value"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

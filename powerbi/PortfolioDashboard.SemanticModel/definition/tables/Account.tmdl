@@ -18,8 +18,8 @@ table Account
 		annotation SummarizationSetBy = Automatic
 
 	column bank
-		isHidden
 		dataType: string
+		isHidden
 		lineageTag: bf7ffc51-6579-4625-907c-c37c7e20f4f9
 		summarizeBy: none
 		sourceColumn: bank
@@ -27,8 +27,8 @@ table Account
 		annotation SummarizationSetBy = Automatic
 
 	column asset_class
-		isHidden
 		dataType: string
+		isHidden
 		lineageTag: c68d81f4-d80a-45e5-b896-09bba5cd3dc6
 		summarizeBy: none
 		sourceColumn: asset_class
